@@ -565,9 +565,17 @@
         </div> 
         <div class="tab-pane fade" id="planlama-modulu" role="tabpanel">
             <div class="card p-2 shadow-sm border-primary mb-2">
-                <div class="d-flex justify-content-between align-items-center border-bottom pb-1 mb-2">
-                    <h5 class="text-primary fw-bold mb-0">📅 3 Aylık İnteraktif Görev ve İstihdam Matrisi</h5>
-                    <small class="text-muted" style="font-size:10px;">⚠️ Kapasite aşımında alta EK PERS uyarısı çıkar. Fırçalarla günlere manuel personel atayabilirsiniz.</small>
+                <div class="d-flex justify-content-between align-items-center border-bottom pb-2 mb-2">
+                    <div>
+                        <h5 class="text-primary fw-bold mb-0 d-inline-block me-2">📅 3 Aylık İnteraktif Görev ve İstihdam Matrisi</h5>
+                        <small class="text-muted d-block mt-1" style="font-size:10px;">⚠️ Kapasite aşımında alta EK PERS uyarısı çıkar. Hücrelere tıklayarak manuel personel atayabilirsiniz.</small>
+                    </div>
+                    <div class="d-flex align-items-center gap-2">
+                        <select id="planlamaProjeSecim" class="form-select form-select-sm border-primary shadow-sm" onchange="loadMatrixForProject()" style="min-width: 250px;">
+                            <option value="">-- Müşteri / Proje Seçiniz --</option>
+                        </select>
+                        <button onclick="saveCurrentMatrix()" class="btn btn-sm btn-success fw-bold shadow-sm px-3">💾 Matrisi Kaydet</button>
+                    </div>
                 </div>
                 
                 <div id="scheduleCostSummary" class="mb-2"></div>
@@ -1541,6 +1549,13 @@
             </tr>`;
         });
         document.getElementById('kayitliTekliflerListesi').innerHTML = html;
+        // YENİ EKLENEN: Planlama sekmesindeki Müşteri/Proje seçiciyi günceller
+        let planlamaHtml = '<option value="">-- Müşteri / Proje Seçiniz --</option>';
+        teklifler.slice().reverse().forEach(t => {
+            planlamaHtml += `<option value="${t.id}">${t.musteri} - ${t.adi}</option>`;
+        });
+        let planlamaSelect = document.getElementById('planlamaProjeSecim');
+        if(planlamaSelect) planlamaSelect.innerHTML = planlamaHtml;
     }
 
     function deleteQuote(id) {
@@ -2565,6 +2580,56 @@
                 }
             }
         });
+    }
+
+    // ================== MATRİS SEÇME VE KAYDETME (MÜŞTERİYE ÖZEL) ==================
+    function loadMatrixForProject() {
+        const selectedId = document.getElementById('planlamaProjeSecim').value;
+        if(!selectedId) {
+            currentGeneratedQuote = null;
+            window.aiScheduleData = {};
+            document.getElementById('scheduleTbody').innerHTML = '<tr><td colspan="30" class="text-center text-muted py-4">Lütfen yukarıdan bir müşteri projesi seçin.</td></tr>';
+            document.getElementById('scheduleThead').innerHTML = '';
+            document.getElementById('scheduleCostSummary').innerHTML = '';
+            return;
+        }
+
+        const t = getData(KEYS.TEKLIFLER).find(x => x.id == selectedId);
+        if(!t) return;
+
+        // Projeyi ve matrisini geçici hafızaya yükle
+        currentGeneratedQuote = t;
+        window.aiScheduleData = t.matrix || {}; 
+        window.currentScheduleMonth = 1;
+
+        // Ay sekmesini görsel olarak 1. Ay'a çek
+        document.querySelectorAll('#planlama-modulu .btn-group .btn').forEach(b => b.classList.remove('active'));
+        let btnAy1 = document.getElementById('btnAy1');
+        if(btnAy1) btnAy1.classList.add('active');
+
+        // Tabloyu çiz
+        renderScheduleGrid();
+    }
+
+    function saveCurrentMatrix() {
+        const selectedId = document.getElementById('planlamaProjeSecim').value;
+        
+        if(!selectedId || !currentGeneratedQuote) {
+            return alert("Lütfen matrisini kaydetmek istediğiniz kayıtlı bir müşteri/proje seçin.");
+        }
+
+        let teklifler = getData(KEYS.TEKLIFLER);
+        const index = teklifler.findIndex(t => t.id == selectedId);
+
+        if(index !== -1) {
+            // Yüzen menüyle yapılan değişiklikler window.aiScheduleData'da birikiyordu.
+            // Şimdi bunu doğrudan projenin ana verisine yazıp kaydediyoruz.
+            teklifler[index].matrix = window.aiScheduleData; 
+            saveData(KEYS.TEKLIFLER, teklifler);
+            alert("✅ Matris üzerindeki tüm personel atamaları bu müşteriye özel olarak başarıyla kaydedildi!");
+        } else {
+            alert("Kayıtlı proje bulunamadı!");
+        }
     }
 
     function changeScheduleMonth(month) {
