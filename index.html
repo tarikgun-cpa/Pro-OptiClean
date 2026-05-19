@@ -1,0 +1,2897 @@
+<!DOCTYPE html>
+<html lang="tr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Banka/Mağaza Temizlik Operasyon ve Teklif Sistemi</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+    <style>
+        /* GENEL TEMA VE TİPOGRAFİ (Kompakt ve Modern) */
+        body { background-color: #f1f5f9; font-family: 'Segoe UI', Roboto, Helvetica, Arial, sans-serif; font-size: 13px; color: #334155; }
+        
+        /* KARTLAR (Daha ince kenarlık, yumuşak gölgeler, daraltılmış iç boşluklar) */
+        .card { border: 1px solid #e2e8f0; border-radius: 12px; box-shadow: 0 4px 6px -1px rgba(0,0,0,0.05); margin-bottom: 16px; background-color: #ffffff; }
+        .card.p-4 { padding: 1.25rem !important; } /* p-4'lerin aşırı boşluğunu ezdik */
+        .card.p-3 { padding: 1rem !important; }
+        
+        /* BAŞLIKLAR (Sade ve Kurumsal) */
+        h2 { font-size: 22px; letter-spacing: -0.5px; }
+        .section-title { font-size: 14px; font-weight: 700; color: #1e293b; border-bottom: none; margin-bottom: 16px; display: flex; align-items: center; text-transform: uppercase; letter-spacing: 0.5px;}
+        .section-title::before { content: ''; display: inline-block; width: 4px; height: 16px; background-color: #3b82f6; margin-right: 8px; border-radius: 4px; }
+        
+        /* FORM ELEMANLARI (Daha dar ve zarif) */
+        .form-label { font-weight: 600; font-size: 11px; margin-bottom: 4px; color: #64748b; text-transform: uppercase; letter-spacing: 0.3px;}
+        .form-control, .form-select { font-size: 13px; border-radius: 6px; border: 1px solid #cbd5e1; padding: 6px 10px; min-height: 32px; box-shadow: none !important; transition: border-color 0.2s;}
+        .form-control:focus, .form-select:focus { border-color: #3b82f6; outline: 3px solid rgba(59, 130, 246, 0.1); }
+        .input-group-text { font-size: 12px; background-color: #f8fafc; border-color: #cbd5e1; font-weight: 600; }
+        
+        /* BUTONLAR */
+        .btn { font-size: 12px; font-weight: 600; border-radius: 6px; padding: 6px 14px; letter-spacing: 0.3px; transition: all 0.2s; }
+        .btn-sm { font-size: 11px; padding: 4px 8px; }
+        
+        /* ANA SEKMELER (SaaS Tarzı Sekmeler) */
+        .nav-tabs { border-bottom: 2px solid #e2e8f0; margin-bottom: 20px; gap: 5px; }
+        .nav-tabs .nav-link { border: none; color: #64748b; font-weight: 600; font-size: 14px; padding: 10px 20px; border-radius: 8px 8px 0 0; transition: all 0.2s; }
+        .nav-tabs .nav-link:hover { background-color: #f8fafc; color: #0f172a; }
+        .nav-tabs .nav-link.active { background-color: transparent; color: #2563eb; font-weight: 700; border-bottom: 3px solid #2563eb; }
+        
+        /* ALT SEKMELER (Hap Tarzı) */
+        .nav-pills .nav-link { font-size: 12px; font-weight: 600; color: #475569; padding: 6px 12px; border-radius: 6px; margin-right: 5px; background: #f1f5f9;}
+        .nav-pills .nav-link.active { background-color: #334155; color: white; }
+
+        /* TABLOLAR (Kompakt ve Okunabilir) */
+        .table { font-size: 12px; margin-bottom: 0; color: #334155; }
+        .table-responsive { border: 1px solid #e2e8f0; border-radius: 8px; max-height: 500px; overflow-y: auto; }
+        .table th { background-color: #f8fafc !important; color: #475569 !important; font-weight: 700; text-transform: uppercase; font-size: 10px; letter-spacing: 0.5px; border-bottom: 2px solid #cbd5e1 !important; padding: 10px 8px; vertical-align: middle; position: sticky; top: 0; z-index: 1;}
+        .table td { padding: 6px 8px; vertical-align: middle; border-bottom: 1px solid #f1f5f9; }
+        .table-hover tbody tr:hover { background-color: #f0fdf4; }
+        
+        /* İSTATİSTİK KARTLARI (Özet Paneli) */
+        .ai-box { background-color: #ffffff; border-radius: 12px; padding: 20px; border: 1px solid #e2e8f0; }
+        .stat-card { border-radius: 8px; border-left: 4px solid; padding: 12px 15px; background: #f8fafc; box-shadow: 0 1px 2px rgba(0,0,0,0.05); }
+        .border-blue { border-color: #3b82f6; } .border-green { border-color: #10b981; } .border-yellow { border-color: #f59e0b; } .border-red { border-color: #ef4444; }
+        
+        /* PLANLAMA MATRİSİ ÖZEL TASARIMI */
+        .schedule-table th, .schedule-table td { border: 1px solid #e2e8f0; padding: 4px; text-align: center; vertical-align: middle; cursor: pointer; min-width: 38px; font-size: 11px; transition: background-color 0.1s;}
+        .schedule-table td:hover { background-color: #e0e7ff; }
+        .schedule-table .sticky-col { position: sticky; left: 0; z-index: 2; border-right: 2px solid #94a3b8; text-align: left; padding-left: 10px; font-weight: bold; width: 220px; max-width: 220px; overflow: hidden; white-space: nowrap; text-overflow: ellipsis; background-color: #fff; box-shadow: 2px 0 5px rgba(0,0,0,0.02);}
+        .bg-kocaeli { background-color: #f8fafc !important; }
+        .bg-sakarya { background-color: #f0fdf4 !important; }
+        .bg-yalova { background-color: #fffbeb !important; }
+        .sunday-col { background-color: #fef2f2 !important; }
+    </style>
+</head>
+<body>
+<script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-app.js"></script>
+<script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-auth.js"></script>
+<script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-firestore.js"></script>
+
+<div id="loginOverlay" style="position:fixed; top:0; left:0; width:100%; height:100%; background:#0f172a; z-index:99999; display:flex; justify-content:center; align-items:center;">
+    <div class="card p-4 shadow-lg text-center" style="width: 350px; background: #fff;">
+        <h3 class="fw-bold text-primary mb-3">CPA-FTC Pro</h3>
+        <p class="text-muted small mb-4">Sisteme erişmek için lütfen giriş yapın.</p>
+        <input type="email" id="loginEmail" class="form-control mb-3" placeholder="E-Posta Adresiniz">
+        <input type="password" id="loginPassword" class="form-control mb-3" placeholder="Şifreniz">
+        <button onclick="loginUser()" id="btnLogin" class="btn btn-primary w-100 fw-bold">Giriş Yap</button>
+        <div id="loginError" class="text-danger mt-3 small fw-bold" style="display:none;"></div>
+    </div>
+</div>
+
+<div class="container-fluid px-4 mt-3" id="mainApp" style="display:none;">
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <h2 class="text-dark fw-bolder mb-0">CPA-FTC Pro 🫧 Kurumsal Temizlik Operasyon Sistemi</h2>
+        <button onclick="logoutUser()" class="btn btn-outline-danger btn-sm fw-bold">Çıkış Yap</button>
+    </div>
+    <h2 class="mb-4 text-dark fw-bolder">CPA-FTC Pro 🫧 Kurumsal Temizlik Operasyon ve Planlama Sistemi</h2>
+
+    <ul class="nav nav-tabs mb-4" id="mainTab" role="tablist">
+        <li class="nav-item" role="presentation">
+            <button class="nav-link active fw-bold" id="tab-veri" data-bs-toggle="tab" data-bs-target="#veri-merkezi" type="button" role="tab">🏢 Veri Merkezi</button>
+        </li>
+        <li class="nav-item" role="presentation">
+            <button class="nav-link fw-bold text-success" id="tab-teklif" data-bs-toggle="tab" data-bs-target="#teklif-modulu" type="button" role="tab">📝 AI Teklif Modülü</button>
+        </li>
+        <li class="nav-item" role="presentation">
+            <button class="nav-link fw-bold text-danger" id="tab-hakedis" data-bs-toggle="tab" data-bs-target="#hakedis-modulu" type="button" role="tab">✅ Operasyon & Hakediş</button>
+        </li>
+        <li class="nav-item" role="presentation">
+            <button class="nav-link fw-bold text-primary" id="tab-planlama" data-bs-toggle="tab" data-bs-target="#planlama-modulu" type="button" role="tab">📅 İstihdam & Planlama</button>
+        </li>
+    </ul>
+
+    <div class="tab-content" id="mainTabContent">
+        
+        <div class="tab-pane fade show active" id="veri-merkezi" role="tabpanel">
+            <ul class="nav nav-pills mb-4" id="pills-tab" role="tablist">
+                <li class="nav-item" role="presentation">
+                    <button class="nav-link active" data-bs-toggle="pill" data-bs-target="#pills-sube" type="button" role="tab">1. Müşteri & Şube Kaydı</button>
+                </li>
+                <li class="nav-item" role="presentation">
+                    <button class="nav-link" data-bs-toggle="pill" data-bs-target="#pills-hizmet" type="button" role="tab">2. İl & Hizmet Fiyatları</button>
+                </li>
+                <li class="nav-item" role="presentation">
+                    <button class="nav-link" data-bs-toggle="pill" data-bs-target="#pills-plan" type="button" role="tab">3. Müşteri İş Planları</button>
+                </li>
+                <li class="nav-item" role="presentation">
+                    <button class="nav-link bg-secondary text-white ms-2" data-bs-toggle="pill" data-bs-target="#pills-personel" type="button" role="tab">4. Personel & Maliyet</button>
+                </li>
+                <li class="nav-item" role="presentation">
+                    <button class="nav-link bg-info text-white ms-2" data-bs-toggle="pill" data-bs-target="#pills-firma" type="button" role="tab">5. Firma Bilgileri</button>
+                </li>
+            </ul>
+
+            <div class="tab-content" id="pills-tabContent">
+                
+                <div class="tab-pane fade show active" id="pills-sube" role="tabpanel">
+                    <div class="row">
+                        <div class="col-md-4">
+                            <div class="card p-3">
+                                <h5 class="section-title">Yeni Müşteri Ekle</h5>
+                                <label class="form-label">Müşteri Tipi</label>
+                                <select id="musteriTipi" class="form-select mb-2">
+                                    <option>Banka</option>
+                                    <option>Mağaza</option>
+                                </select>
+                                <label class="form-label">Müşteri (Marka) Adı</label>
+                                <input type="text" id="musteriAdi" class="form-control mb-3" placeholder="Örn: Vakıfbank">
+                                <button id="btnCustomerSubmit" onclick="addCustomer()" class="btn btn-primary w-100">Müşteriyi Kaydet</button>
+                                
+                                <hr>
+                                <h6 class="text-secondary">Kayıtlı Müşteriler</h6>
+                                <div class="table-responsive">
+                                    <table class="table table-sm table-hover">
+                                        <thead><tr><th>Tip</th><th>Adı</th><th>İşlem</th></tr></thead>
+                                        <tbody id="musteriListesi"></tbody>
+                                    </table>
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <div class="col-md-8">
+                            <div class="card p-3">
+                                <h5 class="section-title">Şube Tanımlama</h5>
+                                <div class="row g-3">
+                                    <div class="col-md-4">
+                                        <label class="form-label text-danger fw-bold">Bağlı Olduğu Müşteri</label>
+                                        <select id="subeMusteriSecim" class="form-select"></select>
+                                    </div>
+                                    <div class="col-md-4"><label class="form-label">Şube Adı</label><input type="text" id="subeAdi" class="form-control"></div>
+                                    <div class="col-md-4"><label class="form-label">Şube Kodu</label><input type="text" id="subeKodu" class="form-control"></div>
+                                    <div class="col-md-3"><label class="form-label">İl</label><input type="text" id="subeIl" class="form-control"></div>
+                                    <div class="col-md-3"><label class="form-label">Bölge</label><input type="text" id="subeBolge" class="form-control"></div>
+                                    <div class="col-md-6"><label class="form-label">Açık Adres</label><input type="text" id="subeAdres" class="form-control"></div>
+                                    <div class="col-md-4"><label class="form-label">Şube Alanı (m²)</label><input type="number" id="subeM2" class="form-control"></div>
+                                    <div class="col-md-4"><label class="form-label">Tadilat Alanı (m²)</label><input type="number" id="subeTadilatM2" class="form-control"></div>
+                                    <div class="col-md-4"><label class="form-label">Cam Alanı (m²)</label><input type="number" id="subeCamM2" class="form-control"></div>
+                                    <div class="col-12 mt-3 d-flex justify-content-between align-items-center">
+                                        <div>
+                                            <input type="file" id="subeExcel" class="form-control form-control-sm d-inline-block w-auto" accept=".xlsx, .xls">
+                                            <button onclick="importExcel('subeExcel', 'subeler')" class="btn btn-sm btn-outline-success">Excel'den Yükle</button>
+                                            <button onclick="downloadTemplate('subeler')" class="btn btn-sm btn-info text-white ms-1">Şablon İndir</button>
+                                        </div>
+                                        <button id="btnBranchSubmit" onclick="addBranch()" class="btn btn-success">Şubeyi Sisteme Ekle</button>
+                                    </div>
+                                </div>
+
+                                <hr>
+                                <h6 class="text-secondary mt-3">Kayıtlı Şubeler</h6>
+                                <div class="table-responsive">
+                                    <table class="table table-sm table-striped">
+                                        <thead class="table-dark">
+                                            <tr><th>Müşteri</th><th>Şube</th><th>Kod</th><th>İl</th><th>m²</th><th style="min-width: 130px;">İşlem</th></tr>
+                                        </thead>
+                                        <tbody id="subeListesi"></tbody>
+                                    </table>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="tab-pane fade" id="pills-hizmet" role="tabpanel">
+                    <div class="card p-4">
+                        <h5 class="section-title">Hizmet ve İl Bazlı Fiyatlandırma</h5>
+                        <div class="row g-3 align-items-end mb-4">
+                            <div class="col-md-3">
+                                <label class="form-label">Hizmet Seçimi</label>
+                                <input type="text" id="fiyatHizmet" class="form-control" placeholder="Örn: Cam Silme (m²)">
+                            </div>
+                            <div class="col-md-3">
+                                <label class="form-label">İl</label>
+                                <input type="text" id="fiyatIl" class="form-control" placeholder="Örn: Kocaeli">
+                            </div>
+                            <div class="col-md-2">
+                                <label class="form-label">Birim Fiyatı (TL)</label>
+                                <input type="number" id="fiyatTutar" class="form-control" placeholder="10">
+                            </div>
+                            <div class="col-md-4 d-flex justify-content-between">
+                                <button id="btnPriceSubmit" onclick="addPrice()" class="btn btn-primary me-2 w-50">Manuel Ekle</button>
+                                <div class="input-group">
+                                    <input type="file" id="fiyatExcel" class="form-control form-control-sm" accept=".xlsx, .xls">
+                                    <button onclick="importExcel('fiyatExcel', 'fiyatlar')" class="btn btn-outline-success btn-sm">Yükle</button>
+                                    <button onclick="downloadTemplate('fiyatlar')" class="btn btn-info btn-sm text-white">Şablon</button>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="table-responsive">
+                            <table class="table table-bordered table-striped">
+                                <thead class="table-dark">
+                                    <tr><th>Hizmet Adı</th><th>İl</th><th>Birim Fiyatı</th><th style="width: 150px;">İşlem</th></tr>
+                                </thead>
+                                <tbody id="fiyatListesi"></tbody>
+                            </table>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="tab-pane fade" id="pills-plan" role="tabpanel">
+                    <div class="card p-4">
+                        <h5 class="section-title">Müşteriye Özel İş Planı Tanımlama</h5>
+                        <div class="row">
+                            <div class="col-md-4">
+                                <label class="form-label">İş Planı Eklenecek Müşteri</label>
+                                <select id="planMusteriSecim" class="form-select mb-3"></select>
+                                <div class="alert alert-warning">
+                                    <strong>Excel Sütunları:</strong> "Müşteri" ve "Madde" şeklinde olmalıdır. Şablonu indirerek örnek formata ulaşabilirsiniz.
+                                </div>
+                                <input type="file" id="planExcel" class="form-control form-control-sm mb-2" accept=".xlsx, .xls">
+                                <div class="d-flex gap-2">
+                                    <button onclick="importExcel('planExcel', 'planlar')" class="btn btn-outline-success btn-sm w-50">Excel'den Yükle</button>
+                                    <button onclick="downloadTemplate('planlar')" class="btn btn-info btn-sm text-white w-50">Şablon İndir</button>
+                                </div>
+                            </div>
+                            <div class="col-md-8">
+                                <div class="row mb-2">
+                                    <div class="col-md-4">
+                                        <label class="form-label text-success fw-bold">Kategori / Grup</label>
+                                        <select id="planGrup" class="form-select">
+                                            <option value="Genel Temizlik">Genel Temizlik</option>
+                                            <option value="DIŞ CEPHE CAM TABELA TEMİZLİK">Dış Cephe Cam Tabela Temizlik</option>
+                                            <option value="EKSTRA DİĞER İŞLER">Ekstra Diğer İşler</option>
+                                        </select>
+                                    </div>
+                                    <div class="col-md-8">
+                                        <label class="form-label">İş Planı Kalemi / Şartname Maddesi</label>
+                                        <div class="input-group">
+                                            <input type="text" id="planMadde" class="form-control" placeholder="Örn: Tabela üstü camlar silinecek...">
+                                            <button id="btnPlanSubmit" onclick="addPlan()" class="btn btn-primary" type="button">Ekle</button>
+                                        </div>
+                                    </div>
+                                </div>
+                                
+                                <div class="d-flex justify-content-between align-items-center mt-4 mb-2">
+    <h6 class="text-secondary mb-0">Tüm Müşteri İş Planları</h6>
+    <button onclick="printAllPlans()" class="btn btn-sm btn-secondary">🖨️ Planları Yazdır</button>
+</div>
+                                <div class="table-responsive">
+                                    <table class="table table-bordered">
+                                        <thead class="table-light"><tr><th>Müşteri</th><th>Şartname Maddesi</th><th style="width: 150px;">İşlem</th></tr></thead>
+                                        <tbody id="planListesi"></tbody>
+                                    </table>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="tab-pane fade" id="pills-personel" role="tabpanel">
+                    <div class="row">
+                        <div class="col-md-6">
+                            <div class="card p-4">
+                                <h5 class="section-title">Personel Tipleri ve Maliyetleri</h5>
+                                <div class="row g-2 align-items-end mb-3">
+                                    <div class="col-md-6">
+                                        <label class="form-label">Personel Türü</label>
+                                        <input type="text" id="persTuru" class="form-control" placeholder="Örn: Temizlik Personeli">
+                                    </div>
+                                    <div class="col-md-4">
+                                        <label class="form-label">Günlük Maliyet (TL)</label>
+                                        <input type="number" id="persMaliyet" class="form-control" placeholder="1500">
+                                    </div>
+                                    <div class="col-md-2">
+                                        <button onclick="addPersonnel()" class="btn btn-primary w-100">Ekle</button>
+                                    </div>
+                                </div>
+                                <table class="table table-sm table-bordered">
+                                    <thead class="table-light"><tr><th>Personel Türü</th><th>Günlük Maliyet</th><th>İşlem</th></tr></thead>
+                                    <tbody id="personelListesi"></tbody>
+                                </table>
+                            </div>
+                        </div>
+                        <div class="col-md-6">
+                            <div class="card p-4 bg-light">
+                                <h5 class="section-title">Genel Maliyet ve Kâr Ayarları</h5>
+                                <label class="form-label">Sarf Malzemesi Maliyet Oranı (%)</label>
+                                <div class="input-group mb-3">
+                                    <input type="number" id="ayarSarfOran" class="form-control" placeholder="Örn: 15" value="15">
+                                    <span class="input-group-text">%</span>
+                                </div>
+                                <label class="form-label text-success fw-bold">Hedeflenen Kâr Oranı (%)</label>
+                                <div class="input-group mb-3">
+                                    <input type="number" id="ayarKarOran" class="form-control border-success" placeholder="Örn: 50" value="50">
+                                    <span class="input-group-text bg-success text-white">%</span>
+                                </div>
+                                <label class="form-label text-primary fw-bold">Şube Hizmet Taban Fiyatı (TL)</label>
+                                <div class="input-group mb-3">
+                                    <input type="number" id="ayarTabanFiyat" class="form-control border-primary" placeholder="Örn: 5000" value="5000">
+                                    <span class="input-group-text bg-primary text-white">₺</span>
+                                </div>
+                                
+                                <h6 class="mt-4 border-bottom border-secondary pb-1 text-secondary">Personel Kapasitesi (AI Dağıtımı İçin)</h6>
+                                <div class="row g-2 mb-3">
+                                    <div class="col-6">
+                                        <label class="form-label fw-bold" style="font-size:12px;">Mevcut Camcı Sayısı</label>
+                                        <input type="number" id="ayarMevcutCam" class="form-control border-info" placeholder="Örn: 2" value="2">
+                                    </div>
+                                    <div class="col-6">
+                                        <label class="form-label fw-bold" style="font-size:12px;">Mevcut Temizlik Ekibi</label>
+                                        <input type="number" id="ayarMevcutGenel" class="form-control border-secondary" placeholder="Örn: 3" value="3">
+                                    </div>
+                                </div>
+                                
+                                <button onclick="saveSettings()" class="btn btn-success w-100 fw-bold">Tüm Ayarları Kaydet</button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                <div class="tab-pane fade" id="pills-firma" role="tabpanel">
+    <div class="card p-4">
+        <h5 class="section-title">Firma Bilgileri ve Teklif Anteti</h5>
+        <div class="row g-3">
+            <div class="col-md-6">
+                <label class="form-label">Firma Unvanı</label>
+                <input type="text" id="firmaUnvani" class="form-control" placeholder="Örn: ABC Temizlik Hizmetleri A.Ş.">
+            </div>
+            <div class="col-md-6">
+                <label class="form-label">İletişim / Adres Bilgisi</label>
+                <input type="text" id="firmaIletisim" class="form-control" placeholder="Örn: Tel: 0212... Adres: İzmit/Kocaeli">
+            </div>
+            <div class="col-md-12">
+                <label class="form-label">Firma Logosu (Resim Seçin)</label>
+                <input type="file" id="firmaLogoFile" class="form-control" accept="image/*">
+                <small class="text-muted">Seçtiğiniz logo tarayıcıya kaydedilir ve yazdırılan PDF/çıktıların en üstüne eklenir.</small>
+            </div>
+            <div class="col-md-12 mt-2">
+                <img id="firmaLogoOnizleme" src="" alt="Logo Önizleme" style="max-height: 80px; display: none; margin-bottom: 10px;">
+                <button onclick="saveFirmaBilgileri()" class="btn btn-success mt-2">Firma Bilgilerini Kaydet</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+            </div>
+        </div>
+
+        <div class="tab-pane fade" id="teklif-modulu" role="tabpanel">
+            <div class="row">
+                
+                <div class="col-md-4">
+                    <div class="card p-3 shadow-sm border-info">
+                        <h5 class="text-info fw-bold">1. Teklif Parametreleri</h5>
+                        
+                        <label class="form-label mt-2 fw-bold text-dark">Müşteri Seçin</label>
+                        <select id="teklifMusteri" class="form-select border-info" onchange="loadBranchesForQuote()"></select>
+                        
+                        <label class="form-label mt-3 fw-bold text-dark">Şubeler</label>
+                        <div id="teklifSubeListesi" class="border p-2 rounded bg-white mb-2" style="max-height: 150px; overflow-y: auto;">
+                            <small class="text-muted">Önce müşteri seçiniz.</small>
+                        </div>
+                        <button onclick="selectAllBranches()" class="btn btn-sm btn-outline-secondary w-100">Tümünü Seç / Kaldır</button>
+
+                        <hr>
+                        <label class="form-label fw-bold text-dark">Hizmetler ve Periyotlar</label>
+                        <small class="d-block text-muted mb-2">İl fiyatları tablosundaki hizmetlere göre fiyatlandırılacaktır.</small>
+                        <div id="teklifHizmetListesi" class="border p-2 rounded bg-white mb-3" style="max-height: 250px; overflow-y: auto;">
+                            </div>
+
+                        <label class="form-label fw-bold text-success">İstenilen Kar Oranı (%)</label>
+                        <div class="input-group mb-3">
+                            <input type="number" id="teklifKarOrani" class="form-control border-success" value="20" placeholder="Örn: 20">
+                            <span class="input-group-text bg-success text-white">%</span>
+                        </div>
+
+                        <button onclick="generateAIQuote()" class="btn btn-primary w-100 mt-2 fw-bold py-2 shadow">🤖 AI Teklifi Hesapla</button>
+                    </div>
+                </div>
+
+                <div class="col-md-8">
+                    <div class="ai-box shadow-sm mb-3" id="aiResultBox" style="display:none;">
+                        <h4 class="mb-4 text-center text-primary fw-bold">📊 AI Aylık Teklif ve Finansal Analiz</h4>
+                        
+                        <div class="row text-center mb-4">
+                            <div class="col-md-4">
+                                <div class="stat-card border-red">
+                                    <h6 class="text-muted mb-1">Aylık Toplam Maliyet</h6>
+                                    <h4 class="text-danger mb-0 fw-bold" id="resMaliyet">0 TL</h4>
+                                </div>
+                            </div>
+                            <div class="col-md-4">
+                                <div class="stat-card border-yellow">
+                                    <h6 class="text-muted mb-1">Tahmini Kar Tutarı</h6>
+                                    <h4 class="text-warning mb-0 fw-bold" id="resKar">0 TL</h4>
+                                </div>
+                            </div>
+                            <div class="col-md-4">
+                                <div class="stat-card border-green">
+                                    <h6 class="text-muted mb-1">Aylık Teklif Tutarı (Satış)</h6>
+                                    <h4 class="text-success mb-0 fw-bold" id="resSatis">0 TL</h4>
+                                </div>
+                            </div>
+                        </div>
+
+                        <h6 class="fw-bold text-secondary border-bottom pb-2">İl ve Operasyon Dağılımı</h6>
+                        <div class="table-responsive bg-white rounded p-2 shadow-sm">
+                            <table class="table table-sm table-hover align-middle mb-0">
+                                <thead class="table-light">
+                                    <tr>
+                                        <th>Bölge/İl</th>
+                                        <th>Şubeler ve Hizmet Uyarıları</th>
+                                        <th>Lojistik/Personel</th>
+                                        <th class="text-end">İl Bazlı Maliyet</th>
+                                    </tr>
+                                </thead>
+                                <tbody id="teklifAnalizTablosu"></tbody>
+                            </table>
+                        </div>
+
+                        <div class="mt-4 p-4 bg-light border border-primary rounded text-center shadow-sm">
+                            <h5 class="text-primary fw-bold">✅ 3 Aylık İstihdam ve Görev Dağılım Matrisi Hazır!</h5>
+                            <p class="text-muted small">Sisteme girdiğiniz mevcut personel kapasitesine göre AI tarafından 90 günlük vardiya planı çizilmiştir.</p>
+                            <button onclick="document.getElementById('tab-planlama').click();" class="btn btn-primary fw-bold px-4 py-2 mt-2">📅 Tam Sayfa Planlama Matrisini Gör ve Düzenle</button>
+                        </div>
+
+                        <div class="mt-4 pt-3 border-top text-end">
+                            <input type="text" id="teklifAdiInput" class="form-control d-inline-block w-50 me-2" placeholder="Teklif Adı (Örn: Ziraat Bankası 2026 Sözleşmesi)">
+                            <button onclick="saveQuote()" class="btn btn-primary fw-bold px-4">💾 Bu Teklifi Kaydet</button>
+                        </div>
+                    </div> <div class="card p-3 shadow-sm mt-4">
+                        <h5 class="section-title text-success">📁 Kayıtlı Teklifler</h5>
+                        <div class="table-responsive">
+                            <table class="table table-hover table-sm align-middle">
+                                <thead class="table-light">
+                                    <tr>
+                                        <th>Tarih</th>
+                                        <th>Teklif Adı</th>
+                                        <th>Müşteri</th>
+                                        <th>Aylık Tutar</th>
+                                        <th style="min-width:200px;">İşlemler</th>
+                                    </tr>
+                                </thead>
+                                <tbody id="kayitliTekliflerListesi"></tbody>
+                            </table>
+                        </div>
+                    </div>
+                </div> </div> </div> 
+                <div class="tab-pane fade" id="hakedis-modulu" role="tabpanel">
+            <div class="card p-2 shadow-sm border-danger mb-2">
+                <div class="d-flex justify-content-between align-items-center border-bottom pb-1 mb-2">
+                    <h5 class="text-danger fw-bold mb-0">Aylık Hakediş ve Operasyon Yönetimi</h5>
+                    <div>
+                        <button onclick="deleteContract()" class="btn btn-outline-danger btn-sm py-0">🗑️ Sil</button>
+                        <button onclick="updateContractPrices()" class="btn btn-outline-warning btn-sm py-0">💰 Fiyat Güncelle</button>
+                        <button onclick="openTaskModal()" class="btn btn-outline-info btn-sm py-0">👷 Görevlendir</button>
+                    </div>
+                </div>
+
+                <div class="row g-2 align-items-end bg-light p-2 rounded border">
+                    <div class="col-md-3">
+                        <label class="form-label mb-0" style="font-size:10px;">Aktif Sözleşme</label>
+                        <select id="hakedisSozlesmeSecim" class="form-select form-select-sm border-danger"></select>
+                    </div>
+                    <div class="col-md-2">
+                        <label class="form-label mb-0" style="font-size:10px;">Dönem/Ay</label>
+                        <input type="month" id="hakedisAy" class="form-control form-control-sm border-danger">
+                    </div>
+                    <div class="col-md-4">
+                        <label class="form-label mb-0" style="font-size:10px;">Açıklama (Fatura Notu)</label>
+                        <input type="text" id="hakedisAciklama" class="form-control form-control-sm border-danger" placeholder="Örn: 1. Bölge Kesimi">
+                    </div>
+                    <div class="col-md-3">
+                        <button onclick="loadHakedisTablosu()" class="btn btn-danger btn-sm w-100 fw-bold shadow-sm">Tabloyu Getir</button>
+                    </div>
+                </div>
+            </div>
+
+                <div class="card p-3 shadow-sm mt-2 border-info mb-4" id="gorevCizelgesiAlani" style="display:none;">
+                    <h5 class="section-title text-info mb-3">📅 Personel Görev Çizelgesi</h5>
+                    <div class="row g-2 mb-3 align-items-center">
+                        <div class="col-md-2">
+                            <label class="form-label text-muted small mb-0">Tarih</label>
+                            <input type="date" id="gorevTarihi" class="form-control form-control-sm">
+                        </div>
+                        <div class="col-md-4">
+                            <label class="form-label text-muted small mb-0">Şubeler (CTRL ile Çoklu Seçim)</label>
+                            <select id="gorevSubeSecim" class="form-select form-select-sm border-info" multiple size="3"></select>
+                        </div>
+                        <div class="col-md-3">
+                            <label class="form-label text-muted small mb-0">Personel Adı Soyadı</label>
+                            <input type="text" id="gorevPersonelIsmi" class="form-control form-control-sm border-info" placeholder="Örn: Ahmet Yılmaz">
+                        </div>
+                        <div class="col-md-3 mt-4">
+                            <button onclick="addTask()" class="btn btn-info btn-sm text-white w-100 fw-bold py-2">Seçili Şubelere Ata</button>
+                        </div>
+                    </div>
+                    <div class="table-responsive bg-white">
+                        <table class="table table-sm table-bordered mb-0">
+                            <thead class="table-info"><tr><th width="20%">Tarih</th><th width="40%">Şube</th><th width="30%">Görevli Personel</th><th width="10%">İşlem</th></tr></thead>
+                            <tbody id="gorevListesiTbody"></tbody>
+                        </table>
+                    </div>
+                </div>
+
+                <div id="hakedisTabloAlani" style="display:none;">
+                    <div class="d-flex justify-content-between align-items-center mb-2">
+                        <div class="alert alert-info border-info mb-0 py-2 w-75" style="font-size:13px;">
+                            <strong>Yıllık Sözleşme İşleyişi:</strong> Sadece bu ay gerçekleşen hizmetleri işaretleyin.
+                        </div>
+                        <div class="w-25 ms-2">
+                            <input type="text" id="hakedisAra" class="form-control form-control-sm border-primary" placeholder="🔍 Şube Ara..." onkeyup="filterHakedisTable()">
+                        </div>
+                    </div>
+                    
+                    <div class="table-responsive bg-white border rounded">
+                        <table class="table table-bordered table-hover table-sm align-middle mb-0">
+                            <thead class="table-dark sticky-top" id="hakedisThead"></thead>
+                            <tbody id="hakedisTbody"></tbody>
+                        </table>
+                    </div>
+                    <div class="d-flex justify-content-between align-items-center mt-3 bg-light p-3 rounded border">
+                        <h4 class="text-success fw-bold m-0" id="hakedisToplamTutar">Toplam: 0,00 TL</h4>
+                        <div>
+                            <button onclick="saveHakedis()" class="btn btn-success fw-bold px-4 me-2">💾 Faturayı Kaydet</button>
+                            <button onclick="printHakedis()" class="btn btn-primary fw-bold px-3 me-2">🖨️ Finansal Fatura Al</button>
+                            <button onclick="printOperasyonRaporu()" class="btn btn-secondary fw-bold px-3">📄 Müşteri Raporu Al</button>
+                        </div>
+                    </div>
+                </div>
+                
+                <div class="card p-3 shadow-sm mt-5 border-secondary">
+                    <h5 class="section-title text-secondary">📁 Kayıtlı Hakediş ve Fatura Dökümleri</h5>
+                    <div class="table-responsive">
+                        <table class="table table-hover table-sm align-middle">
+                            <thead class="table-light"><tr><th>Ay / Dönem</th><th>Sözleşme Adı</th><th>Müşteri</th><th>Fatura Tutarı</th><th style="min-width:240px;">İşlemler</th></tr></thead>
+                            <tbody id="kayitliHakedislerListesi"></tbody>
+                        </table>
+                    </div>
+                </div>
+            </div> 
+        </div> 
+        <div class="tab-pane fade" id="planlama-modulu" role="tabpanel">
+            <div class="card p-2 shadow-sm border-primary mb-2">
+                <div class="d-flex justify-content-between align-items-center border-bottom pb-1 mb-2">
+                    <h5 class="text-primary fw-bold mb-0">📅 3 Aylık İnteraktif Görev ve İstihdam Matrisi</h5>
+                    <small class="text-muted" style="font-size:10px;">⚠️ Kapasite aşımında alta EK PERS uyarısı çıkar. Fırçalarla günlere manuel personel atayabilirsiniz.</small>
+                </div>
+                
+                <div id="scheduleCostSummary" class="mb-2"></div>
+
+                <div class="d-flex justify-content-between align-items-center bg-light p-1 rounded border mb-2">
+                    <div class="btn-group shadow-sm">
+                        <button class="btn btn-sm btn-outline-primary active fw-bold" id="btnAy1" onclick="changeScheduleMonth(1)">1. Ay</button>
+                        <button class="btn btn-sm btn-outline-primary fw-bold" id="btnAy2" onclick="changeScheduleMonth(2)">2. Ay</button>
+                        <button class="btn btn-sm btn-outline-primary fw-bold" id="btnAy3" onclick="changeScheduleMonth(3)">3. Ay</button>
+                        <button class="btn btn-sm btn-outline-dark fw-bold" id="btnAyAll" onclick="changeScheduleMonth('all')">Tümü</button>
+                    </div>
+                    <div class="d-flex align-items-center gap-2">
+                        <span class="text-primary fw-bold" style="font-size:11px;">👉 İşlem yapmak için tablodaki hücrelerin üzerine tıklayın.</span>
+                        <button onclick="printSchedule()" class="btn btn-sm btn-primary fw-bold shadow-sm py-1 px-3">🖨️ Matrisi Yazdır</button>
+                    </div>
+                </div>
+                
+                <div class="table-responsive shadow-sm border rounded bg-white" style="max-height: 600px; overflow: auto;">
+                    <table class="table table-sm table-bordered schedule-table mb-0">
+                        <thead class="table-dark" id="scheduleThead"></thead>
+                        <tbody id="scheduleTbody"></tbody>
+                        <tfoot id="scheduleTfoot" class="table-light border-top border-3"></tfoot>
+                    </table>
+                </div>
+            </div>
+        </div> 
+    </div> </div> ```
+    <script>
+    // ================== FIREBASE BAĞLANTISI VE GİRİŞ (YENİ) ==================
+    const firebaseConfig = {
+            apiKey: "AIzaSyDffhsJ8iFPAzY-XEJoY6ffkwD4OH3Y7zs",
+            authDomain: "pro-opticlean.firebaseapp.com",
+            projectId: "pro-opticlean",
+            storageBucket: "pro-opticlean.firebasestorage.app",
+            messagingSenderId: "162713815130",
+            appId: "1:162713815130:web:da05603b04621947283063"
+
+    };
+    firebase.initializeApp(firebaseConfig);
+    const auth = firebase.auth();
+    const db = firebase.firestore();
+
+    function loginUser() {
+        const e = document.getElementById('loginEmail').value;
+        const p = document.getElementById('loginPassword').value;
+        document.getElementById('btnLogin').innerText = "Bağlanıyor...";
+        auth.signInWithEmailAndPassword(e, p).then((userCredential) => {
+            document.getElementById('loginOverlay').style.display = 'none';
+            document.getElementById('mainApp').style.display = 'block';
+            syncFromCloud(userCredential.user.uid);
+        }).catch((error) => {
+            document.getElementById('loginError').innerText = "Hatalı giriş! " + error.message;
+            document.getElementById('loginError').style.display = 'block';
+            document.getElementById('btnLogin').innerText = "Giriş Yap";
+        });
+    }
+
+    function logoutUser() {
+        auth.signOut().then(() => { location.reload(); });
+    }
+
+    async function syncFromCloud(uid) {
+        window.currentUserUid = uid;
+        const snapshot = await db.collection('cpa_veriler').doc(uid).collection('veritabanlarim').get();
+        snapshot.forEach(doc => {
+            localStorage.setItem(doc.id, doc.data().veri);
+        });
+        renderAll();
+    }
+
+    // Oturum kontrolü
+    auth.onAuthStateChanged((user) => {
+        if (user) {
+            document.getElementById('loginOverlay').style.display = 'none';
+            document.getElementById('mainApp').style.display = 'block';
+            syncFromCloud(user.uid);
+        }
+    });
+
+    // ================== VERİ TABANI ANAHTARLARI ==================
+    const KEYS = {
+        MUSTERILER: 'temizlik_musteriler',
+        SUBELER: 'temizlik_subeler',
+        FIYATLAR: 'temizlik_fiyatlar',
+        PLANLAR: 'temizlik_planlar',
+        PERSONEL: 'temizlik_personel',
+        AYARLAR: 'temizlik_ayarlar',
+        TEKLIFLER: 'temizlik_teklifler',
+        FIRMA: 'temizlik_firma',
+        SOZLESMELER: 'temizlik_sozlesmeler',
+        HAKEDISLER: 'temizlik_hakedisler',
+        GOREVLER: 'temizlik_gorevler' // YENİ: Personel Atamaları İçin
+    };
+
+    let currentGeneratedQuote = null; // YENİ EKLENDİ
+
+    let editStates = {
+        customer: null,
+        branch: null,
+        price: null,
+        plan: null,
+        quote: null // YENİ EKLENDİ
+    };
+
+    // ================== TEMEL VERİ TABANI FONKSİYONLARI ==================
+    function getData(key) {
+        return JSON.parse(localStorage.getItem(key)) || [];
+    }
+
+    function saveData(key, data) {
+        let stringData = JSON.stringify(data);
+        localStorage.setItem(key, stringData);
+        if(window.currentUserUid) {
+            db.collection('cpa_veriler').doc(window.currentUserUid).collection('veritabanlarim').doc(key).set({veri: stringData});
+        }
+        renderAll();
+    }
+
+    // ================== MÜŞTERİ YÖNETİMİ ==================
+    function addCustomer() {
+        const musteriTipi = document.getElementById('musteriTipi').value;
+        const musteriAdi = document.getElementById('musteriAdi').value.trim();
+
+        if (!musteriAdi) {
+            return alert("Müşteri adı boş olamaz!");
+        }
+
+        let data = getData(KEYS.MUSTERILER);
+
+        if (editStates.customer) {
+            const index = data.findIndex(c => c.id === editStates.customer);
+            if (index !== -1) {
+                data[index].tipi = musteriTipi;
+                data[index].adi = musteriAdi;
+            }
+            editStates.customer = null;
+            document.getElementById('btnCustomerSubmit').innerText = "Müşteriyi Kaydet";
+            document.getElementById('btnCustomerSubmit').classList.replace('btn-warning', 'btn-primary');
+        } else {
+            data.push({
+                id: Date.now(),
+                tipi: musteriTipi,
+                adi: musteriAdi
+            });
+        }
+
+        saveData(KEYS.MUSTERILER, data);
+        document.getElementById('musteriAdi').value = '';
+    }
+
+    function editCustomer(id) {
+        const item = getData(KEYS.MUSTERILER).find(c => c.id === id);
+        if (!item) return;
+
+        document.getElementById('musteriTipi').value = item.tipi;
+        document.getElementById('musteriAdi').value = item.adi;
+        
+        editStates.customer = id;
+        document.getElementById('btnCustomerSubmit').innerText = "Güncelle";
+        document.getElementById('btnCustomerSubmit').classList.replace('btn-primary', 'btn-warning');
+    }
+
+    function deleteCustomer(id) {
+        const data = getData(KEYS.MUSTERILER).filter(item => item.id !== id);
+        saveData(KEYS.MUSTERILER, data);
+    }
+
+    // ================== ŞUBE YÖNETİMİ ==================
+    function addBranch() {
+        const musteri = document.getElementById('subeMusteriSecim').value;
+        const adi = document.getElementById('subeAdi').value.trim();
+        const kodu = document.getElementById('subeKodu').value.trim();
+        const il = document.getElementById('subeIl').value.trim();
+        const bolge = document.getElementById('subeBolge').value.trim();
+        const adres = document.getElementById('subeAdres').value.trim();
+        const m2 = document.getElementById('subeM2').value;
+        const tadilatM2 = document.getElementById('subeTadilatM2').value;
+        const camM2 = document.getElementById('subeCamM2').value;
+
+        if (!musteri || !adi || !il) {
+            return alert("Müşteri, Şube Adı ve İl alanları zorunludur!");
+        }
+
+        let data = getData(KEYS.SUBELER);
+
+        if (editStates.branch) {
+            const index = data.findIndex(s => s.id === editStates.branch);
+            if (index !== -1) {
+                data[index] = {
+                    id: editStates.branch,
+                    musteri: musteri,
+                    adi: adi,
+                    kodu: kodu,
+                    il: il,
+                    bolge: bolge,
+                    adres: adres,
+                    m2: m2,
+                    tadilatM2: tadilatM2,
+                    camM2: camM2
+                };
+            }
+            editStates.branch = null;
+            document.getElementById('btnBranchSubmit').innerText = "Şubeyi Sisteme Ekle";
+            document.getElementById('btnBranchSubmit').classList.replace('btn-warning', 'btn-success');
+        } else {
+            data.push({
+                id: Date.now(),
+                musteri: musteri,
+                adi: adi,
+                kodu: kodu,
+                il: il,
+                bolge: bolge,
+                adres: adres,
+                m2: m2,
+                tadilatM2: tadilatM2,
+                camM2: camM2
+            });
+        }
+
+        saveData(KEYS.SUBELER, data);
+        
+        document.getElementById('subeAdi').value = '';
+        document.getElementById('subeKodu').value = '';
+        document.getElementById('subeIl').value = '';
+        document.getElementById('subeBolge').value = '';
+        document.getElementById('subeAdres').value = '';
+        document.getElementById('subeM2').value = '';
+        document.getElementById('subeTadilatM2').value = '';
+        document.getElementById('subeCamM2').value = '';
+    }
+
+    function editBranch(id) {
+        const item = getData(KEYS.SUBELER).find(s => s.id === id);
+        if (!item) return;
+
+        document.getElementById('subeMusteriSecim').value = item.musteri;
+        document.getElementById('subeAdi').value = item.adi;
+        document.getElementById('subeKodu').value = item.kodu;
+        document.getElementById('subeIl').value = item.il;
+        document.getElementById('subeBolge').value = item.bolge;
+        document.getElementById('subeAdres').value = item.adres;
+        document.getElementById('subeM2').value = item.m2;
+        document.getElementById('subeTadilatM2').value = item.tadilatM2;
+        document.getElementById('subeCamM2').value = item.camM2;
+        
+        editStates.branch = id;
+        document.getElementById('btnBranchSubmit').innerText = "Şubeyi Güncelle";
+        document.getElementById('btnBranchSubmit').classList.replace('btn-success', 'btn-warning');
+    }
+
+    function deleteBranch(id) {
+        const data = getData(KEYS.SUBELER).filter(item => item.id !== id);
+        saveData(KEYS.SUBELER, data);
+    }
+
+    // ================== İL FİYAT YÖNETİMİ ==================
+    function addPrice() {
+        const hizmet = document.getElementById('fiyatHizmet').value.trim();
+        const il = document.getElementById('fiyatIl').value.trim();
+        const tutar = document.getElementById('fiyatTutar').value;
+
+        if (!hizmet || !il || !tutar) {
+            return alert("Tüm alanları doldurunuz!");
+        }
+
+        let data = getData(KEYS.FIYATLAR);
+
+        if (editStates.price) {
+            const index = data.findIndex(p => p.id === editStates.price);
+            if (index !== -1) {
+                data[index] = {
+                    id: editStates.price,
+                    hizmet: hizmet,
+                    il: il,
+                    tutar: Number(tutar)
+                };
+            }
+            editStates.price = null;
+            document.getElementById('btnPriceSubmit').innerText = "Manuel Ekle";
+            document.getElementById('btnPriceSubmit').classList.replace('btn-warning', 'btn-primary');
+        } else {
+            data.push({
+                id: Date.now(),
+                hizmet: hizmet,
+                il: il,
+                tutar: Number(tutar)
+            });
+        }
+
+        saveData(KEYS.FIYATLAR, data);
+        
+        document.getElementById('fiyatHizmet').value = '';
+        document.getElementById('fiyatIl').value = '';
+        document.getElementById('fiyatTutar').value = '';
+    }
+
+    function editPrice(id) {
+        const item = getData(KEYS.FIYATLAR).find(p => p.id === id);
+        if (!item) return;
+
+        document.getElementById('fiyatHizmet').value = item.hizmet;
+        document.getElementById('fiyatIl').value = item.il;
+        document.getElementById('fiyatTutar').value = item.tutar;
+        
+        editStates.price = id;
+        document.getElementById('btnPriceSubmit').innerText = "Fiyatı Güncelle";
+        document.getElementById('btnPriceSubmit').classList.replace('btn-primary', 'btn-warning');
+    }
+
+    function deletePrice(id) {
+        const data = getData(KEYS.FIYATLAR).filter(item => item.id !== id);
+        saveData(KEYS.FIYATLAR, data);
+    }
+
+    // ================== İŞ PLANI YÖNETİMİ ==================
+    function addPlan() {
+        const musteri = document.getElementById('planMusteriSecim').value;
+        const grup = document.getElementById('planGrup').value; // YENİ EKLENDİ
+        const madde = document.getElementById('planMadde').value.trim();
+
+        if (!musteri || !madde) {
+            return alert("Müşteri seçin ve madde girin!");
+        }
+
+        let data = getData(KEYS.PLANLAR);
+
+        if (editStates.plan) {
+            const index = data.findIndex(p => p.id === editStates.plan);
+            if (index !== -1) {
+                data[index] = {
+                    id: editStates.plan,
+                    musteri: musteri,
+                    grup: grup, // YENİ
+                    madde: madde
+                };
+            }
+            editStates.plan = null;
+            document.getElementById('btnPlanSubmit').innerText = "Madde Ekle";
+            document.getElementById('btnPlanSubmit').classList.replace('btn-warning', 'btn-primary');
+        } else {
+            data.push({
+                id: Date.now(),
+                musteri: musteri,
+                grup: grup, // YENİ
+                madde: madde
+            });
+        }
+
+        saveData(KEYS.PLANLAR, data);
+        document.getElementById('planMadde').value = '';
+    }
+
+    function editPlan(id) {
+        const item = getData(KEYS.PLANLAR).find(p => p.id === id);
+        if (!item) return;
+
+        document.getElementById('planMusteriSecim').value = item.musteri;
+        if(item.grup) document.getElementById('planGrup').value = item.grup;
+        document.getElementById('planMadde').value = item.madde;
+        
+        editStates.plan = id;
+        document.getElementById('btnPlanSubmit').innerText = "Madde Güncelle";
+        document.getElementById('btnPlanSubmit').classList.replace('btn-primary', 'btn-warning');
+    }
+
+    function deletePlan(id) {
+        const data = getData(KEYS.PLANLAR).filter(item => item.id !== id);
+        saveData(KEYS.PLANLAR, data);
+    }
+
+    // ================== PERSONEL VE MALİYET AYARLARI ==================
+    function addPersonnel() {
+        const turu = document.getElementById('persTuru').value.trim();
+        const maliyet = document.getElementById('persMaliyet').value;
+
+        if (!turu || !maliyet) {
+            return alert("Eksik alan!");
+        }
+
+        let data = getData(KEYS.PERSONEL);
+        data.push({
+            id: Date.now(),
+            turu: turu,
+            maliyet: Number(maliyet)
+        });
+
+        saveData(KEYS.PERSONEL, data);
+        
+        document.getElementById('persTuru').value = '';
+        document.getElementById('persMaliyet').value = '';
+    }
+
+    function deletePersonnel(id) {
+        const data = getData(KEYS.PERSONEL).filter(item => item.id !== id);
+        saveData(KEYS.PERSONEL, data);
+    }
+
+   function saveSettings() {
+        const ayarlar = {
+            sarf: document.getElementById('ayarSarfOran').value,
+            kar: document.getElementById('ayarKarOran').value,
+            taban: document.getElementById('ayarTabanFiyat').value,
+            mevcutCam: document.getElementById('ayarMevcutCam').value, // YENİ
+            mevcutGenel: document.getElementById('ayarMevcutGenel').value // YENİ
+        };
+        localStorage.setItem(KEYS.AYARLAR, JSON.stringify(ayarlar));
+        document.getElementById('teklifKarOrani').value = ayarlar.kar;
+        alert("Ayarlar başarıyla kaydedildi!");
+    }
+
+    // ================== RENDER (TÜM LİSTELERİ EKRANA ÇİZDİRME) ==================
+    function renderAll() {
+        const musteriler = getData(KEYS.MUSTERILER);
+        const subeler = getData(KEYS.SUBELER);
+        const fiyatlar = getData(KEYS.FIYATLAR);
+        const planlar = getData(KEYS.PLANLAR);
+        const personelList = getData(KEYS.PERSONEL);
+
+        // Müşteri Tablosu
+        let musteriHTML = "";
+        musteriler.forEach(m => {
+            musteriHTML += `<tr>
+                <td>${m.tipi}</td>
+                <td>${m.adi}</td>
+                <td>
+                    <button onclick="editCustomer(${m.id})" class="btn btn-sm btn-warning py-0 me-1">Düzenle</button>
+                    <button onclick="deleteCustomer(${m.id})" class="btn btn-sm btn-danger py-0">Sil</button>
+                </td>
+            </tr>`;
+        });
+        document.getElementById('musteriListesi').innerHTML = musteriHTML;
+
+        // Dropdown Menüler (Müşteri Seçimleri)
+        let musteriOptions = "";
+        musteriler.forEach(m => {
+            musteriOptions += `<option value="${m.adi}">${m.adi}</option>`;
+        });
+        
+        document.getElementById('subeMusteriSecim').innerHTML = musteriOptions;
+        document.getElementById('planMusteriSecim').innerHTML = musteriOptions;
+        
+        // Teklif modülü Müşteri Seçimi (Boş seçenek ile başlar)
+        document.getElementById('teklifMusteri').innerHTML = '<option value="">-- Müşteri Seç --</option>' + musteriOptions;
+
+        // Şube Tablosu
+        let subeHTML = "";
+        subeler.forEach(s => {
+            subeHTML += `<tr>
+                <td>${s.musteri}</td>
+                <td>${s.adi}</td>
+                <td>${s.kodu}</td>
+                <td>${s.il}</td>
+                <td>${s.m2}</td>
+                <td>
+                    <button onclick="editBranch(${s.id})" class="btn btn-sm btn-warning py-0 me-1">Düzenle</button>
+                    <button onclick="deleteBranch(${s.id})" class="btn btn-sm btn-danger py-0">Sil</button>
+                </td>
+            </tr>`;
+        });
+        document.getElementById('subeListesi').innerHTML = subeHTML;
+
+        // Fiyatlar Tablosu
+        let fiyatHTML = "";
+        fiyatlar.forEach(f => {
+            fiyatHTML += `<tr>
+                <td>${f.hizmet}</td>
+                <td>${f.il}</td>
+                <td>${f.tutar} TL</td>
+                <td>
+                    <button onclick="editPrice(${f.id})" class="btn btn-sm btn-warning py-0 me-1">Düzenle</button>
+                    <button onclick="deletePrice(${f.id})" class="btn btn-sm btn-danger py-0">Sil</button>
+                </td>
+            </tr>`;
+        });
+        document.getElementById('fiyatListesi').innerHTML = fiyatHTML;
+
+        // Planlar Tablosu
+        let planHTML = "";
+        planlar.forEach(p => {
+            planHTML += `<tr>
+                <td><b>${p.musteri}</b></td>
+                <td>${p.madde}</td>
+                <td>
+                    <button onclick="editPlan(${p.id})" class="btn btn-sm btn-warning py-0 me-1">Düzenle</button>
+                    <button onclick="deletePlan(${p.id})" class="btn btn-sm btn-danger py-0">Sil</button>
+                </td>
+            </tr>`;
+        });
+        document.getElementById('planListesi').innerHTML = planHTML;
+
+        // Personel Listesi
+        let personelHTML = "";
+        personelList.forEach(p => {
+            personelHTML += `<tr>
+                <td>${p.turu}</td>
+                <td>${p.maliyet} TL</td>
+                <td><button onclick="deletePersonnel(${p.id})" class="btn btn-sm btn-danger py-0">Sil</button></td>
+            </tr>`;
+        });
+        document.getElementById('personelListesi').innerHTML = personelHTML;
+
+        // Ayarları Geri Yükle
+        let ayarlar = JSON.parse(localStorage.getItem(KEYS.AYARLAR)) || {};
+        document.getElementById('ayarSarfOran').value = ayarlar.sarf || "15";
+        document.getElementById('ayarKarOran').value = ayarlar.kar || "50";
+        document.getElementById('ayarTabanFiyat').value = ayarlar.taban || "5000";
+        document.getElementById('ayarMevcutCam').value = ayarlar.mevcutCam || "2"; // YENİ
+        document.getElementById('ayarMevcutGenel').value = ayarlar.mevcutGenel || "3"; // YENİ
+        document.getElementById('teklifKarOrani').value = ayarlar.kar || "50";
+        
+        // Teklif Modülü için hizmetleri dinamik oluştur
+        loadServicesForQuoteList();
+
+        // YENİ: Firma bilgilerini inputlara doldur
+        let firma = JSON.parse(localStorage.getItem(KEYS.FIRMA)) || {};
+        if(firma.unvan) document.getElementById('firmaUnvani').value = firma.unvan;
+        if(firma.iletisim) document.getElementById('firmaIletisim').value = firma.iletisim;
+        if(firma.logo) {
+            document.getElementById('firmaLogoOnizleme').src = firma.logo;
+            document.getElementById('firmaLogoOnizleme').style.display = 'block';
+        }
+
+        // YENİ: Kayıtlı teklifleri listele
+        renderQuotes();
+        
+        // YENİ: Sözleşmeleri Dropdown'a yükle
+        renderContracts();
+        
+        // YENİ: Kayıtlı Hakediş (Fatura) geçmişini listele
+        renderHakedisList();
+    }
+
+    // ================== EXCEL OKUMA VE YAZMA (SheetJS) ==================
+    function importExcel(inputId, target) {
+        const file = document.getElementById(inputId).files[0];
+        
+        if (!file) {
+            return alert("Lütfen bir Excel dosyası seçin!");
+        }
+
+        const reader = new FileReader();
+        reader.onload = function(e) {
+            const data = new Uint8Array(e.target.result);
+            const workbook = XLSX.read(data, {type: 'array'});
+            const firstSheet = workbook.Sheets[workbook.SheetNames[0]];
+            const excelData = XLSX.utils.sheet_to_json(firstSheet);
+
+            if(excelData.length === 0) {
+                return alert("Seçtiğiniz Excel dosyası boş!");
+            }
+
+            if (target === 'subeler') {
+                const existing = getData(KEYS.SUBELER);
+                excelData.forEach(row => {
+                    existing.push({
+                        id: Date.now() + Math.random(),
+                        musteri: row["Müşteri"] || "Tanımsız",
+                        adi: row["Şube Adı"] || "",
+                        kodu: row["Şube Kodu"] || "",
+                        il: row["İl"] || "",
+                        bolge: row["Bölge"] || "",
+                        adres: row["Açık Adres"] || "",
+                        m2: row["Şube Alanı (m2)"] || 0,
+                        tadilatM2: row["Tadilat Alanı (m2)"] || 0,
+                        camM2: row["Cam Alanı (m2)"] || 0
+                    });
+                });
+                saveData(KEYS.SUBELER, existing);
+            } 
+            else if (target === 'fiyatlar') {
+                const existing = getData(KEYS.FIYATLAR);
+                excelData.forEach(row => {
+                    existing.push({
+                        id: Date.now() + Math.random(),
+                        hizmet: row["Hizmet Adı"] || "",
+                        il: row["İl"] || "",
+                        tutar: Number(row["Birim Fiyatı"]) || 0
+                    });
+                });
+                saveData(KEYS.FIYATLAR, existing);
+            }
+            else if (target === 'planlar') {
+                const existing = getData(KEYS.PLANLAR);
+                excelData.forEach(row => {
+                    existing.push({
+                        id: Date.now() + Math.random(),
+                        musteri: row["Müşteri"] || "",
+                        grup: row["Grup"] || "EKSTRA DİĞER İŞLER", // BU SATIR EKLENDİ
+                        madde: row["Madde"] || ""
+                    });
+                });
+                saveData(KEYS.PLANLAR, existing);
+            }
+
+            alert("Excel verileri başarıyla sisteme yüklendi!");
+            document.getElementById(inputId).value = ''; 
+        };
+        
+        reader.readAsArrayBuffer(file);
+    }
+
+    function downloadTemplate(target) {
+        let ws_data = [];
+        let filename = "";
+
+        if (target === 'subeler') {
+            ws_data = [
+                ["Müşteri", "Şube Adı", "Şube Kodu", "İl", "Bölge", "Açık Adres", "Şube Alanı (m2)", "Tadilat Alanı (m2)", "Cam Alanı (m2)"],
+                ["Vakıfbank", "Kadıköy Şubesi", "VK-001", "İstanbul", "Marmara", "Osmanağa Mah. Rıhtım Cad.", 450, 50, 120]
+            ];
+            filename = "Sube_Yukleme_Sablonu.xlsx";
+        } 
+        else if (target === 'fiyatlar') {
+            ws_data = [
+                ["Hizmet Adı", "İl", "Birim Fiyatı"],
+                ["Cam Silme (m2)", "Kocaeli", 15]
+            ];
+            filename = "Hizmet_Fiyat_Sablonu.xlsx";
+        } 
+        else if (target === 'planlar') {
+            ws_data = [
+                ["Müşteri", "Grup", "Madde"], // SÜTUN EKLENDİ
+                ["Vakıfbank", "Genel Temizlik", "Dış cephe camları iç yüzeyleri birlikte temizlenmelidir."]
+            ];
+            filename = "Is_Plani_Sablonu.xlsx";
+        }
+
+        const ws = XLSX.utils.aoa_to_sheet(ws_data);
+        const wb = XLSX.utils.book_new();
+        XLSX.utils.book_append_sheet(wb, ws, "Şablon");
+        XLSX.writeFile(wb, filename);
+    }
+
+    // ================== TEKLİF VE AI MODÜLÜ MANTIĞI ==================
+    function loadBranchesForQuote() {
+        const selectedMusteri = document.getElementById('teklifMusteri').value;
+        const subelerListesi = getData(KEYS.SUBELER).filter(s => s.musteri === selectedMusteri);
+        const container = document.getElementById('teklifSubeListesi');
+        
+        if (subelerListesi.length === 0) { 
+            container.innerHTML = "<small class='text-muted'>Bu müşteriye ait kayıtlı şube bulunamadı.</small>"; 
+            return; 
+        }
+        
+        let html = "";
+        subelerListesi.forEach(s => {
+            html += `
+            <div class="form-check border-bottom py-1">
+                <input class="form-check-input sube-chk" type="checkbox" value="${s.id}">
+                <label class="form-check-label">${s.adi} (${s.il}) - ${s.m2}m²</label>
+            </div>`;
+        });
+        
+        container.innerHTML = html;
+    }
+
+    function selectAllBranches() {
+        const checkboxes = document.querySelectorAll('.sube-chk');
+        checkboxes.forEach(cb => {
+            cb.checked = !cb.checked;
+        });
+    }
+
+    function loadServicesForQuoteList() {
+        // Veritabanındaki benzersiz hizmet isimlerini bulur
+        const fiyatlar = getData(KEYS.FIYATLAR);
+        
+        let uniqueServices = [];
+        fiyatlar.forEach(item => {
+            if(!uniqueServices.includes(item.hizmet)) {
+                uniqueServices.push(item.hizmet);
+            }
+        });
+
+        const container = document.getElementById('teklifHizmetListesi');
+
+        if(uniqueServices.length === 0) {
+            container.innerHTML = "<small class='text-muted'>Lütfen önce 'İl & Hizmet Fiyatları' sekmesinden hizmet ekleyin.</small>";
+            return;
+        }
+
+        let html = "<div class='row g-1'>";
+        uniqueServices.forEach((hizmet, index) => {
+            html += `
+            <div class="col-md-6">
+                <div class="p-1 border rounded bg-light d-flex flex-column h-100">
+                    <div class="form-check mb-1">
+                        <input class="form-check-input hizmet-chk" type="checkbox" value="${hizmet}" id="srv_${index}" style="transform: scale(0.9);">
+                        <label class="form-check-label fw-bold text-primary" for="srv_${index}" style="font-size:10px;">${hizmet}</label>
+                    </div>
+                    <div class="input-group input-group-sm mt-auto">
+                        <span class="input-group-text" style="font-size:9px; padding:2px 4px;">Sıklık:</span>
+                        <select class="form-select hizmet-periyot" data-hizmet="${hizmet}" style="font-size:10px; padding:2px 4px;">
+                            <option value="30">Her Gün (30)</option>
+                            <option value="4">Haftada 1 (4)</option>
+                            <option value="1" selected>Ayda 1</option>
+                            <option value="0.33">3 Ayda 1</option>
+                            <option value="0">İstek Üzere</option>
+                        </select>
+                    </div>
+                </div>
+            </div>`;
+        });
+        html += "</div>";
+        
+        container.innerHTML = html;
+    }
+
+    function generateAIQuote() {
+        const checkedSubeler = Array.from(document.querySelectorAll('.sube-chk:checked'));
+        const checkedHizmetler = Array.from(document.querySelectorAll('.hizmet-chk:checked'));
+        
+        if(checkedSubeler.length === 0) {
+            return alert("Lütfen teklif oluşturmak için en az bir şube seçin!");
+        }
+        
+        if(checkedHizmetler.length === 0) {
+            return alert("Lütfen fiyatlandırılacak en az bir hizmet seçin!");
+        }
+
+        const karOrani = Number(document.getElementById('teklifKarOrani').value) || 0;
+        const allSubeler = getData(KEYS.SUBELER);
+        const allFiyatlar = getData(KEYS.FIYATLAR);
+        const personelList = getData(KEYS.PERSONEL);
+        
+        // Veritabanından maliyet ayarlarını çek
+        const baseDailyCost = personelList.length > 0 ? personelList[0].maliyet : 1500; 
+        const sarfOran = Number(localStorage.getItem(KEYS.AYARLAR) || 15) / 100;
+
+        // Seçilen şubeleri İl bazında gruplandır
+        let ilGruplari = {};
+        
+        checkedSubeler.forEach(cb => {
+            let subeData = allSubeler.find(x => x.id == cb.value);
+            if (!ilGruplari[subeData.il]) {
+                ilGruplari[subeData.il] = { subeler: [], totalM2: 0 };
+            }
+            ilGruplari[subeData.il].subeler.push(subeData);
+            ilGruplari[subeData.il].totalM2 += Number(subeData.m2 || 0);
+        });
+
+        let totalAylikMaliyet = 0;
+        let tableHTML = "";
+
+        // Seçilen hizmetleri ve periyot (sıklık) çarpanlarını al
+        let serviceRequests = [];
+        checkedHizmetler.forEach(chk => {
+            let selectBox = document.querySelector(`.hizmet-periyot[data-hizmet="${chk.value}"]`);
+            serviceRequests.push({ 
+                ad: chk.value, 
+                periyotCarpan: Number(selectBox.value) 
+            });
+        });
+
+        // AI Maliyet Hesaplama Motoru
+        for (const ilAdi in ilGruplari) {
+            let veri = ilGruplari[ilAdi];
+            let subeSayisi = veri.subeler.length;
+            let ilAylikMaliyet = 0;
+            
+            let aylikGenelM2 = 0;
+            let aylikCamM2 = 0;
+            let hizmetDetaylariHTML = "";
+            
+            veri.subeler.forEach(sube => {
+                serviceRequests.forEach(srv => {
+                    let srvLower = srv.ad.toLowerCase();
+                    let dbFiyat = allFiyatlar.find(f => f.hizmet.trim().toLowerCase() === srvLower && f.il.trim().toLowerCase() === ilAdi.trim().toLowerCase());
+                    let birimFiyat = dbFiyat ? dbFiyat.tutar : 0; 
+                    
+                    if(!dbFiyat) hizmetDetaylariHTML += `<span class="badge bg-danger mt-1">! ${srv.ad} fiyatı eksik!</span><br>`;
+
+                    // İskele ve Dağcılık gibi hizmetleri Dinamik (Miktar/Saat bazlı) kabul et
+                    let isDynamic = (srvLower.includes("koltuk") || srvLower.includes("halı") || srvLower.includes("hali") || srvLower.includes("jaluzi") || srvLower.includes("iskele") || srvLower.includes("dağcı") || srvLower.includes("dagci") || srvLower.includes("saat"));
+
+                    let carpimM2 = sube.m2;
+                    if(srvLower.includes("cam")) carpimM2 = sube.camM2 || sube.m2;
+                    if(srvLower.includes("tadilat")) carpimM2 = sube.tadilatM2 || sube.m2;
+                    if(isDynamic) carpimM2 = 1; // Dinamik hizmetlerde AI genel maliyeti için varsayılan 1 birim alınır
+                    
+                    let aylikYuku = carpimM2 * srv.periyotCarpan;
+                    
+                    if(srvLower.includes("genel")) aylikGenelM2 += aylikYuku;
+                    else if(srvLower.includes("cam")) aylikCamM2 += aylikYuku;
+
+                    let hesaplananMaliyet = aylikYuku * birimFiyat;
+
+                    // Taban Fiyat Kontrolü (Sadece sabit hizmetlerde ve istenilen periyotlarda)
+                    const ayarlar = JSON.parse(localStorage.getItem(KEYS.AYARLAR)) || {};
+                    const tabanFiyat = Number(ayarlar.taban) || 5000;
+                    if(!isDynamic && hesaplananMaliyet > 0 && hesaplananMaliyet < tabanFiyat && srv.periyotCarpan > 0) {
+                        hesaplananMaliyet = tabanFiyat;
+                    }
+
+                    // Maliyet sadece m2 x birim fiyat (veya taban fiyat) üzerinden toplanır
+                    ilAylikMaliyet += hesaplananMaliyet;
+                });
+            });
+
+            // YENİ NESİL OPERASYON PLANLAMASI (ŞUBE VE VARDİYA BAZLI)
+            let camSubeSayisi = 0;
+            let genelSubeSayisi = 0;
+
+            veri.subeler.forEach(sube => {
+                let hasCam = serviceRequests.some(s => s.ad.toLowerCase().includes("cam"));
+                let hasGenel = serviceRequests.some(s => s.ad.toLowerCase().includes("genel"));
+                if (hasCam) camSubeSayisi++;
+                if (hasGenel) genelSubeSayisi++;
+            });
+
+            // 1 Şube Camı = 1 Part-Time Akşam Mesaisi (3 Saat)
+            // 23 Şube varsa = Ayda 23 Part-Time Mesai gerekir.
+            let camMesai = camSubeSayisi; // Ayda bir kabulüyle
+            
+            // 1 Şube Genel Temizliği = 3 Kişilik Part-Time Ekip (Yarım Gün). 
+            // 3 Ayda 1 yapıldığı için aylık yüke 1/3 olarak yansır.
+            let genelEkipMesai = Math.ceil((genelSubeSayisi / 3) * 3); // Aylık gereken part-time personel mesaisi
+
+            let ekipAciklama = "";
+            if(camMesai > 0) ekipAciklama += `<span class="badge bg-primary mb-1">🪟 Cam: Ayda ${camMesai} Part-Time Mesai (Akşam)</span><br>`;
+            if(genelEkipMesai > 0) ekipAciklama += `<span class="badge bg-secondary mb-1">🧹 Genel: Ayda ${genelEkipMesai} Part-Time Ekip Mesaisi (Yarım Gün)</span><br>`;
+            
+            // Ekstra uzak iller için lojistik marjı (Türkçe Karakter Sorunu Çözüldü)
+            let normalizedIl = ilAdi.trim().toLocaleLowerCase('tr-TR');
+            let komsuHavuzaDahilMi = ['kocaeli', 'sakarya', 'istanbul', 'yalova', 'düzce'].includes(normalizedIl);
+            if(!komsuHavuzaDahilMi) {
+                ilAylikMaliyet = ilAylikMaliyet * 1.05; 
+                ekipAciklama += `<small class="text-danger">⚠️ Uzak Bölge: +%5 Lojistik Marjı</small>`;
+            } else {
+                ekipAciklama += `<small class="text-success">✅ Komşu İl Kaydırma Havuzunda</small>`;
+            }
+
+            totalAylikMaliyet += ilAylikMaliyet;
+            let subeIsimleri = veri.subeler.map(s => s.adi).join(', ');
+
+            tableHTML += `
+                <tr>
+                    <td class="fw-bold align-middle">${ilAdi} <br><span class="badge bg-primary mt-1">${subeSayisi} Şube</span></td>
+                    <td>
+                        <small class="text-secondary fw-bold">${subeIsimleri}</small><br>
+                        ${hizmetDetaylariHTML}
+                    </td>
+                    <td class="align-middle" style="font-size: 13px; line-height:1.5;">
+                        ${ekipAciklama}
+                    </td>
+                    <td class="align-middle text-end fw-bold text-danger">
+                        ${ilAylikMaliyet.toLocaleString('tr-TR', {maximumFractionDigits:2})} TL
+                    </td>
+                </tr>
+            `;
+        }
+
+        // 3. Finansal Matematik ve Kar Hesaplama
+        let karTutari = totalAylikMaliyet * (karOrani / 100);
+        let teklifSatisTutari = totalAylikMaliyet + karTutari;
+
+        // Müşteri adını da alalım
+        const guncelMusteri = document.getElementById('teklifMusteri').value;
+
+        // TEKLİFİ VERİTABANINA YAZMAK İÇİN GÜNCEL VERİYİ HAFIZAYA AL
+        currentGeneratedQuote = {
+            musteri: guncelMusteri,
+            maliyet: totalAylikMaliyet,
+            kar: karTutari,
+            satis: teklifSatisTutari,
+            subeler: checkedSubeler.map(cb => allSubeler.find(x => x.id == cb.value)),
+            hizmetler: serviceRequests,
+            fiyatlar: allFiyatlar 
+        };
+
+        // Sonuçları Ekrana Yazdır
+        document.getElementById('resMaliyet').innerText = totalAylikMaliyet.toLocaleString('tr-TR', {maximumFractionDigits:2}) + " TL";
+        document.getElementById('resKar').innerText = karTutari.toLocaleString('tr-TR', {maximumFractionDigits:2}) + " TL";
+        document.getElementById('resSatis').innerText = teklifSatisTutari.toLocaleString('tr-TR', {maximumFractionDigits:2}) + " TL";
+        document.getElementById('teklifAnalizTablosu').innerHTML = tableHTML;
+        // YENİ: 3 AYLIK İNTERAKTİF GÖREV DAĞILIM MATRİSİ (AI OTOMATİK DOLDURUR)
+        generateScheduleData(checkedSubeler, serviceRequests);
+
+        // Tabloyu arka planda yeni sekmeye (Planlama) çiz
+        window.currentScheduleMonth = 1;
+        setTimeout(() => renderScheduleGrid(), 100);
+
+        // Gizli olan analiz kutusunu görünür yap
+        document.getElementById('aiResultBox').style.display = 'block';
+    }
+    // ================== FİRMA VE LOGO İŞLEMLERİ ==================
+    document.getElementById('firmaLogoFile').addEventListener('change', function() {
+        const file = this.files[0];
+        if (file) {
+            const reader = new FileReader();
+            reader.onload = function(e) {
+                document.getElementById('firmaLogoOnizleme').src = e.target.result;
+                document.getElementById('firmaLogoOnizleme').style.display = 'block';
+            }
+            reader.readAsDataURL(file); // Resmi Base64 formatına çevirir
+        }
+    });
+
+    // ================== TEKLİF KAYDETME, LİSTELEME, DÜZENLEME ==================
+    function saveQuote() {
+        if(!currentGeneratedQuote) return alert("Lütfen önce AI Teklifini hesaplayın.");
+        const teklifAdi = document.getElementById('teklifAdiInput').value.trim();
+        if(!teklifAdi) return alert("Teklifi kaydetmek için lütfen bir 'Teklif Adı' girin!");
+
+        let teklifler = getData(KEYS.TEKLIFLER);
+        if(!Array.isArray(teklifler)) teklifler = [];
+
+        if (editStates.quote) {
+            currentGeneratedQuote.id = editStates.quote;
+            currentGeneratedQuote.adi = teklifAdi;
+            currentGeneratedQuote.tarih = new Date().toLocaleDateString('tr-TR');
+            currentGeneratedQuote.matrix = window.aiScheduleData; // YENİ: MATRİSİ PROJEYE KAYDET
+            
+            const index = teklifler.findIndex(t => t.id === editStates.quote);
+            if(index !== -1) {
+                teklifler[index] = currentGeneratedQuote;
+            } else {
+                teklifler.push(currentGeneratedQuote); 
+            }
+            editStates.quote = null; 
+            alert("Teklif ve Planlama Matrisi Başarıyla GÜNCELLENDİ!");
+        } else {
+            currentGeneratedQuote.id = Date.now();
+            currentGeneratedQuote.adi = teklifAdi;
+            currentGeneratedQuote.tarih = new Date().toLocaleDateString('tr-TR');
+            currentGeneratedQuote.matrix = window.aiScheduleData; // YENİ: MATRİSİ PROJEYE KAYDET
+            teklifler.push(currentGeneratedQuote);
+            alert("Yeni Teklif ve Planlama Matrisi Başarıyla KAYDEDİLDİ!");
+        }
+
+        saveData(KEYS.TEKLIFLER, teklifler);
+        renderQuotes();
+    }
+
+    function renderQuotes() {
+        const teklifler = getData(KEYS.TEKLIFLER);
+        if(!Array.isArray(teklifler)) return;
+        
+        let html = "";
+        teklifler.slice().reverse().forEach(t => { // En yeni kayıt en üstte
+            html += `<tr>
+                <td>${t.tarih}</td>
+                <td class="fw-bold">${t.adi}</td>
+                <td>${t.musteri}</td>
+                <td class="text-success fw-bold">${t.satis.toLocaleString('tr-TR', {maximumFractionDigits:2})} ₺</td>
+                <td>
+                    <button onclick="convertToContract(${t.id})" class="btn btn-sm btn-success py-0 me-1">📝 Sözleşme Yap</button>
+                    <button onclick="printQuote(${t.id})" class="btn btn-sm btn-info text-white py-0 me-1">🖨️ Yazdır</button>
+                    <button onclick="loadQuoteToForm(${t.id})" class="btn btn-sm btn-warning py-0 me-1">✏️ Değiştir</button>
+                    <button onclick="deleteQuote(${t.id})" class="btn btn-sm btn-danger py-0">Sil</button>
+                </td>
+            </tr>`;
+        });
+        document.getElementById('kayitliTekliflerListesi').innerHTML = html;
+    }
+
+    function deleteQuote(id) {
+        if(!confirm("Bu teklifi silmek istediğinize emin misiniz?")) return;
+        const data = getData(KEYS.TEKLIFLER).filter(item => item.id !== id);
+        saveData(KEYS.TEKLIFLER, data);
+        renderQuotes();
+    }
+
+    // Teklifi tekrar panele çağırır
+    function loadQuoteToForm(id) {
+        const t = getData(KEYS.TEKLIFLER).find(x => x.id === id);
+        if(!t) return;
+        
+        document.getElementById('tab-teklif').click();
+        editStates.quote = id; 
+
+        document.getElementById('teklifMusteri').value = t.musteri;
+        loadBranchesForQuote(); // Şubeleri senkron olarak yükle
+        
+        // Şubeleri seç
+        document.querySelectorAll('.sube-chk').forEach(cb => cb.checked = false);
+        t.subeler.forEach(sube => {
+            let cb = document.querySelector(`.sube-chk[value="${sube.id}"]`);
+            if(cb) cb.checked = true;
+        });
+        
+        // Hizmetleri Seç
+        document.querySelectorAll('.hizmet-chk').forEach(cb => cb.checked = false);
+        t.hizmetler.forEach(hizmet => {
+            let cb = document.querySelector(`.hizmet-chk[value="${hizmet.ad}"]`);
+            if(cb) {
+                cb.checked = true;
+                let periyotSecim = document.querySelector(`.hizmet-periyot[data-hizmet="${hizmet.ad}"]`);
+                if(periyotSecim) periyotSecim.value = hizmet.periyotCarpan;
+            }
+        });
+        
+        document.getElementById('teklifAdiInput').value = t.adi;
+        
+        // Kâr oranını hesaplanan tekliften geri getir
+        if(t.maliyet > 0) {
+            let hesaplananKarOrani = Math.round((t.kar / t.maliyet) * 100);
+            document.getElementById('teklifKarOrani').value = hesaplananKarOrani;
+        }
+        
+        // PROJEYE AİT MATRİSİ GERİ YÜKLE
+        currentGeneratedQuote = t;
+        window.aiScheduleData = t.matrix || {};
+        window.currentScheduleMonth = 1;
+        renderScheduleGrid();
+        
+        document.getElementById('aiResultBox').style.display = 'block';
+        alert("Proje verileri ve İstihdam Matrisi forma yüklendi. 'İstihdam & Planlama' sekmesinden projeye ait matrisi inceleyebilirsiniz.");
+    }
+
+    // ================== PDF / DİNAMİK YAZDIRMA MOTORU ==================
+    function printQuote(id) {
+        const teklif = getData(KEYS.TEKLIFLER).find(t => t.id === id);
+        let firma = JSON.parse(localStorage.getItem(KEYS.FIRMA)) || {}; 
+        if(!teklif) return;
+
+        // Seçilen hizmetlere göre Dinamik Sütun Başlıkları
+        let thHizmetler = "";
+        teklif.hizmetler.forEach(h => {
+            thHizmetler += `<th>${h.ad.toUpperCase()}<br>BİRİM TUTARI</th>`;
+        });
+
+        // Şube verileri ve fiyat hücreleri
+        let trRows = "";
+        teklif.subeler.forEach(sube => {
+            let rutineTemizlikAciklamasi = "";
+            let tdFiyatlar = "";
+            
+            teklif.hizmetler.forEach(srv => {
+                // Şube ili ve Hizmet adına göre birim fiyatı bul
+                let dbFiyat = teklif.fiyatlar.find(f => f.hizmet.trim().toLowerCase() === srv.ad.trim().toLowerCase() && f.il.trim().toLowerCase() === sube.il.trim().toLowerCase());
+                let birimFiyat = dbFiyat ? dbFiyat.tutar.toLocaleString('tr-TR', {maximumFractionDigits:2}) + " ₺" : "-";
+                tdFiyatlar += `<td>${birimFiyat}</td>`;
+
+                // Sıklık Açıklaması - SADECE "GENEL" VE "CAM" İÇERENLER
+                let srvAdLower = srv.ad.toLowerCase();
+                if(srvAdLower.includes("genel") || srvAdLower.includes("cam")) {
+                    let freq = "";
+                    if(srv.periyotCarpan == 30) freq = "Her Gün";
+                    else if(srv.periyotCarpan == 4) freq = "Haftada 1";
+                    else if(srv.periyotCarpan == 1) freq = "Ayda 1 Kez";
+                    else if(srv.periyotCarpan == 0.33) freq = "3 Ayda Bir";
+                    else freq = "İstek Üzerine";
+
+                    rutineTemizlikAciklamasi += `<b>${srv.ad}</b>: ${freq}<br>`;
+                }
+            });
+
+            trRows += `
+                <tr>
+                    <td>${sube.kodu || '-'}</td>
+                    <td style="text-align:left;">${sube.adi}</td>
+                    <td>${sube.il}</td>
+                    <td>${sube.bolge || '-'}</td>
+                    <td>${sube.m2 || '-'}</td>
+                    ${tdFiyatlar}
+                    <td style="font-size:10px; text-align:left;">${rutineTemizlikAciklamasi}</td>
+                </tr>
+            `;
+        });
+
+        const printWindow = window.open('', '_blank');
+        let htmlContent = `
+            <!DOCTYPE html>
+            <html>
+            <head>
+                <title>${teklif.adi} - Teklif Çıktısı</title>
+                <style>
+                    body { font-family: Arial, sans-serif; font-size: 11px; color: #000; margin: 30px; }
+                    .header-table { width: 100%; border-bottom: 2px solid #000; padding-bottom: 15px; margin-bottom: 20px; }
+                    .header-table img { max-height: 80px; }
+                    .header-table td { vertical-align: middle; }
+                    .title { text-align: center; font-size: 18px; font-weight: bold; margin-bottom: 20px; text-transform: uppercase; }
+                    table.data-table { width: 100%; border-collapse: collapse; text-align: center; }
+                    table.data-table th, table.data-table td { border: 1px solid #000; padding: 6px 4px; }
+                    table.data-table th { background-color: #f2f2f2; font-weight: bold; font-size: 10px; }
+                    .total-box { margin-top: 20px; font-size: 14px; text-align: right; font-weight: bold; }
+                    .footer { margin-top: 50px; font-size: 11px; text-align: justify; }
+                    @media print {
+                        @page { margin: 10mm; size: landscape; } /* Tablo geniş olduğu için yatay yazdırır */
+                    }
+                </style>
+            </head>
+            <body>
+                <table class="header-table">
+                    <tr>
+                        <td width="30%">
+                            ${firma.logo ? `<img src="${firma.logo}" alt="Logo">` : ''}
+                        </td>
+                        <td width="70%" style="text-align: right;">
+                            <h2 style="margin:0 0 5px 0;">${firma.unvan || ''}</h2>
+                            <p style="margin:0;">${firma.iletisim || ''}</p>
+                        </td>
+                    </tr>
+                </table>
+
+                <div class="title">${teklif.musteri} TEMİZLİK HİZMETLERİ TEKLİF FORMU<br><span style="font-size:14px; font-weight:normal; color:#555;">(${teklif.adi})</span></div>
+
+                <table class="data-table">
+                    <thead>
+                        <tr>
+                            <th width="5%">ŞUBE KODU</th>
+                            <th width="15%">ŞUBE ADI</th>
+                            <th width="10%">İL</th>
+                            <th width="8%">BÖLGE</th>
+                            <th width="5%">M²</th>
+                            ${thHizmetler}
+                            <th width="15%">RUTİN TEMİZLİK BİLGİSİ</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        ${trRows}
+                    </tbody>
+                </table>
+
+                <div style="background-color: #f9f9f9; border: 1px solid #ccc; padding: 15px; margin-top: 20px;">
+                    <h4 style="margin-top: 0; color: #333;">FİYATLANDIRMA VE FATURALANDIRMA ESASLARI</h4>
+                    <ul style="font-size: 11px; margin-bottom: 10px;">
+                        <li>Tabloda belirtilen hizmet birim fiyatları üzerinden, sadece <strong>işlem yapıldıkça ve yapıldığı ay itibariyle</strong> faturalandırma yapılacaktır.</li>
+                        <li><strong>Cam Silim Hizmetleri:</strong> Ayda 1 kez gerçekleştirilecek olup, her ay düzenli fatura edilecektir.</li>
+                        <li><strong>Genel Temizlik Hizmetleri:</strong> 3 Ayda 1 kez (Yılda 4 kez) gerçekleştirilecek olup, gerçekleştirildiği ayın sonunda faturaya yansıtılacaktır.</li>
+                        <li><strong>İstek Üzerine Hizmetler:</strong> Yalnızca kurumunuzun talebi doğrultusunda yapılacak ve yapıldığı tarihte ek olarak faturalandırılacaktır.</li>
+                    </ul>
+                    <div style="text-align: right; font-size: 14px; font-weight: bold; margin-top: 15px; border-top: 1px dashed #ccc; padding-top: 10px;">
+                        Planlanan Aylık Ortalama Operasyon Bütçesi: ${teklif.satis.toLocaleString('tr-TR', {maximumFractionDigits:2})} TL + KDV
+                    </div>
+                </div>
+
+                <div class="footer">
+                    <p><strong>Açıklamalar:</strong> Fiyatlara %20 KDV dahil değildir. Form sistem tarafından otomatik üretilmiştir.</p>
+                </div>
+            `;
+
+        // YENİ: İŞ PLANI VE ŞARTNAMELERİ PDF'İN SONUNA YENİ SAYFA OLARAK EKLEME BÖLÜMÜ
+        let planlar = JSON.parse(localStorage.getItem(KEYS.PLANLAR)) || [];
+        let musteriPlanlari = planlar.filter(p => p.musteri === teklif.musteri);
+        
+        if (musteriPlanlari.length > 0) {
+            let gruplar = {
+                "Genel Temizlik": [],
+                "DIŞ CEPHE CAM TABELA TEMİZLİK": [],
+                "EKSTRA DİĞER İŞLER": []
+            };
+            
+            musteriPlanlari.forEach(p => {
+                let g = p.grup || "EKSTRA DİĞER İŞLER";
+                if(gruplar[g]) gruplar[g].push(p.madde);
+                else gruplar["EKSTRA DİĞER İŞLER"].push(p.madde);
+            });
+
+            htmlContent += `<div style="page-break-before: always; margin-top: 40px;">
+                <h3 style="text-align: center; border-bottom: 2px solid #000; padding-bottom: 10px;">${teklif.musteri} - HİZMET ŞARTNAMESİ VE İŞ PLANI</h3>`;
+            
+            for (let g in gruplar) {
+                if (gruplar[g].length > 0) {
+                    htmlContent += `
+                    <div style="margin-top: 20px;">
+                        <h4 style="background-color: #f2f2f2; padding: 5px; border-left: 3px solid #000; margin-bottom: 10px;">${g}</h4>
+                        <ul style="font-size: 11px; padding-left: 20px;">`;
+                    gruplar[g].forEach(madde => {
+                        htmlContent += `<li style="margin-bottom: 6px;">${madde}</li>`;
+                    });
+                    htmlContent += `</ul></div>`;
+                }
+            }
+            htmlContent += `</div>`;
+        }
+
+        htmlContent += `
+            </body>
+            </html>
+        `;
+
+        printWindow.document.write(htmlContent);
+        printWindow.document.close(); // YENİ EKLENDİ: Tarayıcıya "Yükleme bitti, sayfayı kapat ve yazdır" komutunu verir.
+        
+        // Resmin (Logonun) tarayıcıya render edilmesi için küçük bir bekleme süresi veriyoruz
+        setTimeout(() => {
+            printWindow.print();
+        }, 500);
+    }
+
+    // ================== TÜM PLANLARI YAZDIR ==================
+    function printAllPlans() {
+        const planlar = getData(KEYS.PLANLAR);
+        if(planlar.length === 0) return alert("Yazdırılacak iş planı bulunmuyor.");
+
+        let html = `<html><head><title>Tüm İş Planları</title>
+        <style>body{font-family:Arial,sans-serif; margin:30px;} h2{color:#0d6efd; border-bottom:2px solid #0d6efd; padding-bottom:10px;} table{width:100%; border-collapse:collapse; margin-top:20px; font-size:12px;} th,td{border:1px solid #ccc; padding:8px; text-align:left;} th{background:#f2f2f2;} </style>
+        </head><body><h2>Müşteri İş Planları ve Şartnameleri</h2><table><tr><th width="20%">Müşteri</th><th width="30%">Kategori / Grup</th><th width="50%">Şartname Maddesi</th></tr>`;
+        
+        planlar.sort((a,b) => a.musteri.localeCompare(b.musteri)).forEach(p => {
+            html += `<tr><td><b>${p.musteri}</b></td><td>${p.grup || '-'}</td><td>${p.madde}</td></tr>`;
+        });
+        
+        html += `</table></body></html>`;
+        
+        const printWindow = window.open('', '_blank');
+        printWindow.document.write(html);
+        printWindow.document.close();
+        setTimeout(() => printWindow.print(), 300);
+    }
+
+    // ================== SÖZLEŞME GÜNCELLEME VE PERSONEL GÖREVLENDİRME ==================
+    
+    // 1. Sözleşme Fiyatlarını "İl Fiyatları" tablosundan güncelleyerek enflasyon zammını yansıtır.
+    function updateContractPrices() {
+        const sozlesmeId = document.getElementById('hakedisSozlesmeSecim').value;
+        if(!sozlesmeId) return alert("Lütfen güncellemek için önce Aktif bir Sözleşme seçin.");
+        
+        if(!confirm("DİKKAT: Bu işlem, seçili sözleşmedeki fiyatları 'İl & Hizmet Fiyatları' sekmesindeki GÜNCEL fiyatlarla değiştirecektir. Zam veya fiyat değişikliği yaptıysanız onaylayın.")) return;
+
+        let sozlesmeler = getData(KEYS.SOZLESMELER);
+        let index = sozlesmeler.findIndex(s => s.id == sozlesmeId);
+        if(index === -1) return;
+
+        // Veritabanındaki en güncel fiyatları alıp sözleşmenin içine kopyalıyoruz
+        const guncelFiyatlar = getData(KEYS.FIYATLAR);
+        sozlesmeler[index].data.fiyatlar = guncelFiyatlar; 
+        
+        saveData(KEYS.SOZLESMELER, sozlesmeler);
+        alert("Sözleşme fiyatları başarıyla GÜNCELLENDİ! Tabloyu yeniden getirdiğinizde yeni fiyatları görebilirsiniz.");
+        
+        // Ekranda tablo varsa yenile
+        if(document.getElementById('hakedisTabloAlani').style.display === 'block') {
+            loadHakedisTablosu();
+        }
+    }
+
+    // 2. Personel Görevlendirme Panelini Açma ve Listeleme
+    function openTaskModal() {
+        const sozlesmeId = document.getElementById('hakedisSozlesmeSecim').value;
+        const ay = document.getElementById('hakedisAy').value; // YYYY-MM
+        
+        if(!sozlesmeId || !ay) return alert("Görevlendirme yapabilmek için lütfen Sözleşme ve Ay seçimi yapınız!");
+
+        const sozlesme = getData(KEYS.SOZLESMELER).find(s => s.id == sozlesmeId);
+        
+        // Şube dropdown'ını doldur
+        let subeSecimHtml = '';
+        sozlesme.data.subeler.forEach(s => {
+            subeSecimHtml += `<option value="${s.adi}">${s.adi} (${s.il})</option>`;
+        });
+        document.getElementById('gorevSubeSecim').innerHTML = subeSecimHtml;
+        
+        document.getElementById('gorevTarihi').value = `${ay}-01`;
+        document.getElementById('gorevCizelgesiAlani').style.display = 'block';
+        renderTasks();
+    }
+
+    function addTask() {
+        const sozlesmeId = document.getElementById('hakedisSozlesmeSecim').value;
+        const ay = document.getElementById('hakedisAy').value;
+        const tarih = document.getElementById('gorevTarihi').value;
+        const personel = document.getElementById('gorevPersonelIsmi').value.trim();
+        
+        // YENİ: Çoklu seçilen şubeleri diziye al
+        const subeSelect = document.getElementById('gorevSubeSecim');
+        const selectedSubeler = Array.from(subeSelect.selectedOptions).map(opt => opt.value);
+
+        if(!tarih || selectedSubeler.length === 0 || !personel) return alert("Lütfen Tarih, Personel ve en az bir Şube seçin!");
+        if(!tarih.startsWith(ay)) return alert(`Seçtiğiniz tarih (${tarih}), seçili Hakediş Ayı (${ay}) ile uyuşmuyor!`);
+
+        let data = getData(KEYS.GOREVLER);
+        
+        // Seçilen her bir şube için ayrı görev kaydı oluştur
+        selectedSubeler.forEach(sube => {
+            data.push({
+                id: Date.now() + Math.random(), // Çakışmayı önlemek için
+                sozlesmeId: sozlesmeId,
+                ay: ay,
+                tarih: tarih,
+                sube: sube,
+                personel: personel
+            });
+        });
+
+        saveData(KEYS.GOREVLER, data);
+        renderTasks();
+        alert(`${selectedSubeler.length} adet şubeye personel ataması yapıldı!`);
+    }
+
+    // YENİ: Sözleşme Silme Fonksiyonu
+    function deleteContract() {
+        const sozlesmeId = document.getElementById('hakedisSozlesmeSecim').value;
+        if(!sozlesmeId) return alert("Silmek için aktif bir sözleşme seçmelisiniz!");
+        if(!confirm("DİKKAT: Bu sözleşmeyi tamamen silmek istediğinize emin misiniz? (Geçmiş faturaları silinmez ancak sözleşme listeden kalkar)")) return;
+        
+        const data = getData(KEYS.SOZLESMELER).filter(s => s.id != sozlesmeId);
+        saveData(KEYS.SOZLESMELER, data);
+        renderContracts();
+        document.getElementById('hakedisTabloAlani').style.display = 'none';
+        alert("Sözleşme silindi.");
+    }
+
+    function renderTasks() {
+        const sozlesmeId = document.getElementById('hakedisSozlesmeSecim').value;
+        const ay = document.getElementById('hakedisAy').value;
+        const data = getData(KEYS.GOREVLER).filter(g => g.sozlesmeId == sozlesmeId && g.ay === ay);
+        
+        // Tarihe göre sırala (Eskiden yeniye)
+        data.sort((a,b) => new Date(a.tarih) - new Date(b.tarih));
+
+        let html = "";
+        data.forEach(g => {
+            // Tarihi TR formatına çevir
+            let trTarih = g.tarih.split('-').reverse().join('/');
+            html += `
+                <tr>
+                    <td class="fw-bold">${trTarih}</td>
+                    <td>${g.sube}</td>
+                    <td class="text-primary">${g.personel}</td>
+                    <td><button onclick="deleteTask(${g.id})" class="btn btn-sm btn-outline-danger py-0">İptal</button></td>
+                </tr>
+            `;
+        });
+        
+        if(data.length === 0) html = `<tr><td colspan="4" class="text-center text-muted">Bu aya ait planlanmış bir görev bulunmamaktadır.</td></tr>`;
+        
+        document.getElementById('gorevListesiTbody').innerHTML = html;
+    }
+
+    function deleteTask(id) {
+        if(!confirm("Bu görevlendirmeyi silmek istediğinize emin misiniz?")) return;
+        const data = getData(KEYS.GOREVLER).filter(item => item.id !== id);
+        saveData(KEYS.GOREVLER, data);
+        renderTasks();
+    }
+
+    // ================== HAKEDİŞ VE SÖZLEŞME MODÜLÜ ==================
+    function convertToContract(quoteId) {
+        if(!confirm("Bu teklif müşteri tarafından onaylandı mı? Sözleşmeler listesine aktarılacaktır.")) return;
+        
+        const teklif = getData(KEYS.TEKLIFLER).find(t => t.id === quoteId);
+        let sozlesmeler = getData(KEYS.SOZLESMELER);
+        
+        if(!sozlesmeler.some(s => s.teklifId === quoteId)) {
+            sozlesmeler.push({
+                id: Date.now(),
+                teklifId: teklif.id,
+                adi: teklif.adi,
+                musteri: teklif.musteri,
+                data: teklif
+            });
+            saveData(KEYS.SOZLESMELER, sozlesmeler);
+            alert("Teklif başarıyla 'Aktif Sözleşmeler' arasına alındı! Operasyon sekmesinden takip edebilirsiniz.");
+            renderContracts();
+        } else {
+            alert("Bu teklif zaten sözleşmeye çevrilmiş.");
+        }
+    }
+
+    function renderContracts() {
+        const sozlesmeler = getData(KEYS.SOZLESMELER);
+        let html = '<option value="">-- Sözleşme Seçiniz --</option>';
+        sozlesmeler.reverse().forEach(s => {
+            html += `<option value="${s.id}">${s.musteri} - ${s.adi}</option>`;
+        });
+        document.getElementById('hakedisSozlesmeSecim').innerHTML = html;
+        
+        const now = new Date();
+        document.getElementById('hakedisAy').value = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}`;
+    }
+
+    // ================== HAKEDİŞ TABLOSU VE PDF İŞLEMLERİ ==================
+    let activeHakedisData = null;
+    let windowEditingHakedisId = null; // Düzenlenen faturanın ID'sini tutmak için
+
+    // Sütunlardaki tüm checkboxları seçme / kaldırma
+    function toggleCol(hizmetAd, isChecked) {
+        document.querySelectorAll(`.hakedis-chk[data-srv="${hizmetAd}"]`).forEach(chk => {
+            chk.checked = isChecked;
+        });
+        hesaplaHakedisToplam();
+    }
+
+    function loadHakedisTablosu() {
+        const sozlesmeId = document.getElementById('hakedisSozlesmeSecim').value;
+        const ay = document.getElementById('hakedisAy').value;
+        const aciklama = document.getElementById('hakedisAciklama').value.trim() || "Genel Hakediş";
+        
+        if(!sozlesmeId || !ay) return alert("Sözleşme ve Ay seçimi zorunludur!");
+
+        const sozlesme = getData(KEYS.SOZLESMELER).find(s => s.id == sozlesmeId);
+        const teklif = sozlesme.data;
+        
+        // Eğer "İncele/Düzenle" butonundan gelinmediyse, TEPYENİ boş bir tablo aç
+        let mevcutHakedis = { isaretliler: [], miktarlar: {} };
+        if(windowEditingHakedisId) {
+            mevcutHakedis = getData(KEYS.HAKEDISLER).find(h => h.id === windowEditingHakedisId) || mevcutHakedis;
+        }
+
+        activeHakedisData = { 
+            id: windowEditingHakedisId, // Varsa eski ID, yoksa null
+            sozlesme: sozlesme, 
+            ay: ay, 
+            aciklama: aciklama 
+        };
+        
+        // Düzenleme ID'sini sıfırla ki sonraki "Tabloyu Getir" tıklamaları YENİ kayıt açsın
+        windowEditingHakedisId = null; 
+
+        // Tablo Başlıkları (Checkboxlı Sütunlar)
+        let th = `<tr><th class="align-middle">Şube Kodu</th><th class="align-middle">Şube Adı</th>`;
+        teklif.hizmetler.forEach(h => { 
+            let srvLower = h.ad.toLowerCase();
+            let isFixed = !(srvLower.includes("koltuk") || srvLower.includes("halı") || srvLower.includes("hali") || srvLower.includes("jaluzi") || srvLower.includes("iskele") || srvLower.includes("dağcı") || srvLower.includes("dagci") || srvLower.includes("saat"));
+            
+            if(isFixed) {
+                // Tümünü Seç eklendi
+                th += `<th class="text-center align-middle">${h.ad}<br><input type="checkbox" onchange="toggleCol('${h.ad}', this.checked)" title="Sütunu Tümünü Seç" style="cursor:pointer; width:16px; height:16px; margin-top:5px;"></th>`;
+            } else {
+                th += `<th class="text-center align-middle">${h.ad}</th>`;
+            }
+        });
+        th += `</tr>`;
+        document.getElementById('hakedisThead').innerHTML = th;
+
+        let tr = "";
+        teklif.subeler.forEach(sube => {
+            tr += `<tr><td>${sube.kodu || '-'}</td><td>${sube.adi}</td>`;
+            
+            teklif.hizmetler.forEach(srv => {
+                let dbFiyat = teklif.fiyatlar.find(f => f.hizmet.trim().toLowerCase() === srv.ad.trim().toLowerCase() && f.il.trim().toLowerCase() === sube.il.trim().toLowerCase());
+                let birimFiyat = dbFiyat ? dbFiyat.tutar : 0;
+                let srvLower = srv.ad.toLowerCase();
+                let chkId = `${sube.id}_${srv.ad}`;
+                
+                let isFixedCell = !(srvLower.includes("koltuk") || srvLower.includes("halı") || srvLower.includes("hali") || srvLower.includes("jaluzi") || srvLower.includes("iskele") || srvLower.includes("dağcı") || srvLower.includes("dagci") || srvLower.includes("saat"));
+
+                // Dinamik Hizmetler (Koltuk, İskele vb.)
+                if(!isFixedCell) {
+                    let val = mevcutHakedis.miktarlar[chkId] || "";
+                    tr += `<td class="text-center">
+                        <input type="number" class="form-control form-control-sm mx-auto hakedis-input" data-birim="${birimFiyat}" data-id="${chkId}" value="${val}" onchange="hesaplaHakedisToplam()" placeholder="Miktar" style="width:70px;">
+                        <small class="text-muted">(${birimFiyat} ₺/Br)</small>
+                    </td>`;
+                } 
+                // Sabit Çarpanlı Hizmetler
+                else {
+                    let carpimM2 = sube.m2;
+                    if(srvLower.includes("cam")) carpimM2 = sube.camM2 || sube.m2;
+                    if(srvLower.includes("tadilat")) carpimM2 = sube.tadilatM2 || sube.m2;
+                    let finalFiyat = birimFiyat * carpimM2;
+
+                    // Taban Fiyat Kontrolü Eklendi
+                    const ayarlar = JSON.parse(localStorage.getItem(KEYS.AYARLAR)) || {};
+                    const tabanFiyat = Number(ayarlar.taban) || 5000;
+                    if (finalFiyat > 0 && finalFiyat < tabanFiyat) {
+                        finalFiyat = tabanFiyat;
+                    }
+                    let isChecked = mevcutHakedis.isaretliler.includes(chkId) ? "checked" : "";
+                    
+                    tr += `<td class="text-center">
+                        <div class="form-check d-flex flex-column align-items-center justify-content-center">
+                            <input class="form-check-input hakedis-chk" type="checkbox" data-srv="${srv.ad}" data-fiyat="${finalFiyat}" data-id="${chkId}" onchange="hesaplaHakedisToplam()" ${isChecked} style="width:20px; height:20px; cursor:pointer;">
+                            <small class="text-muted mt-1">(${finalFiyat.toLocaleString('tr-TR')} ₺)</small>
+                        </div>
+                    </td>`;
+                }
+            });
+            tr += `</tr>`;
+        });
+        
+        document.getElementById('hakedisTbody').innerHTML = tr;
+        document.getElementById('hakedisTabloAlani').style.display = 'block';
+        hesaplaHakedisToplam();
+    }
+
+    function hesaplaHakedisToplam() {
+        let toplam = 0;
+        document.querySelectorAll('.hakedis-chk:checked').forEach(chk => {
+            toplam += Number(chk.getAttribute('data-fiyat'));
+        });
+        document.querySelectorAll('.hakedis-input').forEach(inp => {
+            let miktar = Number(inp.value) || 0;
+            let birim = Number(inp.getAttribute('data-birim'));
+            toplam += (miktar * birim);
+        });
+        
+        document.getElementById('hakedisToplamTutar').innerText = `Oluşan Fatura Tutarı: ${toplam.toLocaleString('tr-TR', {maximumFractionDigits:2})} TL + KDV`;
+        return toplam;
+    }
+
+    function saveHakedis() {
+        if(!activeHakedisData) return;
+        let isaretliler = [];
+        let miktarlar = {};
+        
+        document.querySelectorAll('.hakedis-chk:checked').forEach(chk => { isaretliler.push(chk.getAttribute('data-id')); });
+        document.querySelectorAll('.hakedis-input').forEach(inp => { 
+            if(inp.value > 0) miktarlar[inp.getAttribute('data-id')] = Number(inp.value); 
+        });
+
+        let kayitlar = getData(KEYS.HAKEDISLER);
+        let aciklama = document.getElementById('hakedisAciklama').value.trim() || activeHakedisData.aciklama;
+        
+        let yeniData = {
+            id: activeHakedisData.id ? activeHakedisData.id : Date.now(), // Eski ID varsa ez, yoksa yeni oluştur
+            sozlesmeId: activeHakedisData.sozlesme.id,
+            ay: activeHakedisData.ay,
+            aciklama: aciklama,
+            isaretliler: isaretliler,
+            miktarlar: miktarlar,
+            tutar: hesaplaHakedisToplam()
+        };
+
+        if(activeHakedisData.id) {
+            let index = kayitlar.findIndex(h => h.id === activeHakedisData.id);
+            if(index !== -1) kayitlar[index] = yeniData;
+        } else {
+            kayitlar.push(yeniData);
+            activeHakedisData.id = yeniData.id; // Artık yeni kaydedildi, tekrar basarsa güncellesin
+        }
+
+        saveData(KEYS.HAKEDISLER, kayitlar);
+        alert("Fatura / Hakediş başarıyla kaydedildi!");
+        renderHakedisList();
+    }
+
+    function renderHakedisList() {
+        const hakedisler = getData(KEYS.HAKEDISLER);
+        const sozlesmeler = getData(KEYS.SOZLESMELER);
+        let html = "";
+        
+        hakedisler.slice().reverse().forEach(h => {
+            let s = sozlesmeler.find(x => x.id === h.sozlesmeId);
+            if(!s) return;
+            let title = h.aciklama ? `<span class="badge bg-secondary">${h.aciklama}</span>` : "";
+            html += `<tr>
+                <td class="fw-bold">${h.ay} ${title}</td>
+                <td>${s.adi}</td>
+                <td>${s.musteri}</td>
+                <td class="text-danger fw-bold">${h.tutar.toLocaleString('tr-TR')} ₺</td>
+                <td>
+                    <button onclick="loadSavedHakedis(${h.id})" class="btn btn-sm btn-warning py-0 me-1">✏️ İncele/Düzenle</button>
+                    <button onclick="deleteHakedis(${h.id})" class="btn btn-sm btn-danger py-0">Sil</button>
+                </td>
+            </tr>`;
+        });
+        document.getElementById('kayitliHakedislerListesi').innerHTML = html;
+    }
+
+    function loadSavedHakedis(hakedisId) {
+        const h = getData(KEYS.HAKEDISLER).find(x => x.id === hakedisId);
+        if(!h) return;
+        
+        windowEditingHakedisId = hakedisId; // Tablo motoruna eski faturayı açmasını söyler
+        document.getElementById('hakedisSozlesmeSecim').value = h.sozlesmeId;
+        document.getElementById('hakedisAy').value = h.ay;
+        document.getElementById('hakedisAciklama').value = h.aciklama || "";
+        loadHakedisTablosu();
+        window.scrollTo(0, 0);
+    }
+
+    function deleteHakedis(id) {
+        if(!confirm("Bu faturayı/hakedişi silmek istediğinize emin misiniz?")) return;
+        const data = getData(KEYS.HAKEDISLER).filter(item => item.id !== id);
+        saveData(KEYS.HAKEDISLER, data);
+        renderHakedisList();
+    }
+
+    function printHakedis() {
+        if(!activeHakedisData) return;
+        const toplamTutar = hesaplaHakedisToplam();
+        const ayText = activeHakedisData.ay.split('-').reverse().join('/');
+        const fName = document.getElementById('hakedisAciklama').value.trim();
+        let firma = JSON.parse(localStorage.getItem(KEYS.FIRMA)) || {}; 
+        const teklif = activeHakedisData.sozlesme.data;
+
+        let isaretliler = [];
+        let miktarlar = {};
+        document.querySelectorAll('.hakedis-chk:checked').forEach(chk => { isaretliler.push(chk.getAttribute('data-id')); });
+        document.querySelectorAll('.hakedis-input').forEach(inp => { if(inp.value > 0) miktarlar[inp.getAttribute('data-id')] = Number(inp.value); });
+
+        let trRows = "";
+        teklif.subeler.forEach(sube => {
+            let yapilanHizmetler = [];
+            let subeFaturaTutar = 0;
+
+            teklif.hizmetler.forEach(srv => {
+                let srvLower = srv.ad.toLowerCase();
+                let chkId = `${sube.id}_${srv.ad}`;
+                let dbFiyat = teklif.fiyatlar.find(f => f.hizmet.trim().toLowerCase() === srv.ad.trim().toLowerCase() && f.il.trim().toLowerCase() === sube.il.trim().toLowerCase());
+                let birimFiyat = dbFiyat ? dbFiyat.tutar : 0;
+                
+                let isFixed = !(srvLower.includes("koltuk") || srvLower.includes("halı") || srvLower.includes("hali") || srvLower.includes("jaluzi") || srvLower.includes("iskele") || srvLower.includes("dağcı") || srvLower.includes("dagci") || srvLower.includes("saat"));
+                
+                const ayarlar = JSON.parse(localStorage.getItem(KEYS.AYARLAR)) || {};
+                const tabanFiyat = Number(ayarlar.taban) || 5000;
+
+                // Sabit Hizmetler (Cam, Genel vb.)
+                if(isFixed && isaretliler.includes(chkId)) {
+                    let carpimM2 = sube.m2;
+                    if(srvLower.includes("cam")) carpimM2 = sube.camM2 || sube.m2;
+                    if(srvLower.includes("tadilat")) carpimM2 = sube.tadilatM2 || sube.m2;
+                    let fiyat = birimFiyat * carpimM2;
+                    let aciklamaYazisi = `${carpimM2} m² x ${birimFiyat.toLocaleString('tr-TR')} ₺`;
+
+                    // Taban Fiyat Kontrolü
+                    if (fiyat > 0 && fiyat < tabanFiyat) {
+                        fiyat = tabanFiyat;
+                        aciklamaYazisi = `<i>Minimum Şube Taban Fiyatı Uygulandı</i>`;
+                    }
+                    
+                    yapilanHizmetler.push(`<b>${srv.ad}</b>: ${aciklamaYazisi} = <span style="color:#0d6efd">${fiyat.toLocaleString('tr-TR')} ₺</span>`);
+                    subeFaturaTutar += fiyat;
+                }
+                
+                // Dinamik Hizmetler (İskele, Koltuk vb.)
+                if(!isFixed && miktarlar[chkId]) {
+                    let miktar = miktarlar[chkId];
+                    let fiyat = miktar * birimFiyat;
+                    yapilanHizmetler.push(`<b>${srv.ad}</b>: ${miktar} Birim/Saat x ${birimFiyat.toLocaleString('tr-TR')} ₺ = <span style="color:#0d6efd">${fiyat.toLocaleString('tr-TR')} ₺</span>`);
+                    subeFaturaTutar += fiyat;
+                }
+            });
+
+            if(yapilanHizmetler.length > 0) {
+                trRows += `
+                    <tr>
+                        <td class="align-middle">${sube.kodu || '-'}</td>
+                        <td class="align-middle" style="text-align:left;"><b>${sube.adi}</b><br><small style="color:#666;">${sube.il}</small></td>
+                        <td style="text-align:left; line-height:1.6;">${yapilanHizmetler.join('<br>')}</td>
+                        <td class="align-middle"><b>${subeFaturaTutar.toLocaleString('tr-TR', {maximumFractionDigits:2})} ₺</b></td>
+                    </tr>
+                `;
+            }
+        });
+
+        const printWindow = window.open('', '_blank');
+        let htmlContent = `
+            <!DOCTYPE html>
+            <html>
+            <head>
+                <title>${teklif.musteri} - ${ayText} Hakediş Raporu</title>
+                <style>
+                    body { font-family: Arial, sans-serif; font-size: 12px; color: #000; margin: 30px; }
+                    .header-table { width: 100%; border-bottom: 2px solid #000; padding-bottom: 15px; margin-bottom: 20px; }
+                    .header-table img { max-height: 80px; }
+                    .header-table td { vertical-align: middle; }
+                    .title { text-align: center; font-size: 18px; font-weight: bold; margin-bottom: 5px; text-transform: uppercase; }
+                    .subtitle { text-align: center; font-size: 14px; margin-bottom: 20px; color: #555; }
+                    table.data-table { width: 100%; border-collapse: collapse; text-align: center; margin-bottom: 20px;}
+                    table.data-table th, table.data-table td { border: 1px solid #000; padding: 10px 6px; }
+                    table.data-table th { background-color: #f2f2f2; font-weight: bold; font-size: 11px; }
+                    .total-box { border: 2px solid #000; padding: 12px; font-size: 16px; text-align: right; width: 320px; float: right; background-color:#f9f9f9; }
+                    .clearfix { clear: both; }
+                </style>
+            </head>
+            <body>
+                <table class="header-table">
+                    <tr>
+                        <td width="30%">${firma.logo ? `<img src="${firma.logo}" alt="Logo">` : ''}</td>
+                        <td width="70%" style="text-align: right;">
+                            <h2 style="margin:0 0 5px 0;">${firma.unvan || ''}</h2>
+                            <p style="margin:0;">${firma.iletisim || ''}</p>
+                        </td>
+                    </tr>
+                </table>
+
+                <div class="title">${teklif.musteri} AYLIK TEMİZLİK OPERASYON HAKEDİŞİ</div>
+                <div class="subtitle">Sözleşme: ${teklif.adi} <br> Dönem: ${ayText} ${fName ? `| Açıklama: <b>${fName}</b>` : ""}</div>
+
+                <table class="data-table">
+                    <thead>
+                        <tr>
+                            <th width="10%">ŞUBE KODU</th>
+                            <th width="25%">ŞUBE ADI & İL</th>
+                            <th width="50%">YAPILAN İŞLEMLER VE HESAPLAMA</th>
+                            <th width="15%">ARA TOPLAM</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        ${trRows}
+                    </tbody>
+                </table>
+
+                <div class="total-box">
+                    <span style="font-size:12px; color:#555;">ÖDENECEK KDV HARİÇ TUTAR:</span><br>
+                    <span style="color:#dc3545; font-size:22px; font-weight:bold;">${toplamTutar.toLocaleString('tr-TR', {maximumFractionDigits:2})} TL</span>
+                </div>
+                <div class="clearfix"></div>
+                
+                <div style="margin-top: 60px; display:flex; justify-content:space-between; width:80%;">
+                    <div style="text-align:center;"><b>Hizmeti Veren</b><br><br>Kaşe / İmza</div>
+                    <div style="text-align:center;"><b>Kurum Yetkilisi / Onay</b><br><br>İmza</div>
+                </div>
+            </body>
+            </html>
+        `;
+
+        printWindow.document.write(htmlContent);
+        printWindow.document.close(); 
+        
+        setTimeout(() => {
+            printWindow.print();
+        }, 500);
+    }
+    // Tablo içinde şube araması yapar
+    function filterHakedisTable() {
+        const val = document.getElementById('hakedisAra').value.toLowerCase();
+        const rows = document.querySelectorAll('#hakedisTbody tr');
+        rows.forEach(row => {
+            const text = row.innerText.toLowerCase();
+            row.style.display = text.includes(val) ? '' : 'none';
+        });
+    }
+
+    function printSavedHakedis(id) {
+        loadSavedHakedis(id);
+        setTimeout(() => { printHakedis(); }, 500);
+    }
+
+    function printSavedOpRapor(id) {
+        loadSavedHakedis(id);
+        setTimeout(() => { printOperasyonRaporu(); }, 500);
+    }
+
+    // Fiyatsız Müşteri Operasyon Raporu
+    function printOperasyonRaporu() {
+        if(!activeHakedisData) return;
+        const ayText = activeHakedisData.ay.split('-').reverse().join('/');
+        const fName = document.getElementById('hakedisAciklama').value.trim();
+        let firma = JSON.parse(localStorage.getItem(KEYS.FIRMA)) || {}; 
+        const teklif = activeHakedisData.sozlesme.data;
+
+        let isaretliler = [];
+        let miktarlar = {};
+        document.querySelectorAll('.hakedis-chk:checked').forEach(chk => { isaretliler.push(chk.getAttribute('data-id')); });
+        document.querySelectorAll('.hakedis-input').forEach(inp => { if(inp.value > 0) miktarlar[inp.getAttribute('data-id')] = Number(inp.value); });
+
+        let trRows = "";
+        teklif.subeler.forEach(sube => {
+            let yapilanHizmetler = [];
+
+            teklif.hizmetler.forEach(srv => {
+                let srvLower = srv.ad.toLowerCase();
+                let chkId = `${sube.id}_${srv.ad}`;
+                
+                if(isaretliler.includes(chkId)) {
+                    let carpimM2 = sube.m2;
+                    if(srvLower.includes("cam")) carpimM2 = sube.camM2 || sube.m2;
+                    if(srvLower.includes("tadilat")) carpimM2 = sube.tadilatM2 || sube.m2;
+                    yapilanHizmetler.push(`☑️ <b>${srv.ad}</b> (${carpimM2} m²)`);
+                }
+                
+                if(miktarlar[chkId]) {
+                    yapilanHizmetler.push(`☑️ <b>${srv.ad}</b> (${miktarlar[chkId]} Birim)`);
+                }
+            });
+
+            if(yapilanHizmetler.length > 0) {
+                trRows += `
+                    <tr>
+                        <td class="align-middle">${sube.kodu || '-'}</td>
+                        <td class="align-middle" style="text-align:left;"><b>${sube.adi}</b><br><small style="color:#666;">${sube.il}</small></td>
+                        <td style="text-align:left; line-height:1.6;">${yapilanHizmetler.join('<br>')}</td>
+                        <td class="align-middle text-success fw-bold">Tamamlandı</td>
+                    </tr>
+                `;
+            }
+        });
+
+        const printWindow = window.open('', '_blank');
+        let htmlContent = `
+            <!DOCTYPE html>
+            <html>
+            <head>
+                <title>${teklif.musteri} - Operasyon Raporu</title>
+                <style>
+                    body { font-family: Arial, sans-serif; font-size: 12px; color: #000; margin: 30px; }
+                    .header-table { width: 100%; border-bottom: 2px solid #000; padding-bottom: 15px; margin-bottom: 20px; }
+                    .header-table img { max-height: 80px; }
+                    .header-table td { vertical-align: middle; }
+                    .title { text-align: center; font-size: 18px; font-weight: bold; margin-bottom: 5px; text-transform: uppercase; }
+                    .subtitle { text-align: center; font-size: 14px; margin-bottom: 20px; color: #555; }
+                    table.data-table { width: 100%; border-collapse: collapse; text-align: center; margin-bottom: 20px;}
+                    table.data-table th, table.data-table td { border: 1px solid #000; padding: 10px 6px; }
+                    table.data-table th { background-color: #f2f2f2; font-weight: bold; font-size: 11px; }
+                </style>
+            </head>
+            <body>
+                <table class="header-table">
+                    <tr>
+                        <td width="30%">${firma.logo ? `<img src="${firma.logo}" alt="Logo">` : ''}</td>
+                        <td width="70%" style="text-align: right;">
+                            <h2 style="margin:0 0 5px 0;">${firma.unvan || ''}</h2>
+                            <p style="margin:0;">${firma.iletisim || ''}</p>
+                        </td>
+                    </tr>
+                </table>
+
+                <div class="title">${teklif.musteri} SAHA OPERASYON VE TESLİMAT RAPORU</div>
+                <div class="subtitle">Sözleşme: ${teklif.adi} <br> Dönem: ${ayText} ${fName ? `| Kapsam: <b>${fName}</b>` : ""}</div>
+
+                <table class="data-table">
+                    <thead>
+                        <tr>
+                            <th width="10%">ŞUBE KODU</th>
+                            <th width="30%">ŞUBE ADI & İL</th>
+                            <th width="45%">YAPILAN HİZMET VE MİKTARI</th>
+                            <th width="15%">DURUM</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        ${trRows}
+                    </tbody>
+                </table>
+                
+                <div style="margin-top: 60px; display:flex; justify-content:space-between; width:80%;">
+                    <div style="text-align:center;"><b>Hizmeti Teslim Eden</b><br><br>Kaşe / İmza</div>
+                    <div style="text-align:center;"><b>Hizmeti Teslim Alan / Onay</b><br><br>İmza</div>
+                </div>
+            </body>
+            </html>
+        `;
+
+        printWindow.document.write(htmlContent);
+        printWindow.document.close(); 
+        setTimeout(() => { printWindow.print(); }, 500);
+    }
+    // ================== İNTERAKTİF 3 AYLIK PLANLAMA MOTORU ==================
+    window.aiScheduleData = {}; 
+    window.currentScheduleMonth = 1;
+
+    // AI KAPASİTE BAZLI DAĞITIM ALGORİTMASI
+    // AI KAPASİTE VE M² BAZLI DAĞITIM ALGORİTMASI
+    // AI KAPASİTE, M² VE BÖLGESEL LOJİSTİK BAZLI DAĞITIM ALGORİTMASI
+    // AI KAPASİTE, M², BÖLGESEL LOJİSTİK VE TAM SENKRONİZASYON (MALİYET OPTİMİZASYONU)
+    function generateScheduleData(checkedSubeler, serviceRequests) {
+        window.aiScheduleData = {};
+        const allSubeler = getData(KEYS.SUBELER);
+        const ayarlar = JSON.parse(localStorage.getItem(KEYS.AYARLAR)) || {};
+        const capCam = Number(ayarlar.mevcutCam) || 2; 
+        const capGenel = Number(ayarlar.mevcutGenel) || 3; 
+
+        let hasCam = serviceRequests.some(s => s.ad.toLowerCase().includes("cam"));
+        let hasGenel = serviceRequests.some(s => s.ad.toLowerCase().includes("genel"));
+
+        let dailyUsage = {};
+        for(let d=1; d<=90; d++) dailyUsage[d] = { cam: 0, genel: 0, camIl: null, genelIl: null };
+
+        let subelerData = checkedSubeler.map(cb => allSubeler.find(x => x.id == cb.value)).filter(Boolean);
+        subelerData.sort((a, b) => {
+            let ilCompare = (a.il || "").localeCompare(b.il || "", 'tr-TR');
+            if(ilCompare !== 0) return ilCompare;
+            return (Number(b.m2) || 0) - (Number(a.m2) || 0); 
+        });
+
+        subelerData.forEach((sube, index) => {
+            window.aiScheduleData[sube.id] = {};
+            
+            let subeM2 = Number(sube.m2) || 200;
+            let reqGenel = Math.ceil(subeM2 / 200); 
+            if(reqGenel < 1) reqGenel = 1;
+            if(reqGenel > 6) reqGenel = 6;
+
+            let subeCamM2 = Number(sube.camM2);
+            if(!subeCamM2 || subeCamM2 === 0) subeCamM2 = subeM2 / 2;
+            
+            let reqCam = Math.ceil(subeCamM2 / 300);
+            if(reqCam < 1) reqCam = 1;
+            if(reqCam > 3) reqCam = 3;
+
+            // ADIM 1: ÖNCE CAM ATAMALARINI YAP (Rutin Temeli Oluştur)
+            let assignedCamDays = [null, null, null]; // 3 ayın atandığı gün hafızası
+
+            if (hasCam) {
+                for (let m = 0; m < 3; m++) {
+                    let assigned = false;
+                    let startDay = (m * 30) + 1;
+                    let endDay = (m * 30) + 30;
+                    
+                    // Kendi iline uygun ilk boşluk
+                    for(let d=startDay; d<=endDay; d++) {
+                        if (d % 7 === 0) continue;
+                        let isSameIl = !dailyUsage[d].camIl || dailyUsage[d].camIl === sube.il;
+                        if (dailyUsage[d].cam + reqCam <= capCam && isSameIl) {
+                            if (!window.aiScheduleData[sube.id][d]) window.aiScheduleData[sube.id][d] = {cam:0, genel:0, ekstra:0};
+                            window.aiScheduleData[sube.id][d].cam = reqCam;
+                            dailyUsage[d].cam += reqCam;
+                            dailyUsage[d].camIl = sube.il;
+                            assignedCamDays[m] = d;
+                            assigned = true; break;
+                        }
+                    }
+                    // İl uymazsa mecburi boşluk ara
+                    if(!assigned) {
+                        for(let d=startDay; d<=endDay; d++) {
+                            if (d % 7 === 0) continue;
+                            if (dailyUsage[d].cam + reqCam <= capCam) {
+                                if (!window.aiScheduleData[sube.id][d]) window.aiScheduleData[sube.id][d] = {cam:0, genel:0, ekstra:0};
+                                window.aiScheduleData[sube.id][d].cam = reqCam;
+                                dailyUsage[d].cam += reqCam;
+                                assignedCamDays[m] = d;
+                                assigned = true; break;
+                            }
+                        }
+                    }
+                    // Hiç yer yoksa en boş güne yığ (Taşeron Alarmı)
+                    if(!assigned) {
+                        let minUsage = 999; let targetDay = startDay;
+                        for(let d=startDay; d<=endDay; d++) {
+                            if(d%7===0) continue;
+                            if(dailyUsage[d].cam < minUsage) { minUsage = dailyUsage[d].cam; targetDay = d; }
+                        }
+                        if(!window.aiScheduleData[sube.id][targetDay]) window.aiScheduleData[sube.id][targetDay] = {cam:0, genel:0, ekstra:0};
+                        window.aiScheduleData[sube.id][targetDay].cam = reqCam;
+                        dailyUsage[targetDay].cam += reqCam;
+                        assignedCamDays[m] = targetDay;
+                    }
+                }
+            }
+
+            // ADIM 2: ŞİMDİ GENEL TEMİZLİĞİ DAĞIT (3 AYA EŞİT YAY, CAM İLE AYNI GÜNE DENK GETİR)
+            if (hasGenel) {
+                // Şubeyi hangi aya koyacağımızı belirle (0: 1.ay, 1: 2.ay, 2: 3.ay)
+                let targetMonthIndex = index % 3; 
+                
+                let startDay = (targetMonthIndex * 30) + 1;
+                let endDay = (targetMonthIndex * 30) + 30;
+                let assigned = false;
+
+                // TERCİH 1: (LOJİSTİK OPTİMİZASYONU) - Eğer bu ayda CAM varsa, Genel Temizliği de aynı güne koy!
+                let preferDay = assignedCamDays[targetMonthIndex];
+                if (preferDay && dailyUsage[preferDay].genel + reqGenel <= capGenel) {
+                    let isSameIl = !dailyUsage[preferDay].genelIl || dailyUsage[preferDay].genelIl === sube.il;
+                    if(isSameIl) {
+                        if(!window.aiScheduleData[sube.id][preferDay]) window.aiScheduleData[sube.id][preferDay] = {cam:0, genel:0, ekstra:0};
+                        window.aiScheduleData[sube.id][preferDay].genel = reqGenel;
+                        dailyUsage[preferDay].genel += reqGenel;
+                        dailyUsage[preferDay].genelIl = sube.il;
+                        assigned = true;
+                    }
+                }
+
+                // TERCİH 2: Cam ile aynı gün olmadıysa o ay içinde kendi iline uygun başka gün ara
+                if (!assigned) {
+                    for(let d=startDay; d<=endDay; d++) {
+                        if (d % 7 === 0) continue; 
+                        let isSameIl = !dailyUsage[d].genelIl || dailyUsage[d].genelIl === sube.il;
+                        if (dailyUsage[d].genel + reqGenel <= capGenel && isSameIl) { 
+                            if(!window.aiScheduleData[sube.id][d]) window.aiScheduleData[sube.id][d] = {cam:0, genel:0, ekstra:0};
+                            window.aiScheduleData[sube.id][d].genel = reqGenel;
+                            dailyUsage[d].genel += reqGenel;
+                            dailyUsage[d].genelIl = sube.il;
+                            assigned = true; break;
+                        }
+                    }
+                }
+
+                // TERCİH 3: İl uymasa da o ay içinde boş yer ara
+                if(!assigned) {
+                    for(let d=startDay; d<=endDay; d++) {
+                        if (d % 7 === 0) continue; 
+                        if (dailyUsage[d].genel + reqGenel <= capGenel) { 
+                            if(!window.aiScheduleData[sube.id][d]) window.aiScheduleData[sube.id][d] = {cam:0, genel:0, ekstra:0};
+                            window.aiScheduleData[sube.id][d].genel = reqGenel;
+                            dailyUsage[d].genel += reqGenel;
+                            assigned = true; break;
+                        }
+                    }
+                }
+
+                // TERCİH 4: O ay tamamen doluysa en az yoğun güne taşırt (Taşeron alarmı yakar)
+                if(!assigned) {
+                    let minUsage = 999; let targetDay = startDay;
+                    for(let d=startDay; d<=endDay; d++) {
+                        if(d%7===0) continue;
+                        if(dailyUsage[d].genel < minUsage) { minUsage = dailyUsage[d].genel; targetDay = d; }
+                    }
+                    if(!window.aiScheduleData[sube.id][targetDay]) window.aiScheduleData[sube.id][targetDay] = {cam:0, genel:0, ekstra:0};
+                    window.aiScheduleData[sube.id][targetDay].genel = reqGenel;
+                    dailyUsage[targetDay].genel += reqGenel;
+                }
+            }
+        });
+    }
+
+    function changeScheduleMonth(month) {
+        window.currentScheduleMonth = month;
+        document.querySelectorAll('#planlama-modulu .btn-group .btn').forEach(b => b.classList.remove('active'));
+        if(month === 'all') document.getElementById('btnAyAll').classList.add('active');
+        else document.getElementById('btnAy' + month).classList.add('active');
+        renderScheduleGrid();
+    }
+
+    function renderScheduleGrid() {
+        if(!currentGeneratedQuote || !currentGeneratedQuote.subeler) return;
+        
+        const ayarlar = JSON.parse(localStorage.getItem(KEYS.AYARLAR)) || {};
+        const capCam = Number(ayarlar.mevcutCam) || 0;
+        const capGenel = Number(ayarlar.mevcutGenel) || 0;
+
+        const thead = document.getElementById('scheduleThead');
+        const tbody = document.getElementById('scheduleTbody');
+        
+        let startDay = 1, endDay = 30;
+        if(window.currentScheduleMonth === 2) { startDay = 31; endDay = 60; }
+        else if(window.currentScheduleMonth === 3) { startDay = 61; endDay = 90; }
+        else if(window.currentScheduleMonth === 'all') { startDay = 1; endDay = 90; }
+
+        let dailyTotals = {};
+        for(let d = startDay; d <= endDay; d++) dailyTotals[d] = {cam: 0, genel: 0};
+
+        let trHtml = "";
+        let sortedSubeler = [...currentGeneratedQuote.subeler].sort((a, b) => a.il.localeCompare(b.il, 'tr-TR'));
+        
+        let hasCamReq = currentGeneratedQuote.hizmetler.some(s => s.ad.toLowerCase().includes("cam"));
+        let hasGenelReq = currentGeneratedQuote.hizmetler.some(s => s.ad.toLowerCase().includes("genel"));
+
+        sortedSubeler.forEach(sube => {
+            let ilNormal = sube.il.trim().toLocaleLowerCase('tr-TR');
+            let rowBg = '';
+            if(ilNormal === 'kocaeli') rowBg = 'bg-kocaeli';
+            else if(ilNormal === 'sakarya') rowBg = 'bg-sakarya';
+            else if(ilNormal === 'yalova') rowBg = 'bg-yalova';
+
+            let camM1 = 0, camM2 = 0, camM3 = 0;
+            let genelTotal = 0;
+            
+            if(window.aiScheduleData[sube.id]) {
+                for(let d=1; d<=90; d++) {
+                    let cell = window.aiScheduleData[sube.id][d];
+                    if(cell) {
+                        if(cell.cam > 0) {
+                            if(d <= 30) camM1++;
+                            else if(d <= 60) camM2++;
+                            else camM3++;
+                        }
+                        if(cell.genel > 0) genelTotal++;
+                    }
+                }
+            }
+
+            let uyariHTML = "";
+            let eksikler = [];
+            let fazlalar = []; // YENİ: FAZLA PLANLAMA LİSTESİ
+
+            // Eksik Kontrolü
+            if(hasCamReq && (camM1 === 0 || camM2 === 0 || camM3 === 0)) eksikler.push("Cam");
+            if(hasGenelReq && genelTotal === 0) eksikler.push("Genel");
+            
+            // Fazla Kontrolü (Aynı periyot içinde 1'den fazla atandıysa)
+            if(hasCamReq && (camM1 > 1 || camM2 > 1 || camM3 > 1)) fazlalar.push("Cam");
+            if(hasGenelReq && genelTotal > 1) fazlalar.push("Genel");
+            
+            let extraStyle = "";
+            if(eksikler.length > 0) {
+                uyariHTML += `<br><span class="badge bg-danger mt-1 shadow-sm" style="font-size:9px; white-space:normal; line-height:1.2;">⚠️ EKSİK: ${eksikler.join(', ')}</span>`;
+                extraStyle = "border-left: 4px solid #dc3545;"; 
+            }
+            if(fazlalar.length > 0) {
+                uyariHTML += `<br><span class="badge bg-warning text-dark mt-1 shadow-sm" style="font-size:9px; white-space:normal; line-height:1.2;">⚡ FAZLA: ${fazlalar.join(', ')}</span>`;
+                if(extraStyle === "") extraStyle = "border-left: 4px solid #ffc107;"; 
+            }
+
+            trHtml += `<tr><td class="sticky-col ${rowBg}" style="${extraStyle}" title="${sube.adi}">${sube.adi} <br><small class="text-muted" style="font-size:9px;">${sube.m2 || 0} m² | ${sube.il}</small>${uyariHTML}</td>`;
+            
+            for(let d = startDay; d <= endDay; d++) {
+                let cell = window.aiScheduleData[sube.id] && window.aiScheduleData[sube.id][d] ? window.aiScheduleData[sube.id][d] : {cam:0, genel:0, ekstra:0};
+                let cellText = "";
+                
+                if(cell.cam > 0) { cellText += `<div class='text-primary fw-bold' style='font-size:10px;'>${cell.cam}🪟</div>`; dailyTotals[d].cam += cell.cam; }
+                if(cell.genel > 0) { cellText += `<div class='text-secondary fw-bold' style='font-size:10px;'>${cell.genel}🧹</div>`; dailyTotals[d].genel += cell.genel; }
+                if(cell.ekstra > 0) { cellText += `<div class='text-warning fw-bold text-dark' style='font-size:10px;'>${cell.ekstra}✨</div>`; }
+                
+                // YENİ: Hücreye Tıklayınca openCellMenu() çalışacak
+                trHtml += `<td class="${(d % 7 === 0) ? 'sunday-col' : ''}" onclick="openCellMenu(event, '${sube.id}', ${d})">${cellText}</td>`;
+            }
+            trHtml += `</tr>`;
+        });
+        tbody.innerHTML = trHtml;
+
+        let thHtml = `<tr style="height:36px;"><th class="sticky-col bg-dark text-white" style="z-index:4; top:0; padding:6px;">ŞUBE ADI & İL</th>`;
+        for(let d = startDay; d <= endDay; d++) {
+            let isSunday = (d % 7 === 0);
+            thHtml += `<th class="${isSunday ? 'bg-danger text-white' : ''}" style="top:0; z-index:3; padding:6px; min-width:48px;">${d}. Gün</th>`;
+        }
+        thHtml += `</tr>`;
+
+        thHtml += `<tr style="box-shadow: 0 4px 4px -2px rgba(0,0,0,0.1);"><th class="sticky-col bg-secondary text-white text-end pe-2" style="z-index:4; top:35px; font-size:10px; padding:4px;">GÜNLÜK PERSONEL DURUMU:</th>`;
+        for(let d = startDay; d <= endDay; d++) {
+            if(d % 7 === 0) {
+                thHtml += `<th class="bg-danger text-white text-center align-middle border-start border-end" style="top:35px; z-index:3; font-size:10px; padding:4px;">TATİL</th>`;
+                continue;
+            }
+
+            let reqCam = dailyTotals[d].cam;
+            let reqGenel = dailyTotals[d].genel;
+            let statusHtml = "";
+            
+            let idleCam = Math.max(0, capCam - reqCam);
+            let idleGenel = Math.max(0, capGenel - reqGenel);
+            let taseronCam = Math.max(0, reqCam - capCam);
+            let taseronGenel = Math.max(0, reqGenel - capGenel);
+
+            if (reqCam === 0 && reqGenel === 0) {
+                if(capCam > 0 || capGenel > 0) {
+                     statusHtml += `<div class="d-flex flex-column gap-1 align-items-center justify-content-center" style="font-size:9px; line-height:1.1;">`;
+                     if(capCam > 0) statusHtml += `<span class="text-success fw-bold border border-success rounded px-1 w-100 bg-white shadow-sm">🪟 +${capCam} Boş</span>`;
+                     if(capGenel > 0) statusHtml += `<span class="text-success fw-bold border border-success rounded px-1 w-100 bg-white shadow-sm">🧹 +${capGenel} Boş</span>`;
+                     statusHtml += `</div>`;
+                } else {
+                     statusHtml = `<span class="text-muted">-</span>`;
+                }
+            } else {
+                statusHtml += `<div class="d-flex flex-column gap-1 align-items-center justify-content-center" style="font-size:9px; line-height:1.1;">`;
+                
+                if (reqCam > 0 || capCam > 0) {
+                    if (taseronCam > 0) statusHtml += `<span class="text-danger fw-bold border border-danger rounded px-1 w-100 bg-white shadow-sm py-1">🪟 -${taseronCam} Taş.</span>`;
+                    else if (idleCam > 0) statusHtml += `<span class="text-success fw-bold border border-success rounded px-1 w-100 bg-white shadow-sm py-1">🪟 +${idleCam} Boş</span>`;
+                    else statusHtml += `<span class="text-primary fw-bold border border-primary rounded px-1 w-100 bg-white shadow-sm py-1">🪟 TAM</span>`;
+                }
+
+                if (reqGenel > 0 || capGenel > 0) {
+                    if (taseronGenel > 0) statusHtml += `<span class="text-danger fw-bold border border-danger rounded px-1 w-100 bg-white shadow-sm py-1">🧹 -${taseronGenel} Taş.</span>`;
+                    else if (idleGenel > 0) statusHtml += `<span class="text-success fw-bold border border-success rounded px-1 w-100 bg-white shadow-sm py-1">🧹 +${idleGenel} Boş</span>`;
+                    else statusHtml += `<span class="text-secondary fw-bold border border-secondary rounded px-1 w-100 bg-white shadow-sm py-1">🧹 TAM</span>`;
+                }
+                statusHtml += `</div>`;
+            }
+
+            thHtml += `<th class="text-center align-middle border-start border-end" style="background:#e2e8f0; top:35px; z-index:3; padding:4px;">${statusHtml}</th>`;
+        }
+        thHtml += `</tr>`;
+        thead.innerHTML = thHtml;
+
+        const personelList = getData(KEYS.PERSONEL);
+        const baseDailyCost = personelList.length > 0 ? personelList[0].maliyet : 1500; 
+        
+        let totalCamShifts = 0; let totalGenelShifts = 0; let totalEkstraShifts = 0;
+        let taseronCamShifts = 0; let taseronGenelShifts = 0;
+        
+        for(let d = startDay; d <= endDay; d++) {
+            if(d % 7 !== 0) {
+                taseronCamShifts += Math.max(0, dailyTotals[d].cam - capCam);
+                taseronGenelShifts += Math.max(0, dailyTotals[d].genel - capGenel);
+            }
+
+            totalCamShifts += dailyTotals[d].cam;
+            totalGenelShifts += dailyTotals[d].genel;
+            
+            currentGeneratedQuote.subeler.forEach(s => {
+                if(window.aiScheduleData[s.id] && window.aiScheduleData[s.id][d] && window.aiScheduleData[s.id][d].ekstra) {
+                    totalEkstraShifts += window.aiScheduleData[s.id][d].ekstra;
+                }
+            });
+        }
+
+        let costCam = totalCamShifts * baseDailyCost;
+        let costGenel = totalGenelShifts * baseDailyCost;
+        let costEkstra = totalEkstraShifts * baseDailyCost;
+        let totalCost = costCam + costGenel + costEkstra;
+        
+        let monthLabel = window.currentScheduleMonth === 'all' ? "3 Aylık" : window.currentScheduleMonth + ". Ay";
+
+        document.getElementById('scheduleCostSummary').innerHTML = `
+            <div class="w-100 d-flex flex-column gap-2">
+                <div class="d-flex justify-content-between align-items-center">
+                    <div>
+                        <span class="fw-bold text-dark">📊 ${monthLabel} Adam/Gün:</span> 
+                        <span class="badge bg-info text-dark ms-2 border border-info">
+                            🪟 ${totalCamShifts} Cam <small class="text-danger fw-bold">(${taseronCamShifts} Taşeron)</small>
+                        </span>
+                        <span class="badge bg-secondary ms-1">
+                            🧹 ${totalGenelShifts} Genel <small class="text-danger fw-bold">(${taseronGenelShifts} Taşeron)</small>
+                        </span>
+                        <span class="badge bg-warning text-dark ms-1">✨ ${totalEkstraShifts} Ekstra</span>
+                    </div>
+                    <div class="text-end">
+                        <span class="fw-bold text-dark me-2">Toplam Personel Bütçesi:</span>
+                        <span class="badge bg-danger fs-6">${totalCost.toLocaleString('tr-TR')} ₺</span>
+                    </div>
+                </div>
+                <div class="d-flex justify-content-end gap-3 text-muted" style="font-size: 11px;">
+                    <span class="fw-bold text-dark">Maliyet Dağılımı:</span>
+                    <span>🪟 Cam: <b class="text-primary">${costCam.toLocaleString('tr-TR')} ₺</b></span>
+                    <span>🧹 Genel: <b class="text-secondary">${costGenel.toLocaleString('tr-TR')} ₺</b></span>
+                    <span>✨ Ekstra: <b class="text-warning text-dark">${costEkstra.toLocaleString('tr-TR')} ₺</b></span>
+                </div>
+            </div>
+        `;
+    }
+
+    // YENİ: YÜZEN MENÜ KONTROL MERKEZİ (CONTEXT MENU)
+    let activeCell = { subeId: null, day: null };
+
+    function openCellMenu(event, subeId, day) {
+        event.stopPropagation(); // Menünün hemen kapanmasını engeller
+        
+        if(!window.aiScheduleData[subeId]) window.aiScheduleData[subeId] = {};
+        if(!window.aiScheduleData[subeId][day]) window.aiScheduleData[subeId][day] = {cam:0, genel:0, ekstra:0};
+        
+        let cell = window.aiScheduleData[subeId][day];
+        const sube = currentGeneratedQuote.subeler.find(s => s.id == subeId);
+        
+        document.getElementById('cMenuCam').value = cell.cam || 0;
+        document.getElementById('cMenuGenel').value = cell.genel || 0;
+        document.getElementById('cMenuEkstra').value = cell.ekstra || 0;
+        document.getElementById('cMenuTitle').innerHTML = `${sube.adi}<br><small>${day}. Gün Görev Dağılımı</small>`;
+        
+        activeCell = { subeId, day };
+        
+        let menu = document.getElementById('cellMenu');
+        menu.style.display = 'block';
+        
+        // Farenin konumuna göre menüyü yerleştir, ekrandan taşmasını engelle
+        let x = event.pageX + 10;
+        let y = event.pageY + 10;
+        if (x + 190 > window.innerWidth) x = window.innerWidth - 200;
+        
+        menu.style.left = x + 'px';
+        menu.style.top = y + 'px';
+    }
+    
+    function updateCellVal(type, delta) {
+        if(!activeCell.subeId) return;
+        let cell = window.aiScheduleData[activeCell.subeId][activeCell.day];
+        
+        if (type === 'sil') {
+            cell.cam = 0; cell.genel = 0; cell.ekstra = 0;
+        } else {
+            cell[type] += delta;
+            if(cell[type] < 0) cell[type] = 0; // Eksi sayıya düşmesini engelle
+        }
+        
+        // Menüdeki rakamları anında güncelle
+        document.getElementById('cMenuCam').value = cell.cam;
+        document.getElementById('cMenuGenel').value = cell.genel;
+        document.getElementById('cMenuEkstra').value = cell.ekstra;
+        
+        // Tabloyu arka planda yenile (Uyarıları anında yakalamak için)
+        renderScheduleGrid();
+    }
+    
+    function closeCellMenu() {
+        document.getElementById('cellMenu').style.display = 'none';
+        activeCell = { subeId: null, day: null };
+    }
+    
+    // Ekranda menü dışı boş bir yere tıklayınca menüyü kapat
+    document.addEventListener('click', function(e) {
+        let menu = document.getElementById('cellMenu');
+        if(menu.style.display === 'block' && !menu.contains(e.target)) {
+            closeCellMenu();
+        }
+    });
+    
+    function printSchedule() {
+        const tableHtml = document.querySelector('.schedule-table').outerHTML;
+        let monthLabel = window.currentScheduleMonth === 'all' ? "3 Aylık Tüm Plan" : window.currentScheduleMonth + ". Ay Planı";
+        let firma = JSON.parse(localStorage.getItem(KEYS.FIRMA)) || {}; 
+        
+        // Özet çubuğundaki değerleri al
+        const totalBudget = document.querySelector('#scheduleCostSummary .badge.bg-danger').innerText;
+        
+        const printWindow = window.open('', '_blank');
+        printWindow.document.write(`
+            <html>
+            <head>
+                <title>İstihdam ve Planlama Matrisi</title>
+                <style>
+                    body { font-family: Arial, sans-serif; font-size: 10px; margin: 15px; }
+                    h2 { text-align: center; color: #333; margin-bottom: 5px; text-transform:uppercase; font-size:16px;}
+                    .summary-box { border: 1px solid #000; padding: 8px; margin-bottom: 10px; background: #f2f2f2; text-align:center; font-size:12px; font-weight:bold;}
+                    .schedule-table { width: 100%; border-collapse: collapse; text-align: center; font-size: 9px; }
+                    .schedule-table th, .schedule-table td { border: 1px solid #000; padding: 2px; }
+                    .schedule-table th { background-color: #e0e0e0 !important; font-weight: bold; -webkit-print-color-adjust: exact; }
+                    .sunday-col { background-color: #ffe3e3 !important; -webkit-print-color-adjust: exact; }
+                    .bg-dark { background-color: #333 !important; color: #fff !important; -webkit-print-color-adjust: exact;}
+                    .bg-danger { background-color: #dc3545 !important; color: #fff !important; -webkit-print-color-adjust: exact;}
+                    .text-danger { color: #dc3545 !important; }
+                    /* Ekranda görünen küçük kutuları gizle, düz metin yazsın */
+                    .badge { border:none; padding:0; background:transparent!important; color:#000!important;}
+                    @media print {
+                        @page { size: landscape; margin: 5mm; }
+                        body { margin: 0; -webkit-print-color-adjust: exact; print-color-adjust: exact; }
+                    }
+                </style>
+            </head>
+            <body>
+                <h2>${firma.unvan || 'Temizlik Operasyon'} - ${monthLabel} Görev Matrisi</h2>
+                <div class="summary-box">Aylık Tahmini Toplam Personel Bütçesi: ${totalBudget}</div>
+                ${tableHtml}
+            </body>
+            </html>
+        `);
+        printWindow.document.close();
+        setTimeout(() => printWindow.print(), 800);
+    }
+    window.onload = renderAll; 
+</script>
+<div id="cellMenu" class="card shadow-lg border-primary" style="display:none; position:absolute; z-index:9999; width:190px; font-size:11px;">
+    <div class="card-header bg-primary text-white p-2 text-center fw-bold" style="font-size:12px;">
+        <span id="cMenuTitle"></span>
+    </div>
+    <div class="card-body p-2">
+        <div class="d-flex justify-content-between align-items-center mb-2">
+            <span class="fw-bold text-primary">🪟 Cam:</span>
+            <div class="input-group input-group-sm w-50 shadow-sm">
+                <button class="btn btn-outline-secondary py-0 px-2 fw-bold" onclick="updateCellVal('cam', -1)">-</button>
+                <input type="text" id="cMenuCam" class="form-control text-center py-0 px-1 fw-bold text-dark" readonly>
+                <button class="btn btn-outline-secondary py-0 px-2 fw-bold" onclick="updateCellVal('cam', 1)">+</button>
+            </div>
+        </div>
+        <div class="d-flex justify-content-between align-items-center mb-2">
+            <span class="fw-bold text-secondary">🧹 Genel:</span>
+            <div class="input-group input-group-sm w-50 shadow-sm">
+                <button class="btn btn-outline-secondary py-0 px-2 fw-bold" onclick="updateCellVal('genel', -1)">-</button>
+                <input type="text" id="cMenuGenel" class="form-control text-center py-0 px-1 fw-bold text-dark" readonly>
+                <button class="btn btn-outline-secondary py-0 px-2 fw-bold" onclick="updateCellVal('genel', 1)">+</button>
+            </div>
+        </div>
+        <div class="d-flex justify-content-between align-items-center mb-2">
+            <span class="fw-bold text-warning text-dark">✨ Ekstra:</span>
+            <div class="input-group input-group-sm w-50 shadow-sm">
+                <button class="btn btn-outline-secondary py-0 px-2 fw-bold" onclick="updateCellVal('ekstra', -1)">-</button>
+                <input type="text" id="cMenuEkstra" class="form-control text-center py-0 px-1 fw-bold text-dark" readonly>
+                <button class="btn btn-outline-secondary py-0 px-2 fw-bold" onclick="updateCellVal('ekstra', 1)">+</button>
+            </div>
+        </div>
+        <div class="d-flex gap-1 mt-3 border-top pt-2">
+            <button class="btn btn-danger btn-sm w-50 py-1 fw-bold" onclick="updateCellVal('sil', 0)">🗑️ Sıfırla</button>
+            <button class="btn btn-success btn-sm w-50 py-1 fw-bold" onclick="closeCellMenu()">✅ Tamam</button>
+        </div>
+    </div>
+</div>
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+</body>
+</html>
