@@ -1469,6 +1469,22 @@
         }
     });
 
+    // YENİ EKLENEN: FİRMA BİLGİLERİNİ BULUTA KAYDETME FONKSİYONU
+    function saveFirmaBilgileri() {
+        const unvan = document.getElementById('firmaUnvani').value.trim();
+        const iletisim = document.getElementById('firmaIletisim').value.trim();
+        const logo = document.getElementById('firmaLogoOnizleme').src;
+
+        const firmaData = {
+            unvan: unvan,
+            iletisim: iletisim,
+            logo: logo && logo.startsWith('data:image') ? logo : "" // Sadece resim yüklendiyse kaydet
+        };
+
+        saveData(KEYS.FIRMA, firmaData); // saveData fonksiyonu hem bilgisayara hem buluta (Firebase) yollar
+        alert("Firma bilgileri ve logo başarıyla buluta kaydedildi!");
+    }
+
     // ================== TEKLİF KAYDETME, LİSTELEME, DÜZENLEME ==================
     function saveQuote() {
         if(!currentGeneratedQuote) return alert("Lütfen önce AI Teklifini hesaplayın.");
