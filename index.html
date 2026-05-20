@@ -2436,6 +2436,8 @@
         window.aiScheduleData = {};
         const allSubeler = getData(KEYS.SUBELER);
         const ayarlar = JSON.parse(localStorage.getItem(KEYS.AYARLAR)) || {};
+        
+        // Kapasiteler (Araç/Tim mantığıyla)
         const capCam = Number(ayarlar.mevcutCam) || 2; 
         const capGenel = Number(ayarlar.mevcutGenel) || 3; 
 
@@ -2445,6 +2447,7 @@
         let dailyUsage = {};
         for(let d=1; d<=90; d++) dailyUsage[d] = { cam: 0, genel: 0, camIl: null, genelIl: null };
 
+        // Şubeleri İl ve M2'ye göre sırala (Ekiplerin aynı ilde kalmasını sağlamak için)
         let subelerData = checkedSubeler.map(cb => allSubeler.find(x => x.id == cb.value)).filter(Boolean);
         subelerData.sort((a, b) => {
             let ilCompare = (a.il || "").localeCompare(b.il || "", 'tr-TR');
@@ -2452,36 +2455,48 @@
             return (Number(b.m2) || 0) - (Number(a.m2) || 0); 
         });
 
+        // Merkez İller (Kendi araç ve timlerimizin çalıştığı iller)
+        const merkezIller = ['kocaeli', 'sakarya'];
+
         subelerData.forEach((sube, index) => {
             window.aiScheduleData[sube.id] = {};
-            
+            let ilNormal = sube.il.trim().toLocaleLowerCase('tr-TR');
+            let isUzakBolge = !merkezIller.includes(ilNormal); // Uzak bölgeyse taşeron gidecek
+
             let subeM2 = Number(sube.m2) || 200;
             let reqGenel = Math.ceil(subeM2 / 200); 
-            if(reqGenel < 1) reqGenel = 1;
-            if(reqGenel > 6) reqGenel = 6;
+            if(reqGenel < 1) reqGenel = 1; if(reqGenel > 6) reqGenel = 6;
 
             let subeCamM2 = Number(sube.camM2);
             if(!subeCamM2 || subeCamM2 === 0) subeCamM2 = subeM2 / 2;
-            
             let reqCam = Math.ceil(subeCamM2 / 300);
-            if(reqCam < 1) reqCam = 1;
-            if(reqCam > 3) reqCam = 3;
+            if(reqCam < 1) reqCam = 1; if(reqCam > 3) reqCam = 3;
 
-            // ADIM 1: ÖNCE CAM ATAMALARINI YAP (Rutin Temeli Oluştur)
-            let assignedCamDays = [null, null, null]; // 3 ayın atandığı gün hafızası
+            let assignedCamDays = [null, null, null]; 
 
+            // CAM ATAMALARI
             if (hasCam) {
                 for (let m = 0; m < 3; m++) {
-                    let assigned = false;
                     let startDay = (m * 30) + 1;
                     let endDay = (m * 30) + 30;
                     
-                    // Kendi iline uygun ilk boşluk
+                    // UZAK BÖLGE İSE DİREKT TAŞERON YAZ VE GEÇ (Kadrolu timi bölme)
+                    if (isUzakBolge) {
+                        let targetDay = startDay + (index % 20) + 1; // Rastgele ama ardışık olmayan bir gün
+                        if (targetDay % 7 === 0) targetDay++; // Pazara denk gelmesin
+                        if (!window.aiScheduleData[sube.id][targetDay]) window.aiScheduleData[sube.id][targetDay] = {cam:0, genel:0, ekstra:0, taseronCam:0, taseronGenel:0};
+                        window.aiScheduleData[sube.id][targetDay].taseronCam = reqCam;
+                        assignedCamDays[m] = targetDay;
+                        continue;
+                    }
+
+                    // MERKEZ BÖLGE İSE KADROLU TİMİ ATA
+                    let assigned = false;
                     for(let d=startDay; d<=endDay; d++) {
                         if (d % 7 === 0) continue;
                         let isSameIl = !dailyUsage[d].camIl || dailyUsage[d].camIl === sube.il;
                         if (dailyUsage[d].cam + reqCam <= capCam && isSameIl) {
-                            if (!window.aiScheduleData[sube.id][d]) window.aiScheduleData[sube.id][d] = {cam:0, genel:0, ekstra:0};
+                            if (!window.aiScheduleData[sube.id][d]) window.aiScheduleData[sube.id][d] = {cam:0, genel:0, ekstra:0, taseronCam:0, taseronGenel:0};
                             window.aiScheduleData[sube.id][d].cam = reqCam;
                             dailyUsage[d].cam += reqCam;
                             dailyUsage[d].camIl = sube.il;
@@ -2489,12 +2504,11 @@
                             assigned = true; break;
                         }
                     }
-                    // İl uymazsa mecburi boşluk ara
                     if(!assigned) {
                         for(let d=startDay; d<=endDay; d++) {
                             if (d % 7 === 0) continue;
                             if (dailyUsage[d].cam + reqCam <= capCam) {
-                                if (!window.aiScheduleData[sube.id][d]) window.aiScheduleData[sube.id][d] = {cam:0, genel:0, ekstra:0};
+                                if (!window.aiScheduleData[sube.id][d]) window.aiScheduleData[sube.id][d] = {cam:0, genel:0, ekstra:0, taseronCam:0, taseronGenel:0};
                                 window.aiScheduleData[sube.id][d].cam = reqCam;
                                 dailyUsage[d].cam += reqCam;
                                 assignedCamDays[m] = d;
@@ -2502,36 +2516,37 @@
                             }
                         }
                     }
-                    // Hiç yer yoksa en boş güne yığ (Taşeron Alarmı)
+                    // Kadrolu yer yoksa merkeze de Taşeron çağır
                     if(!assigned) {
-                        let minUsage = 999; let targetDay = startDay;
-                        for(let d=startDay; d<=endDay; d++) {
-                            if(d%7===0) continue;
-                            if(dailyUsage[d].cam < minUsage) { minUsage = dailyUsage[d].cam; targetDay = d; }
-                        }
-                        if(!window.aiScheduleData[sube.id][targetDay]) window.aiScheduleData[sube.id][targetDay] = {cam:0, genel:0, ekstra:0};
-                        window.aiScheduleData[sube.id][targetDay].cam = reqCam;
-                        dailyUsage[targetDay].cam += reqCam;
+                        let targetDay = startDay + (index % 15);
+                        if(targetDay%7===0) targetDay++;
+                        if(!window.aiScheduleData[sube.id][targetDay]) window.aiScheduleData[sube.id][targetDay] = {cam:0, genel:0, ekstra:0, taseronCam:0, taseronGenel:0};
+                        window.aiScheduleData[sube.id][targetDay].taseronCam = reqCam;
                         assignedCamDays[m] = targetDay;
                     }
                 }
             }
 
-            // ADIM 2: ŞİMDİ GENEL TEMİZLİĞİ DAĞIT (3 AYA EŞİT YAY, CAM İLE AYNI GÜNE DENK GETİR)
+            // GENEL TEMİZLİK ATAMALARI
             if (hasGenel) {
-                // Şubeyi hangi aya koyacağımızı belirle (0: 1.ay, 1: 2.ay, 2: 3.ay)
                 let targetMonthIndex = index % 3; 
-                
                 let startDay = (targetMonthIndex * 30) + 1;
                 let endDay = (targetMonthIndex * 30) + 30;
-                let assigned = false;
 
-                // TERCİH 1: (LOJİSTİK OPTİMİZASYONU) - Eğer bu ayda CAM varsa, Genel Temizliği de aynı güne koy!
+                if (isUzakBolge) {
+                    let preferDay = assignedCamDays[targetMonthIndex] || startDay + (index % 10) + 2;
+                    if(preferDay%7===0) preferDay++;
+                    if(!window.aiScheduleData[sube.id][preferDay]) window.aiScheduleData[sube.id][preferDay] = {cam:0, genel:0, ekstra:0, taseronCam:0, taseronGenel:0};
+                    window.aiScheduleData[sube.id][preferDay].taseronGenel = reqGenel;
+                    return;
+                }
+
+                let assigned = false;
                 let preferDay = assignedCamDays[targetMonthIndex];
                 if (preferDay && dailyUsage[preferDay].genel + reqGenel <= capGenel) {
                     let isSameIl = !dailyUsage[preferDay].genelIl || dailyUsage[preferDay].genelIl === sube.il;
                     if(isSameIl) {
-                        if(!window.aiScheduleData[sube.id][preferDay]) window.aiScheduleData[sube.id][preferDay] = {cam:0, genel:0, ekstra:0};
+                        if(!window.aiScheduleData[sube.id][preferDay]) window.aiScheduleData[sube.id][preferDay] = {cam:0, genel:0, ekstra:0, taseronCam:0, taseronGenel:0};
                         window.aiScheduleData[sube.id][preferDay].genel = reqGenel;
                         dailyUsage[preferDay].genel += reqGenel;
                         dailyUsage[preferDay].genelIl = sube.il;
@@ -2539,13 +2554,12 @@
                     }
                 }
 
-                // TERCİH 2: Cam ile aynı gün olmadıysa o ay içinde kendi iline uygun başka gün ara
                 if (!assigned) {
                     for(let d=startDay; d<=endDay; d++) {
                         if (d % 7 === 0) continue; 
                         let isSameIl = !dailyUsage[d].genelIl || dailyUsage[d].genelIl === sube.il;
                         if (dailyUsage[d].genel + reqGenel <= capGenel && isSameIl) { 
-                            if(!window.aiScheduleData[sube.id][d]) window.aiScheduleData[sube.id][d] = {cam:0, genel:0, ekstra:0};
+                            if(!window.aiScheduleData[sube.id][d]) window.aiScheduleData[sube.id][d] = {cam:0, genel:0, ekstra:0, taseronCam:0, taseronGenel:0};
                             window.aiScheduleData[sube.id][d].genel = reqGenel;
                             dailyUsage[d].genel += reqGenel;
                             dailyUsage[d].genelIl = sube.il;
@@ -2554,29 +2568,11 @@
                     }
                 }
 
-                // TERCİH 3: İl uymasa da o ay içinde boş yer ara
                 if(!assigned) {
-                    for(let d=startDay; d<=endDay; d++) {
-                        if (d % 7 === 0) continue; 
-                        if (dailyUsage[d].genel + reqGenel <= capGenel) { 
-                            if(!window.aiScheduleData[sube.id][d]) window.aiScheduleData[sube.id][d] = {cam:0, genel:0, ekstra:0};
-                            window.aiScheduleData[sube.id][d].genel = reqGenel;
-                            dailyUsage[d].genel += reqGenel;
-                            assigned = true; break;
-                        }
-                    }
-                }
-
-                // TERCİH 4: O ay tamamen doluysa en az yoğun güne taşırt (Taşeron alarmı yakar)
-                if(!assigned) {
-                    let minUsage = 999; let targetDay = startDay;
-                    for(let d=startDay; d<=endDay; d++) {
-                        if(d%7===0) continue;
-                        if(dailyUsage[d].genel < minUsage) { minUsage = dailyUsage[d].genel; targetDay = d; }
-                    }
-                    if(!window.aiScheduleData[sube.id][targetDay]) window.aiScheduleData[sube.id][targetDay] = {cam:0, genel:0, ekstra:0};
-                    window.aiScheduleData[sube.id][targetDay].genel = reqGenel;
-                    dailyUsage[targetDay].genel += reqGenel;
+                    let targetDay = startDay + (index % 15);
+                    if(targetDay%7===0) targetDay++;
+                    if(!window.aiScheduleData[sube.id][targetDay]) window.aiScheduleData[sube.id][targetDay] = {cam:0, genel:0, ekstra:0, taseronCam:0, taseronGenel:0};
+                    window.aiScheduleData[sube.id][targetDay].taseronGenel = reqGenel;
                 }
             }
         });
@@ -2656,7 +2652,8 @@
         else if(window.currentScheduleMonth === 'all') { startDay = 1; endDay = 90; }
 
         let dailyTotals = {};
-        for(let d = startDay; d <= endDay; d++) dailyTotals[d] = {cam: 0, genel: 0};
+        // HATA DÜZELTİLDİ: Taşeron verileri de günlük toplamlara eklendi
+        for(let d = startDay; d <= endDay; d++) dailyTotals[d] = {cam: 0, genel: 0, taseronCam: 0, taseronGenel: 0};
 
         let trHtml = "";
         let sortedSubeler = [...currentGeneratedQuote.subeler].sort((a, b) => a.il.localeCompare(b.il, 'tr-TR'));
@@ -2665,7 +2662,7 @@
         let hasGenelReq = currentGeneratedQuote.hizmetler.some(s => s.ad.toLowerCase().includes("genel"));
 
         sortedSubeler.forEach(sube => {
-            let ilNormal = sube.il.trim().toLocaleLowerCase('tr-TR');
+            let ilNormal = (sube.il || "").trim().toLocaleLowerCase('tr-TR');
             let rowBg = '';
             if(ilNormal === 'kocaeli') rowBg = 'bg-kocaeli';
             else if(ilNormal === 'sakarya') rowBg = 'bg-sakarya';
@@ -2678,25 +2675,24 @@
                 for(let d=1; d<=90; d++) {
                     let cell = window.aiScheduleData[sube.id][d];
                     if(cell) {
-                        if(cell.cam > 0) {
+                        // HATA DÜZELTİLDİ: Kadrolu YOKSA ama Taşeron VARSA, Eksik uyarısı verme!
+                        if((cell.cam > 0) || (cell.taseronCam > 0)) {
                             if(d <= 30) camM1++;
                             else if(d <= 60) camM2++;
                             else camM3++;
                         }
-                        if(cell.genel > 0) genelTotal++;
+                        if((cell.genel > 0) || (cell.taseronGenel > 0)) genelTotal++;
                     }
                 }
             }
 
             let uyariHTML = "";
             let eksikler = [];
-            let fazlalar = []; // YENİ: FAZLA PLANLAMA LİSTESİ
+            let fazlalar = []; 
 
-            // Eksik Kontrolü
             if(hasCamReq && (camM1 === 0 || camM2 === 0 || camM3 === 0)) eksikler.push("Cam");
             if(hasGenelReq && genelTotal === 0) eksikler.push("Genel");
             
-            // Fazla Kontrolü (Aynı periyot içinde 1'den fazla atandıysa)
             if(hasCamReq && (camM1 > 1 || camM2 > 1 || camM3 > 1)) fazlalar.push("Cam");
             if(hasGenelReq && genelTotal > 1) fazlalar.push("Genel");
             
@@ -2713,16 +2709,20 @@
             trHtml += `<tr><td class="sticky-col ${rowBg}" style="${extraStyle}" title="${sube.adi}">${sube.adi} <br><small class="text-muted" style="font-size:9px;">${sube.m2 || 0} m² | ${sube.il}</small>${uyariHTML}</td>`;
             
             for(let d = startDay; d <= endDay; d++) {
-                let cell = window.aiScheduleData[sube.id] && window.aiScheduleData[sube.id][d] ? window.aiScheduleData[sube.id][d] : {cam:0, genel:0, ekstra:0};
+                let cell = window.aiScheduleData[sube.id] && window.aiScheduleData[sube.id][d] ? window.aiScheduleData[sube.id][d] : {cam:0, genel:0, ekstra:0, taseronCam:0, taseronGenel:0};
                 let cellText = "";
                 
                 if(cell.cam > 0) { cellText += `<div class='text-primary fw-bold' style='font-size:10px;'>${cell.cam}🧽</div>`; dailyTotals[d].cam += cell.cam; }
                 if(cell.genel > 0) { cellText += `<div class='text-secondary fw-bold' style='font-size:10px;'>${cell.genel}🧹</div>`; dailyTotals[d].genel += cell.genel; }
                 if(cell.ekstra > 0) { cellText += `<div class='text-warning fw-bold text-dark' style='font-size:10px;'>${cell.ekstra}✨</div>`; }
                 
-                // YENİ: Hücreye Tıklayınca openCellMenu() çalışacak
+                // HATA DÜZELTİLDİ: Taşeron sayıları da Toplam Havuzuna dahil edildi
+                if(cell.taseronCam > 0) { cellText += `<div class='text-danger fw-bold' style='font-size:10px;' title="Taşeron Camcı">${cell.taseronCam}👷(C)</div>`; dailyTotals[d].taseronCam += cell.taseronCam; }
+                if(cell.taseronGenel > 0) { cellText += `<div class='text-danger fw-bold' style='font-size:10px;' title="Taşeron Genel">${cell.taseronGenel}👷(G)</div>`; dailyTotals[d].taseronGenel += cell.taseronGenel; }
+                
                 trHtml += `<td class="${(d % 7 === 0) ? 'sunday-col' : ''}" onclick="openCellMenu(event, '${sube.id}', ${d})">${cellText}</td>`;
             }
+
             trHtml += `</tr>`;
         });
         tbody.innerHTML = trHtml;
@@ -2747,10 +2747,12 @@
             
             let idleCam = Math.max(0, capCam - reqCam);
             let idleGenel = Math.max(0, capGenel - reqGenel);
-            let taseronCam = Math.max(0, reqCam - capCam);
-            let taseronGenel = Math.max(0, reqGenel - capGenel);
+            
+            // HATA DÜZELTİLDİ: Taşmaları ve Doğrudan Taşeron Atamalarını Birleştir
+            let taseronCam = Math.max(0, reqCam - capCam) + dailyTotals[d].taseronCam;
+            let taseronGenel = Math.max(0, reqGenel - capGenel) + dailyTotals[d].taseronGenel;
 
-            if (reqCam === 0 && reqGenel === 0) {
+            if (reqCam === 0 && reqGenel === 0 && taseronCam === 0 && taseronGenel === 0) {
                 if(capCam > 0 || capGenel > 0) {
                      statusHtml += `<div class="d-flex flex-column gap-1 align-items-center justify-content-center" style="font-size:9px; line-height:1.1;">`;
                      if(capCam > 0) statusHtml += `<span class="text-success fw-bold border border-success rounded px-1 w-100 bg-white shadow-sm">🧽 +${capCam} Boş</span>`;
@@ -2762,13 +2764,13 @@
             } else {
                 statusHtml += `<div class="d-flex flex-column gap-1 align-items-center justify-content-center" style="font-size:9px; line-height:1.1;">`;
                 
-                if (reqCam > 0 || capCam > 0) {
+                if (reqCam > 0 || capCam > 0 || taseronCam > 0) {
                     if (taseronCam > 0) statusHtml += `<span class="text-danger fw-bold border border-danger rounded px-1 w-100 bg-white shadow-sm py-1">🧽 -${taseronCam} Taş.</span>`;
                     else if (idleCam > 0) statusHtml += `<span class="text-success fw-bold border border-success rounded px-1 w-100 bg-white shadow-sm py-1">🧽 +${idleCam} Boş</span>`;
                     else statusHtml += `<span class="text-primary fw-bold border border-primary rounded px-1 w-100 bg-white shadow-sm py-1">🧽 TAM</span>`;
                 }
 
-                if (reqGenel > 0 || capGenel > 0) {
+                if (reqGenel > 0 || capGenel > 0 || taseronGenel > 0) {
                     if (taseronGenel > 0) statusHtml += `<span class="text-danger fw-bold border border-danger rounded px-1 w-100 bg-white shadow-sm py-1">🧹 -${taseronGenel} Taş.</span>`;
                     else if (idleGenel > 0) statusHtml += `<span class="text-success fw-bold border border-success rounded px-1 w-100 bg-white shadow-sm py-1">🧹 +${idleGenel} Boş</span>`;
                     else statusHtml += `<span class="text-secondary fw-bold border border-secondary rounded px-1 w-100 bg-white shadow-sm py-1">🧹 TAM</span>`;
@@ -2789,12 +2791,12 @@
         
         for(let d = startDay; d <= endDay; d++) {
             if(d % 7 !== 0) {
-                taseronCamShifts += Math.max(0, dailyTotals[d].cam - capCam);
-                taseronGenelShifts += Math.max(0, dailyTotals[d].genel - capGenel);
+                taseronCamShifts += Math.max(0, dailyTotals[d].cam - capCam) + dailyTotals[d].taseronCam;
+                taseronGenelShifts += Math.max(0, dailyTotals[d].genel - capGenel) + dailyTotals[d].taseronGenel;
             }
 
-            totalCamShifts += dailyTotals[d].cam;
-            totalGenelShifts += dailyTotals[d].genel;
+            totalCamShifts += dailyTotals[d].cam + dailyTotals[d].taseronCam;
+            totalGenelShifts += dailyTotals[d].genel + dailyTotals[d].taseronGenel;
             
             currentGeneratedQuote.subeler.forEach(s => {
                 if(window.aiScheduleData[s.id] && window.aiScheduleData[s.id][d] && window.aiScheduleData[s.id][d].ekstra) {
@@ -2842,50 +2844,48 @@
     let activeCell = { subeId: null, day: null };
 
     function openCellMenu(event, subeId, day) {
-        event.stopPropagation(); // Menünün hemen kapanmasını engeller
-        
+        event.stopPropagation();
         if(!window.aiScheduleData[subeId]) window.aiScheduleData[subeId] = {};
-        if(!window.aiScheduleData[subeId][day]) window.aiScheduleData[subeId][day] = {cam:0, genel:0, ekstra:0};
+        if(!window.aiScheduleData[subeId][day]) window.aiScheduleData[subeId][day] = {cam:0, genel:0, ekstra:0, taseronCam:0, taseronGenel:0};
         
         let cell = window.aiScheduleData[subeId][day];
         const sube = currentGeneratedQuote.subeler.find(s => s.id == subeId);
         
         document.getElementById('cMenuCam').value = cell.cam || 0;
         document.getElementById('cMenuGenel').value = cell.genel || 0;
-        document.getElementById('cMenuEkstra').value = cell.ekstra || 0;
+        document.getElementById('cMenuTasCam').value = cell.taseronCam || 0;
+        document.getElementById('cMenuTasGenel').value = cell.taseronGenel || 0;
         document.getElementById('cMenuTitle').innerHTML = `${sube.adi}<br><small>${day}. Gün Görev Dağılımı</small>`;
         
         activeCell = { subeId, day };
         
         let menu = document.getElementById('cellMenu');
         menu.style.display = 'block';
-        
-        // Farenin konumuna göre menüyü yerleştir, ekrandan taşmasını engelle
-        let x = event.pageX + 10;
-        let y = event.pageY + 10;
-        if (x + 190 > window.innerWidth) x = window.innerWidth - 200;
-        
-        menu.style.left = x + 'px';
-        menu.style.top = y + 'px';
+        let x = event.pageX + 10; let y = event.pageY + 10;
+        if (x + 220 > window.innerWidth) x = window.innerWidth - 230;
+        menu.style.left = x + 'px'; menu.style.top = y + 'px';
     }
-    
+
     function updateCellVal(type, delta) {
         if(!activeCell.subeId) return;
         let cell = window.aiScheduleData[activeCell.subeId][activeCell.day];
         
         if (type === 'sil') {
-            cell.cam = 0; cell.genel = 0; cell.ekstra = 0;
+            cell.cam = 0; cell.genel = 0; cell.ekstra = 0; cell.taseronCam = 0; cell.taseronGenel = 0;
         } else {
+            // HATA DÜZELTİLDİ: NaN (Sayı Değil) Koruması Eklendi
+            if (typeof cell[type] !== 'number' || isNaN(cell[type])) {
+                cell[type] = 0;
+            }
             cell[type] += delta;
-            if(cell[type] < 0) cell[type] = 0; // Eksi sayıya düşmesini engelle
+            if(cell[type] < 0) cell[type] = 0; 
         }
         
-        // Menüdeki rakamları anında güncelle
         document.getElementById('cMenuCam').value = cell.cam;
         document.getElementById('cMenuGenel').value = cell.genel;
-        document.getElementById('cMenuEkstra').value = cell.ekstra;
+        document.getElementById('cMenuTasCam').value = cell.taseronCam || 0;
+        document.getElementById('cMenuTasGenel').value = cell.taseronGenel || 0;
         
-        // Tabloyu arka planda yenile (Uyarıları anında yakalamak için)
         renderScheduleGrid();
     }
     
@@ -2946,16 +2946,17 @@
     }
     window.onload = renderAll; 
 </script>
-<div id="cellMenu" class="card shadow-lg border-primary" style="display:none; position:absolute; z-index:9999; width:190px; font-size:11px;">
+<div id="cellMenu" class="card shadow-lg border-primary" style="display:none; position:absolute; z-index:9999; width:220px; font-size:11px;">
     <div class="card-header bg-primary text-white p-2 text-center fw-bold" style="font-size:12px;">
         <span id="cMenuTitle"></span>
     </div>
     <div class="card-body p-2">
-        <div class="d-flex justify-content-between align-items-center mb-2">
+        <h6 class="border-bottom pb-1 text-muted" style="font-size:10px;">KADROLU EKİP</h6>
+        <div class="d-flex justify-content-between align-items-center mb-1">
             <span class="fw-bold text-primary">🧽 Cam:</span>
             <div class="input-group input-group-sm w-50 shadow-sm">
                 <button class="btn btn-outline-secondary py-0 px-2 fw-bold" onclick="updateCellVal('cam', -1)">-</button>
-                <input type="text" id="cMenuCam" class="form-control text-center py-0 px-1 fw-bold text-dark" readonly>
+                <input type="text" id="cMenuCam" class="form-control text-center py-0 px-1 fw-bold" readonly>
                 <button class="btn btn-outline-secondary py-0 px-2 fw-bold" onclick="updateCellVal('cam', 1)">+</button>
             </div>
         </div>
@@ -2963,18 +2964,29 @@
             <span class="fw-bold text-secondary">🧹 Genel:</span>
             <div class="input-group input-group-sm w-50 shadow-sm">
                 <button class="btn btn-outline-secondary py-0 px-2 fw-bold" onclick="updateCellVal('genel', -1)">-</button>
-                <input type="text" id="cMenuGenel" class="form-control text-center py-0 px-1 fw-bold text-dark" readonly>
+                <input type="text" id="cMenuGenel" class="form-control text-center py-0 px-1 fw-bold" readonly>
                 <button class="btn btn-outline-secondary py-0 px-2 fw-bold" onclick="updateCellVal('genel', 1)">+</button>
             </div>
         </div>
-        <div class="d-flex justify-content-between align-items-center mb-2">
-            <span class="fw-bold text-warning text-dark">✨ Ekstra:</span>
+
+        <h6 class="border-bottom pb-1 mt-2 text-danger" style="font-size:10px;">DIŞ TAŞERON</h6>
+        <div class="d-flex justify-content-between align-items-center mb-1">
+            <span class="fw-bold text-danger">👷 Taşeron Cam:</span>
             <div class="input-group input-group-sm w-50 shadow-sm">
-                <button class="btn btn-outline-secondary py-0 px-2 fw-bold" onclick="updateCellVal('ekstra', -1)">-</button>
-                <input type="text" id="cMenuEkstra" class="form-control text-center py-0 px-1 fw-bold text-dark" readonly>
-                <button class="btn btn-outline-secondary py-0 px-2 fw-bold" onclick="updateCellVal('ekstra', 1)">+</button>
+                <button class="btn btn-outline-danger py-0 px-2 fw-bold" onclick="updateCellVal('taseronCam', -1)">-</button>
+                <input type="text" id="cMenuTasCam" class="form-control text-center py-0 px-1 fw-bold" readonly>
+                <button class="btn btn-outline-danger py-0 px-2 fw-bold" onclick="updateCellVal('taseronCam', 1)">+</button>
             </div>
         </div>
+        <div class="d-flex justify-content-between align-items-center mb-2">
+            <span class="fw-bold text-danger">👷 Taşeron Genel:</span>
+            <div class="input-group input-group-sm w-50 shadow-sm">
+                <button class="btn btn-outline-danger py-0 px-2 fw-bold" onclick="updateCellVal('taseronGenel', -1)">-</button>
+                <input type="text" id="cMenuTasGenel" class="form-control text-center py-0 px-1 fw-bold" readonly>
+                <button class="btn btn-outline-danger py-0 px-2 fw-bold" onclick="updateCellVal('taseronGenel', 1)">+</button>
+            </div>
+        </div>
+
         <div class="d-flex gap-1 mt-3 border-top pt-2">
             <button class="btn btn-danger btn-sm w-50 py-1 fw-bold" onclick="updateCellVal('sil', 0)">🗑️ Sıfırla</button>
             <button class="btn btn-success btn-sm w-50 py-1 fw-bold" onclick="closeCellMenu()">✅ Tamam</button>
