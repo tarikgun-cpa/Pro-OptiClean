@@ -564,36 +564,30 @@
             </div> 
         </div> 
         <div class="tab-pane fade" id="planlama-modulu" role="tabpanel">
-            <div class="card p-2 shadow-sm border-primary mb-2">
-                <div class="d-flex justify-content-between align-items-center border-bottom pb-2 mb-2">
-                    <div>
-                        <h5 class="text-primary fw-bold mb-0 d-inline-block me-2">📅 3 Aylık İnteraktif Görev ve İstihdam Matrisi</h5>
-                        <small class="text-muted d-block mt-1" style="font-size:10px;">⚠️ Kapasite aşımında alta EK PERS uyarısı çıkar. Hücrelere tıklayarak manuel personel atayabilirsiniz.</small>
+            <div class="card shadow-sm border-primary mb-0" style="height: calc(100vh - 150px); display: flex; flex-direction: column;">
+                
+                <div class="d-flex justify-content-between align-items-center p-2 border-bottom bg-light">
+                    <div class="d-flex align-items-center gap-3">
+                        <h6 class="text-primary fw-bold mb-0"><i class="fs-5 align-middle">📅</i> Görev Matrisi</h6>
+                        <div class="btn-group shadow-sm">
+                            <button class="btn btn-sm btn-outline-primary active fw-bold px-2 py-0" id="btnAy1" onclick="changeScheduleMonth(1)">1. Ay</button>
+                            <button class="btn btn-sm btn-outline-primary fw-bold px-2 py-0" id="btnAy2" onclick="changeScheduleMonth(2)">2. Ay</button>
+                            <button class="btn btn-sm btn-outline-primary fw-bold px-2 py-0" id="btnAy3" onclick="changeScheduleMonth(3)">3. Ay</button>
+                            <button class="btn btn-sm btn-outline-dark fw-bold px-2 py-0" id="btnAyAll" onclick="changeScheduleMonth('all')">Tümü</button>
+                        </div>
                     </div>
                     <div class="d-flex align-items-center gap-2">
-                        <select id="planlamaProjeSecim" class="form-select form-select-sm border-primary shadow-sm" onchange="loadMatrixForProject()" style="min-width: 250px;">
+                        <select id="planlamaProjeSecim" class="form-select form-select-sm border-primary shadow-sm py-0" onchange="loadMatrixForProject()" style="min-width: 220px; height: 26px; font-size:11px;">
                             <option value="">-- Müşteri / Proje Seçiniz --</option>
                         </select>
-                        <button onclick="saveCurrentMatrix()" class="btn btn-sm btn-success fw-bold shadow-sm px-3">💾 Matrisi Kaydet</button>
+                        <button onclick="saveCurrentMatrix()" class="btn btn-sm btn-success fw-bold shadow-sm py-0 px-2" style="height: 26px;">💾 Kaydet</button>
+                        <button onclick="printSchedule()" class="btn btn-sm btn-primary fw-bold shadow-sm py-0 px-2" style="height: 26px;">🖨️ Yazdır</button>
                     </div>
                 </div>
-                
-                <div id="scheduleCostSummary" class="mb-2"></div>
 
-                <div class="d-flex justify-content-between align-items-center bg-light p-1 rounded border mb-2">
-                    <div class="btn-group shadow-sm">
-                        <button class="btn btn-sm btn-outline-primary active fw-bold" id="btnAy1" onclick="changeScheduleMonth(1)">1. Ay</button>
-                        <button class="btn btn-sm btn-outline-primary fw-bold" id="btnAy2" onclick="changeScheduleMonth(2)">2. Ay</button>
-                        <button class="btn btn-sm btn-outline-primary fw-bold" id="btnAy3" onclick="changeScheduleMonth(3)">3. Ay</button>
-                        <button class="btn btn-sm btn-outline-dark fw-bold" id="btnAyAll" onclick="changeScheduleMonth('all')">Tümü</button>
-                    </div>
-                    <div class="d-flex align-items-center gap-2">
-                        <span class="text-primary fw-bold" style="font-size:11px;">👉 İşlem yapmak için tablodaki hücrelerin üzerine tıklayın.</span>
-                        <button onclick="printSchedule()" class="btn btn-sm btn-primary fw-bold shadow-sm py-1 px-3">🖨️ Matrisi Yazdır</button>
-                    </div>
-                </div>
-                
-                <div class="table-responsive shadow-sm border rounded bg-white" style="max-height: 600px; overflow: auto;">
+                <div id="scheduleCostSummary" class="p-1 px-2 bg-white"></div>
+
+                <div class="table-responsive shadow-sm bg-white border-top" style="flex: 1; overflow: auto;">
                     <table class="table table-sm table-bordered schedule-table mb-0">
                         <thead class="table-dark" id="scheduleThead"></thead>
                         <tbody id="scheduleTbody"></tbody>
@@ -601,7 +595,8 @@
                     </table>
                 </div>
             </div>
-        </div> 
+        </div>
+        
     </div> <div class="text-center mt-5 mb-4 text-muted" style="font-size: 13px; font-weight: 600; letter-spacing: 0.5px;">
         Yazılım & Altyapı: <img src="Logo2.png" alt="CPA-FTC Logo" style="height: 20px; margin: 0 6px; vertical-align: middle;"> ERP © 2026
     </div>
@@ -2428,16 +2423,12 @@
     window.aiScheduleData = {}; 
     window.currentScheduleMonth = 1;
 
-    // AI KAPASİTE BAZLI DAĞITIM ALGORİTMASI
-    // AI KAPASİTE VE M² BAZLI DAĞITIM ALGORİTMASI
-    // AI KAPASİTE, M² VE BÖLGESEL LOJİSTİK BAZLI DAĞITIM ALGORİTMASI
     // AI KAPASİTE, M², BÖLGESEL LOJİSTİK VE TAM SENKRONİZASYON (MALİYET OPTİMİZASYONU)
     function generateScheduleData(checkedSubeler, serviceRequests) {
         window.aiScheduleData = {};
         const allSubeler = getData(KEYS.SUBELER);
         const ayarlar = JSON.parse(localStorage.getItem(KEYS.AYARLAR)) || {};
         
-        // Kapasiteler (Araç/Tim mantığıyla)
         const capCam = Number(ayarlar.mevcutCam) || 2; 
         const capGenel = Number(ayarlar.mevcutGenel) || 3; 
 
@@ -2447,7 +2438,6 @@
         let dailyUsage = {};
         for(let d=1; d<=90; d++) dailyUsage[d] = { cam: 0, genel: 0, camIl: null, genelIl: null };
 
-        // Şubeleri İl ve M2'ye göre sırala (Ekiplerin aynı ilde kalmasını sağlamak için)
         let subelerData = checkedSubeler.map(cb => allSubeler.find(x => x.id == cb.value)).filter(Boolean);
         subelerData.sort((a, b) => {
             let ilCompare = (a.il || "").localeCompare(b.il || "", 'tr-TR');
@@ -2455,13 +2445,17 @@
             return (Number(b.m2) || 0) - (Number(a.m2) || 0); 
         });
 
-        // Merkez İller (Kendi araç ve timlerimizin çalıştığı iller)
         const merkezIller = ['kocaeli', 'sakarya'];
+        
+        // Obje oluşturma yardımcısı
+        const ensureCell = (sId, d) => {
+            if(!window.aiScheduleData[sId]) window.aiScheduleData[sId] = {};
+            if(!window.aiScheduleData[sId][d]) window.aiScheduleData[sId][d] = {cam:0, genel:0, ekstra:0, taseronCam:0, taseronGenel:0};
+        };
 
         subelerData.forEach((sube, index) => {
-            window.aiScheduleData[sube.id] = {};
             let ilNormal = sube.il.trim().toLocaleLowerCase('tr-TR');
-            let isUzakBolge = !merkezIller.includes(ilNormal); // Uzak bölgeyse taşeron gidecek
+            let isUzakBolge = !merkezIller.includes(ilNormal); 
 
             let subeM2 = Number(sube.m2) || 200;
             let reqGenel = Math.ceil(subeM2 / 200); 
@@ -2474,110 +2468,120 @@
 
             let assignedCamDays = [null, null, null]; 
 
-            // CAM ATAMALARI
+            // ================= CAM ATAMALARI =================
             if (hasCam) {
                 for (let m = 0; m < 3; m++) {
                     let startDay = (m * 30) + 1;
                     let endDay = (m * 30) + 30;
                     
-                    // UZAK BÖLGE İSE DİREKT TAŞERON YAZ VE GEÇ (Kadrolu timi bölme)
                     if (isUzakBolge) {
-                        let targetDay = startDay + (index % 20) + 1; // Rastgele ama ardışık olmayan bir gün
-                        if (targetDay % 7 === 0) targetDay++; // Pazara denk gelmesin
-                        if (!window.aiScheduleData[sube.id][targetDay]) window.aiScheduleData[sube.id][targetDay] = {cam:0, genel:0, ekstra:0, taseronCam:0, taseronGenel:0};
+                        let targetDay = startDay + (index % 26) + 1; // Ay geneline yay
+                        if (targetDay % 7 === 0) targetDay++; 
+                        ensureCell(sube.id, targetDay);
                         window.aiScheduleData[sube.id][targetDay].taseronCam = reqCam;
                         assignedCamDays[m] = targetDay;
                         continue;
                     }
 
-                    // MERKEZ BÖLGE İSE KADROLU TİMİ ATA
                     let assigned = false;
-                    for(let d=startDay; d<=endDay; d++) {
-                        if (d % 7 === 0) continue;
+                    // YENİ: Yığılmayı önlemek için aramaya ayın ortalarından / rastgele başla (Dairesel Arama)
+                    let idealDay = startDay + (index % 24) + 1; 
+                    if(idealDay % 7 === 0) idealDay++;
+
+                    let tryAssignCam = (d) => {
+                        if (d % 7 === 0) return false;
                         let isSameIl = !dailyUsage[d].camIl || dailyUsage[d].camIl === sube.il;
-                        if (dailyUsage[d].cam + reqCam <= capCam && isSameIl) {
-                            if (!window.aiScheduleData[sube.id][d]) window.aiScheduleData[sube.id][d] = {cam:0, genel:0, ekstra:0, taseronCam:0, taseronGenel:0};
-                            window.aiScheduleData[sube.id][d].cam = reqCam;
-                            dailyUsage[d].cam += reqCam;
+                        let availableCap = capCam - dailyUsage[d].cam;
+
+                        // YENİ: Kapasite tamamen dolmamışsa (availableCap > 0), kadrolu ata, artanı taşerona ver
+                        if (availableCap > 0 && isSameIl) {
+                            ensureCell(sube.id, d);
+                            let assignCam = Math.min(reqCam, availableCap);
+                            let assignTaseron = reqCam - assignCam; 
+
+                            window.aiScheduleData[sube.id][d].cam = assignCam;
+                            if(assignTaseron > 0) window.aiScheduleData[sube.id][d].taseronCam = assignTaseron;
+
+                            dailyUsage[d].cam += assignCam;
                             dailyUsage[d].camIl = sube.il;
                             assignedCamDays[m] = d;
-                            assigned = true; break;
+                            return true;
+                        }
+                        return false;
+                    };
+
+                    // Önce ideal günden ay sonuna doğru ara
+                    for(let d = idealDay; d <= endDay; d++) {
+                        if(tryAssignCam(d)) { assigned = true; break; }
+                    }
+                    // Bulamazsa ayın başından ideal güne kadar ara
+                    if(!assigned) {
+                        for(let d = startDay; d < idealDay; d++) {
+                            if(tryAssignCam(d)) { assigned = true; break; }
                         }
                     }
+                    // Hiç boşluk yoksa mecburen ideal güne %100 Taşeron ata
                     if(!assigned) {
-                        for(let d=startDay; d<=endDay; d++) {
-                            if (d % 7 === 0) continue;
-                            if (dailyUsage[d].cam + reqCam <= capCam) {
-                                if (!window.aiScheduleData[sube.id][d]) window.aiScheduleData[sube.id][d] = {cam:0, genel:0, ekstra:0, taseronCam:0, taseronGenel:0};
-                                window.aiScheduleData[sube.id][d].cam = reqCam;
-                                dailyUsage[d].cam += reqCam;
-                                assignedCamDays[m] = d;
-                                assigned = true; break;
-                            }
-                        }
-                    }
-                    // Kadrolu yer yoksa merkeze de Taşeron çağır
-                    if(!assigned) {
-                        let targetDay = startDay + (index % 15);
-                        if(targetDay%7===0) targetDay++;
-                        if(!window.aiScheduleData[sube.id][targetDay]) window.aiScheduleData[sube.id][targetDay] = {cam:0, genel:0, ekstra:0, taseronCam:0, taseronGenel:0};
-                        window.aiScheduleData[sube.id][targetDay].taseronCam = reqCam;
-                        assignedCamDays[m] = targetDay;
+                        ensureCell(sube.id, idealDay);
+                        window.aiScheduleData[sube.id][idealDay].taseronCam = reqCam;
+                        assignedCamDays[m] = idealDay;
                     }
                 }
             }
 
-            // GENEL TEMİZLİK ATAMALARI
+            // ================= GENEL TEMİZLİK ATAMALARI =================
             if (hasGenel) {
                 let targetMonthIndex = index % 3; 
                 let startDay = (targetMonthIndex * 30) + 1;
                 let endDay = (targetMonthIndex * 30) + 30;
 
                 if (isUzakBolge) {
-                    let preferDay = assignedCamDays[targetMonthIndex] || startDay + (index % 10) + 2;
-                    if(preferDay%7===0) preferDay++;
-                    if(!window.aiScheduleData[sube.id][preferDay]) window.aiScheduleData[sube.id][preferDay] = {cam:0, genel:0, ekstra:0, taseronCam:0, taseronGenel:0};
+                    let preferDay = assignedCamDays[targetMonthIndex] || startDay + (index % 26) + 2;
+                    if(preferDay % 7 === 0) preferDay++;
+                    ensureCell(sube.id, preferDay);
                     window.aiScheduleData[sube.id][preferDay].taseronGenel = reqGenel;
-                    return;
+                    return; 
                 }
 
                 let assigned = false;
-                let preferDay = assignedCamDays[targetMonthIndex];
-                if (preferDay && dailyUsage[preferDay].genel + reqGenel <= capGenel) {
-                    let isSameIl = !dailyUsage[preferDay].genelIl || dailyUsage[preferDay].genelIl === sube.il;
-                    if(isSameIl) {
-                        if(!window.aiScheduleData[sube.id][preferDay]) window.aiScheduleData[sube.id][preferDay] = {cam:0, genel:0, ekstra:0, taseronCam:0, taseronGenel:0};
-                        window.aiScheduleData[sube.id][preferDay].genel = reqGenel;
-                        dailyUsage[preferDay].genel += reqGenel;
-                        dailyUsage[preferDay].genelIl = sube.il;
-                        assigned = true;
-                    }
-                }
+                let idealDay = assignedCamDays[targetMonthIndex] || startDay + (index % 24) + 1;
+                if(idealDay % 7 === 0) idealDay++;
 
+                let tryAssignGenel = (d) => {
+                    if (d % 7 === 0) return false;
+                    let isSameIl = !dailyUsage[d].genelIl || dailyUsage[d].genelIl === sube.il;
+                    let availableCap = capGenel - dailyUsage[d].genel;
+
+                    if (availableCap > 0 && isSameIl) { 
+                        ensureCell(sube.id, d);
+                        let assignGenel = Math.min(reqGenel, availableCap);
+                        let assignTaseron = reqGenel - assignGenel;
+
+                        window.aiScheduleData[sube.id][d].genel = assignGenel;
+                        if(assignTaseron > 0) window.aiScheduleData[sube.id][d].taseronGenel = assignTaseron;
+
+                        dailyUsage[d].genel += assignGenel;
+                        dailyUsage[d].genelIl = sube.il;
+                        return true;
+                    }
+                    return false;
+                };
+
+                for(let d = idealDay; d <= endDay; d++) {
+                    if(tryAssignGenel(d)) { assigned = true; break; }
+                }
                 if (!assigned) {
-                    for(let d=startDay; d<=endDay; d++) {
-                        if (d % 7 === 0) continue; 
-                        let isSameIl = !dailyUsage[d].genelIl || dailyUsage[d].genelIl === sube.il;
-                        if (dailyUsage[d].genel + reqGenel <= capGenel && isSameIl) { 
-                            if(!window.aiScheduleData[sube.id][d]) window.aiScheduleData[sube.id][d] = {cam:0, genel:0, ekstra:0, taseronCam:0, taseronGenel:0};
-                            window.aiScheduleData[sube.id][d].genel = reqGenel;
-                            dailyUsage[d].genel += reqGenel;
-                            dailyUsage[d].genelIl = sube.il;
-                            assigned = true; break;
-                        }
+                    for(let d = startDay; d < idealDay; d++) {
+                        if(tryAssignGenel(d)) { assigned = true; break; }
                     }
                 }
-
                 if(!assigned) {
-                    let targetDay = startDay + (index % 15);
-                    if(targetDay%7===0) targetDay++;
-                    if(!window.aiScheduleData[sube.id][targetDay]) window.aiScheduleData[sube.id][targetDay] = {cam:0, genel:0, ekstra:0, taseronCam:0, taseronGenel:0};
-                    window.aiScheduleData[sube.id][targetDay].taseronGenel = reqGenel;
+                    ensureCell(sube.id, idealDay);
+                    window.aiScheduleData[sube.id][idealDay].taseronGenel = reqGenel;
                 }
             }
         });
     }
-
     // ================== MATRİS SEÇME VE KAYDETME (MÜŞTERİYE ÖZEL) ==================
     function loadMatrixForProject() {
         const selectedId = document.getElementById('planlamaProjeSecim').value;
@@ -2813,28 +2817,17 @@
         let monthLabel = window.currentScheduleMonth === 'all' ? "3 Aylık" : window.currentScheduleMonth + ". Ay";
 
         document.getElementById('scheduleCostSummary').innerHTML = `
-            <div class="w-100 d-flex flex-column gap-2">
-                <div class="d-flex justify-content-between align-items-center">
-                    <div>
-                        <span class="fw-bold text-dark">📊 ${monthLabel} Adam/Gün:</span> 
-                        <span class="badge bg-info text-dark ms-2 border border-info">
-                            🧽 ${totalCamShifts} Cam <small class="text-danger fw-bold">(${taseronCamShifts} Taşeron)</small>
-                        </span>
-                        <span class="badge bg-secondary ms-1">
-                            🧹 ${totalGenelShifts} Genel <small class="text-danger fw-bold">(${taseronGenelShifts} Taşeron)</small>
-                        </span>
-                        <span class="badge bg-warning text-dark ms-1">✨ ${totalEkstraShifts} Ekstra</span>
-                    </div>
-                    <div class="text-end">
-                        <span class="fw-bold text-dark me-2">Toplam Personel Bütçesi:</span>
-                        <span class="badge bg-danger fs-6">${totalCost.toLocaleString('tr-TR')} ₺</span>
-                    </div>
+            <div class="d-flex justify-content-between align-items-center bg-light p-1 rounded border shadow-sm" style="font-size:11px;">
+                <div>
+                    <span class="fw-bold text-dark me-2">📊 ${monthLabel} Adam/Gün:</span>
+                    <span class="badge bg-info text-dark border border-info me-1">🧽 ${totalCamShifts} Cam <span class="text-danger">(${taseronCamShifts} Taş.)</span></span>
+                    <span class="badge bg-secondary me-1">🧹 ${totalGenelShifts} Genel <span class="text-danger">(${taseronGenelShifts} Taş.)</span></span>
+                    <span class="badge bg-warning text-dark">✨ ${totalEkstraShifts} Ekstra</span>
                 </div>
-                <div class="d-flex justify-content-end gap-3 text-muted" style="font-size: 11px;">
-                    <span class="fw-bold text-dark">Maliyet Dağılımı:</span>
-                    <span>🧽 Cam: <b class="text-primary">${costCam.toLocaleString('tr-TR')} ₺</b></span>
-                    <span>🧹 Genel: <b class="text-secondary">${costGenel.toLocaleString('tr-TR')} ₺</b></span>
-                    <span>✨ Ekstra: <b class="text-warning text-dark">${costEkstra.toLocaleString('tr-TR')} ₺</b></span>
+                <div>
+                    <span class="text-muted me-2">Maliyet: 🧽 <b class="text-primary">${costCam.toLocaleString('tr-TR')} ₺</b> | 🧹 <b class="text-secondary">${costGenel.toLocaleString('tr-TR')} ₺</b></span>
+                    <span class="fw-bold text-dark me-1">Toplam Bütçe:</span>
+                    <span class="badge bg-danger fs-6 py-1">${totalCost.toLocaleString('tr-TR')} ₺</span>
                 </div>
             </div>
         `;
