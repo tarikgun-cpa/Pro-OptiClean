@@ -1398,7 +1398,7 @@
             let genelEkipMesai = Math.ceil((genelSubeSayisi / 3) * 3); // Aylık gereken part-time personel mesaisi
 
             let ekipAciklama = "";
-            if(camMesai > 0) ekipAciklama += `<span class="badge bg-primary mb-1">🪟 Cam: Ayda ${camMesai} Part-Time Mesai (Akşam)</span><br>`;
+            if(camMesai > 0) ekipAciklama += `<span class="badge bg-primary mb-1">🧽 Cam: Ayda ${camMesai} Part-Time Mesai (Akşam)</span><br>`;
             if(genelEkipMesai > 0) ekipAciklama += `<span class="badge bg-secondary mb-1">🧹 Genel: Ayda ${genelEkipMesai} Part-Time Ekip Mesaisi (Yarım Gün)</span><br>`;
             
             // Ekstra uzak iller için lojistik marjı (Türkçe Karakter Sorunu Çözüldü)
@@ -2716,7 +2716,7 @@
                 let cell = window.aiScheduleData[sube.id] && window.aiScheduleData[sube.id][d] ? window.aiScheduleData[sube.id][d] : {cam:0, genel:0, ekstra:0};
                 let cellText = "";
                 
-                if(cell.cam > 0) { cellText += `<div class='text-primary fw-bold' style='font-size:10px;'>${cell.cam}🪟</div>`; dailyTotals[d].cam += cell.cam; }
+                if(cell.cam > 0) { cellText += `<div class='text-primary fw-bold' style='font-size:10px;'>${cell.cam}🧽</div>`; dailyTotals[d].cam += cell.cam; }
                 if(cell.genel > 0) { cellText += `<div class='text-secondary fw-bold' style='font-size:10px;'>${cell.genel}🧹</div>`; dailyTotals[d].genel += cell.genel; }
                 if(cell.ekstra > 0) { cellText += `<div class='text-warning fw-bold text-dark' style='font-size:10px;'>${cell.ekstra}✨</div>`; }
                 
@@ -2753,7 +2753,7 @@
             if (reqCam === 0 && reqGenel === 0) {
                 if(capCam > 0 || capGenel > 0) {
                      statusHtml += `<div class="d-flex flex-column gap-1 align-items-center justify-content-center" style="font-size:9px; line-height:1.1;">`;
-                     if(capCam > 0) statusHtml += `<span class="text-success fw-bold border border-success rounded px-1 w-100 bg-white shadow-sm">🪟 +${capCam} Boş</span>`;
+                     if(capCam > 0) statusHtml += `<span class="text-success fw-bold border border-success rounded px-1 w-100 bg-white shadow-sm">🧽 +${capCam} Boş</span>`;
                      if(capGenel > 0) statusHtml += `<span class="text-success fw-bold border border-success rounded px-1 w-100 bg-white shadow-sm">🧹 +${capGenel} Boş</span>`;
                      statusHtml += `</div>`;
                 } else {
@@ -2763,9 +2763,9 @@
                 statusHtml += `<div class="d-flex flex-column gap-1 align-items-center justify-content-center" style="font-size:9px; line-height:1.1;">`;
                 
                 if (reqCam > 0 || capCam > 0) {
-                    if (taseronCam > 0) statusHtml += `<span class="text-danger fw-bold border border-danger rounded px-1 w-100 bg-white shadow-sm py-1">🪟 -${taseronCam} Taş.</span>`;
-                    else if (idleCam > 0) statusHtml += `<span class="text-success fw-bold border border-success rounded px-1 w-100 bg-white shadow-sm py-1">🪟 +${idleCam} Boş</span>`;
-                    else statusHtml += `<span class="text-primary fw-bold border border-primary rounded px-1 w-100 bg-white shadow-sm py-1">🪟 TAM</span>`;
+                    if (taseronCam > 0) statusHtml += `<span class="text-danger fw-bold border border-danger rounded px-1 w-100 bg-white shadow-sm py-1">🧽 -${taseronCam} Taş.</span>`;
+                    else if (idleCam > 0) statusHtml += `<span class="text-success fw-bold border border-success rounded px-1 w-100 bg-white shadow-sm py-1">🧽 +${idleCam} Boş</span>`;
+                    else statusHtml += `<span class="text-primary fw-bold border border-primary rounded px-1 w-100 bg-white shadow-sm py-1">🧽 TAM</span>`;
                 }
 
                 if (reqGenel > 0 || capGenel > 0) {
@@ -2816,7 +2816,7 @@
                     <div>
                         <span class="fw-bold text-dark">📊 ${monthLabel} Adam/Gün:</span> 
                         <span class="badge bg-info text-dark ms-2 border border-info">
-                            🪟 ${totalCamShifts} Cam <small class="text-danger fw-bold">(${taseronCamShifts} Taşeron)</small>
+                            🧽 ${totalCamShifts} Cam <small class="text-danger fw-bold">(${taseronCamShifts} Taşeron)</small>
                         </span>
                         <span class="badge bg-secondary ms-1">
                             🧹 ${totalGenelShifts} Genel <small class="text-danger fw-bold">(${taseronGenelShifts} Taşeron)</small>
@@ -2830,7 +2830,7 @@
                 </div>
                 <div class="d-flex justify-content-end gap-3 text-muted" style="font-size: 11px;">
                     <span class="fw-bold text-dark">Maliyet Dağılımı:</span>
-                    <span>🪟 Cam: <b class="text-primary">${costCam.toLocaleString('tr-TR')} ₺</b></span>
+                    <span>🧽 Cam: <b class="text-primary">${costCam.toLocaleString('tr-TR')} ₺</b></span>
                     <span>🧹 Genel: <b class="text-secondary">${costGenel.toLocaleString('tr-TR')} ₺</b></span>
                     <span>✨ Ekstra: <b class="text-warning text-dark">${costEkstra.toLocaleString('tr-TR')} ₺</b></span>
                 </div>
@@ -2952,7 +2952,7 @@
     </div>
     <div class="card-body p-2">
         <div class="d-flex justify-content-between align-items-center mb-2">
-            <span class="fw-bold text-primary">🪟 Cam:</span>
+            <span class="fw-bold text-primary">🧽 Cam:</span>
             <div class="input-group input-group-sm w-50 shadow-sm">
                 <button class="btn btn-outline-secondary py-0 px-2 fw-bold" onclick="updateCellVal('cam', -1)">-</button>
                 <input type="text" id="cMenuCam" class="form-control text-center py-0 px-1 fw-bold text-dark" readonly>
