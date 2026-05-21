@@ -1384,28 +1384,47 @@
                 });
             });
 
-            // YENİ NESİL OPERASYON PLANLAMASI (ŞUBE VE VARDİYA BAZLI)
-            let camSubeSayisi = 0;
-            let genelSubeSayisi = 0;
+            // YENİ NESİL OPERASYON PLANLAMASI (M² VE KAPASİTE BAZLI)
+            function getPersCount(m) {
+                if(m <= 250) return 1; if(m <= 500) return 2; if(m <= 750) return 3;
+                if(m <= 1000) return 4; if(m <= 1250) return 5; if(m <= 1500) return 6;
+                return Math.ceil(m / 250); // 1500 üzeri için dinamik ekleme
+            }
+
+            let requiredCamManDays = 0;
+            let requiredGenelManDays = 0;
 
             veri.subeler.forEach(sube => {
                 let hasCam = serviceRequests.some(s => s.ad.toLowerCase().includes("cam"));
                 let hasGenel = serviceRequests.some(s => s.ad.toLowerCase().includes("genel"));
-                if (hasCam) camSubeSayisi++;
-                if (hasGenel) genelSubeSayisi++;
+
+                if (hasCam) {
+                    let cM2 = Number(sube.camM2);
+                    if(!cM2 || cM2 === 0) cM2 = (Number(sube.m2) / 2) || 50;
+                    requiredCamManDays += getPersCount(cM2);
+                }
+                if (hasGenel) {
+                    let gM2 = Number(sube.m2) || 200;
+                    requiredGenelManDays += getPersCount(gM2);
+                }
             });
 
-            // 1 Şube Camı = 1 Part-Time Akşam Mesaisi (3 Saat)
-            // 23 Şube varsa = Ayda 23 Part-Time Mesai gerekir.
-            let camMesai = camSubeSayisi; // Ayda bir kabulüyle
-            
-            // 1 Şube Genel Temizliği = 3 Kişilik Part-Time Ekip (Yarım Gün). 
-            // 3 Ayda 1 yapıldığı için aylık yüke 1/3 olarak yansır.
-            let genelEkipMesai = Math.ceil((genelSubeSayisi / 3) * 3); // Aylık gereken part-time personel mesaisi
+            // Genel temizlik 3 ayda 1 olduğu için o ayki yük 1/3 oranındadır
+            let aylikGenelYuk = Math.ceil(requiredGenelManDays / 3);
+            let aylikCamYuk = requiredCamManDays;
 
             let ekipAciklama = "";
-            if(camMesai > 0) ekipAciklama += `<span class="badge bg-primary mb-1">🧽 Cam: Ayda ${camMesai} Part-Time Mesai (Akşam)</span><br>`;
-            if(genelEkipMesai > 0) ekipAciklama += `<span class="badge bg-secondary mb-1">🧹 Genel: Ayda ${genelEkipMesai} Part-Time Ekip Mesaisi (Yarım Gün)</span><br>`;
+            if(aylikCamYuk > 0) ekipAciklama += `<span class="badge bg-info text-dark mb-1 border border-info">🧽 Cam: Toplam ${aylikCamYuk} Adam/Gün</span><br>`;
+            if(aylikGenelYuk > 0) ekipAciklama += `<span class="badge bg-secondary mb-1">🧹 Genel: Toplam ${aylikGenelYuk} Adam/Gün</span><br>`;
+
+            // İSTİHDAM ÖNERİSİ HESAPLAMA (Aylık 22 İş Günü / Yaklaşık 165 Saat üzerinden)
+            let camFT = Math.floor(aylikCamYuk / 22);
+            let camPT = aylikCamYuk % 22;
+            let genelFT = Math.floor(aylikGenelYuk / 22);
+            let genelPT = aylikGenelYuk % 22;
+
+            if(camFT > 0 || camPT > 0) ekipAciklama += `<small class="text-primary fw-bold d-block mt-1" style="font-size:10px;">👉 Öneri (Cam): ${camFT} Tam Zamanlı + ${camPT} Taşeron/PT</small>`;
+            if(genelFT > 0 || genelPT > 0) ekipAciklama += `<small class="text-secondary fw-bold d-block" style="font-size:10px;">👉 Öneri (Genel): ${genelFT} Tam Zamanlı + ${genelPT} Taşeron/PT</small>`;
             
             // Ekstra uzak iller için lojistik marjı (Türkçe Karakter Sorunu Çözüldü)
             let normalizedIl = ilAdi.trim().toLocaleLowerCase('tr-TR');
@@ -2435,6 +2454,7 @@
     window.currentScheduleMonth = 1;
 
     // AI KAPASİTE, M², BÖLGESEL LOJİSTİK VE TAM SENKRONİZASYON (MALİYET OPTİMİZASYONU)
+    // AI KAPASİTE, M² VE TAM SENKRONİZE YÜK DENGELEME (LOAD BALANCING) ALGORİTMASI
     function generateScheduleData(checkedSubeler, serviceRequests) {
         window.aiScheduleData = {};
         const allSubeler = getData(KEYS.SUBELER);
@@ -2450,146 +2470,140 @@
         for(let d=1; d<=90; d++) dailyUsage[d] = { cam: 0, genel: 0, camIl: null, genelIl: null };
 
         let subelerData = checkedSubeler.map(cb => allSubeler.find(x => x.id == cb.value)).filter(Boolean);
+        // Büyük şubeleri önce yerleştirmek yük dengelemenin altın kuralıdır.
         subelerData.sort((a, b) => {
             let ilCompare = (a.il || "").localeCompare(b.il || "", 'tr-TR');
             if(ilCompare !== 0) return ilCompare;
             return (Number(b.m2) || 0) - (Number(a.m2) || 0); 
         });
 
-        const merkezIller = ['kocaeli', 'sakarya'];
-        
-        // Obje oluşturma yardımcısı
         const ensureCell = (sId, d) => {
             if(!window.aiScheduleData[sId]) window.aiScheduleData[sId] = {};
             if(!window.aiScheduleData[sId][d]) window.aiScheduleData[sId][d] = {cam:0, genel:0, ekstra:0, taseronCam:0, taseronGenel:0};
         };
 
-        subelerData.forEach((sube, index) => {
-            let ilNormal = sube.il.trim().toLocaleLowerCase('tr-TR');
-            let isUzakBolge = !merkezIller.includes(ilNormal); 
+        function getPersCount(m2) {
+            if(m2 <= 250) return 1; if(m2 <= 500) return 2; if(m2 <= 750) return 3;
+            if(m2 <= 1000) return 4; if(m2 <= 1250) return 5; if(m2 <= 1500) return 6;
+            return Math.ceil(m2 / 250); 
+        }
 
+        subelerData.forEach((sube, index) => {
             let subeM2 = Number(sube.m2) || 200;
-            let reqGenel = Math.ceil(subeM2 / 200); 
-            if(reqGenel < 1) reqGenel = 1; if(reqGenel > 6) reqGenel = 6;
+            let reqGenel = getPersCount(subeM2);
 
             let subeCamM2 = Number(sube.camM2);
             if(!subeCamM2 || subeCamM2 === 0) subeCamM2 = subeM2 / 2;
-            let reqCam = Math.ceil(subeCamM2 / 300);
-            if(reqCam < 1) reqCam = 1; if(reqCam > 3) reqCam = 3;
+            let reqCam = getPersCount(subeCamM2);
 
             let assignedCamDays = [null, null, null]; 
 
-            // ================= CAM ATAMALARI =================
+            // ================= CAM ATAMALARI (YÜK DENGELEME) =================
             if (hasCam) {
                 for (let m = 0; m < 3; m++) {
                     let startDay = (m * 30) + 1;
                     let endDay = (m * 30) + 30;
                     
-                    if (isUzakBolge) {
-                        let targetDay = startDay + (index % 26) + 1; // Ay geneline yay
-                        if (targetDay % 7 === 0) targetDay++; 
-                        ensureCell(sube.id, targetDay);
-                        window.aiScheduleData[sube.id][targetDay].taseronCam = reqCam;
-                        assignedCamDays[m] = targetDay;
-                        continue;
-                    }
+                    let bestDay = null;
+                    let bestScore = -9999; // En yüksek boş kapasiteye sahip günü arıyoruz
 
-                    let assigned = false;
-                    // YENİ: Yığılmayı önlemek için aramaya ayın ortalarından / rastgele başla (Dairesel Arama)
-                    let idealDay = startDay + (index % 24) + 1; 
-                    if(idealDay % 7 === 0) idealDay++;
+                    for(let d = startDay; d <= endDay; d++) {
+                        if (d % 7 === 0) continue; // Pazar pas geçilir
+                        
+                        let currentIl = dailyUsage[d].camIl;
+                        let isSameIl = (currentIl === sube.il || !currentIl);
+                        
+                        // Lojistik: Sadece aynı il olan günlere veya tamamen boş günlere atama yap!
+                        if (!isSameIl) continue;
 
-                    let tryAssignCam = (d) => {
-                        if (d % 7 === 0) return false;
-                        let isSameIl = !dailyUsage[d].camIl || dailyUsage[d].camIl === sube.il;
-                        let availableCap = capCam - dailyUsage[d].cam;
-
-                        // YENİ: Kapasite tamamen dolmamışsa (availableCap > 0), kadrolu ata, artanı taşerona ver
-                        if (availableCap > 0 && isSameIl) {
-                            ensureCell(sube.id, d);
-                            let assignCam = Math.min(reqCam, availableCap);
-                            let assignTaseron = reqCam - assignCam; 
-
-                            window.aiScheduleData[sube.id][d].cam = assignCam;
-                            if(assignTaseron > 0) window.aiScheduleData[sube.id][d].taseronCam = assignTaseron;
-
-                            dailyUsage[d].cam += assignCam;
-                            dailyUsage[d].camIl = sube.il;
-                            assignedCamDays[m] = d;
-                            return true;
-                        }
-                        return false;
-                    };
-
-                    // Önce ideal günden ay sonuna doğru ara
-                    for(let d = idealDay; d <= endDay; d++) {
-                        if(tryAssignCam(d)) { assigned = true; break; }
-                    }
-                    // Bulamazsa ayın başından ideal güne kadar ara
-                    if(!assigned) {
-                        for(let d = startDay; d < idealDay; d++) {
-                            if(tryAssignCam(d)) { assigned = true; break; }
+                        let idleCap = capCam - dailyUsage[d].cam;
+                        
+                        // O GÜNKÜ BOŞLUK daha fazlaysa bu günü seç! (Yükü aya dümdüz yayar)
+                        if (idleCap > bestScore) {
+                            bestScore = idleCap;
+                            bestDay = d;
                         }
                     }
-                    // Hiç boşluk yoksa mecburen ideal güne %100 Taşeron ata
-                    if(!assigned) {
-                        ensureCell(sube.id, idealDay);
-                        window.aiScheduleData[sube.id][idealDay].taseronCam = reqCam;
-                        assignedCamDays[m] = idealDay;
+
+                    // Kendi ilinde hiç boşluk kalmadıysa (çok yoğun bir il ise), ay içindeki HERHANGİ bir en boş güne ata
+                    if (!bestDay) {
+                        for(let d = startDay; d <= endDay; d++) {
+                            if (d % 7 === 0) continue;
+                            let idleCap = capCam - dailyUsage[d].cam;
+                            if (idleCap > bestScore) {
+                                bestScore = idleCap;
+                                bestDay = d;
+                            }
+                        }
                     }
+
+                    ensureCell(sube.id, bestDay);
+                    let assignCam = Math.min(reqCam, Math.max(0, capCam - dailyUsage[bestDay].cam));
+                    let assignTaseron = reqCam - assignCam; 
+
+                    window.aiScheduleData[sube.id][bestDay].cam = assignCam;
+                    if(assignTaseron > 0) window.aiScheduleData[sube.id][bestDay].taseronCam = assignTaseron;
+
+                    dailyUsage[bestDay].cam += assignCam;
+                    dailyUsage[bestDay].camIl = sube.il;
+                    assignedCamDays[m] = bestDay;
                 }
             }
 
-            // ================= GENEL TEMİZLİK ATAMALARI =================
+            // ================= GENEL TEMİZLİK ATAMALARI (YÜK DENGELEME) =================
             if (hasGenel) {
                 let targetMonthIndex = index % 3; 
                 let startDay = (targetMonthIndex * 30) + 1;
                 let endDay = (targetMonthIndex * 30) + 30;
 
-                if (isUzakBolge) {
-                    let preferDay = assignedCamDays[targetMonthIndex] || startDay + (index % 26) + 2;
-                    if(preferDay % 7 === 0) preferDay++;
-                    ensureCell(sube.id, preferDay);
-                    window.aiScheduleData[sube.id][preferDay].taseronGenel = reqGenel;
-                    return; 
-                }
+                let bestDay = null;
+                let bestScore = -9999;
 
-                let assigned = false;
-                let idealDay = assignedCamDays[targetMonthIndex] || startDay + (index % 24) + 1;
-                if(idealDay % 7 === 0) idealDay++;
-
-                let tryAssignGenel = (d) => {
-                    if (d % 7 === 0) return false;
-                    let isSameIl = !dailyUsage[d].genelIl || dailyUsage[d].genelIl === sube.il;
-                    let availableCap = capGenel - dailyUsage[d].genel;
-
-                    if (availableCap > 0 && isSameIl) { 
-                        ensureCell(sube.id, d);
-                        let assignGenel = Math.min(reqGenel, availableCap);
-                        let assignTaseron = reqGenel - assignGenel;
-
-                        window.aiScheduleData[sube.id][d].genel = assignGenel;
-                        if(assignTaseron > 0) window.aiScheduleData[sube.id][d].taseronGenel = assignTaseron;
-
-                        dailyUsage[d].genel += assignGenel;
-                        dailyUsage[d].genelIl = sube.il;
-                        return true;
-                    }
-                    return false;
-                };
-
-                for(let d = idealDay; d <= endDay; d++) {
-                    if(tryAssignGenel(d)) { assigned = true; break; }
-                }
-                if (!assigned) {
-                    for(let d = startDay; d < idealDay; d++) {
-                        if(tryAssignGenel(d)) { assigned = true; break; }
+                // ÖNCELİK: Lojistik maliyeti düşürmek için Camcılarla aynı gün gitsinler!
+                let preferDay = assignedCamDays[targetMonthIndex];
+                if (preferDay) {
+                    let currentIl = dailyUsage[preferDay].genelIl;
+                    let isSameIl = (currentIl === sube.il || !currentIl);
+                    if (isSameIl) {
+                        bestDay = preferDay; // Arabada onlara da yer var, beraber gitsinler
                     }
                 }
-                if(!assigned) {
-                    ensureCell(sube.id, idealDay);
-                    window.aiScheduleData[sube.id][idealDay].taseronGenel = reqGenel;
+
+                // Camcılarla gidemedilerse, Genel Temizlik ekibi için en boş günü (Yük Dengeleme) bul
+                if (!bestDay) {
+                    for(let d = startDay; d <= endDay; d++) {
+                        if (d % 7 === 0) continue;
+                        let currentIl = dailyUsage[d].genelIl;
+                        let isSameIl = (currentIl === sube.il || !currentIl);
+                        if (!isSameIl) continue;
+
+                        let idleCap = capGenel - dailyUsage[d].genel;
+                        if (idleCap > bestScore) {
+                            bestScore = idleCap;
+                            bestDay = d;
+                        }
+                    }
+                    if (!bestDay) {
+                        for(let d = startDay; d <= endDay; d++) {
+                            if (d % 7 === 0) continue;
+                            let idleCap = capGenel - dailyUsage[d].genel;
+                            if (idleCap > bestScore) {
+                                bestScore = idleCap;
+                                bestDay = d;
+                            }
+                        }
+                    }
                 }
+
+                ensureCell(sube.id, bestDay);
+                let assignGenel = Math.min(reqGenel, Math.max(0, capGenel - dailyUsage[bestDay].genel));
+                let assignTaseron = reqGenel - assignGenel;
+
+                window.aiScheduleData[sube.id][bestDay].genel = assignGenel;
+                if(assignTaseron > 0) window.aiScheduleData[sube.id][bestDay].taseronGenel = assignTaseron;
+
+                dailyUsage[bestDay].genel += assignGenel;
+                dailyUsage[bestDay].genelIl = sube.il;
             }
         });
     }
