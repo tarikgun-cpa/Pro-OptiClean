@@ -2453,7 +2453,6 @@
     window.aiScheduleData = {}; 
     window.currentScheduleMonth = 1;
 
-    // AI KAPASİTE, M², BÖLGESEL LOJİSTİK VE TAM SENKRONİZASYON (MALİYET OPTİMİZASYONU)
     // AI KAPASİTE, M² VE TAM SENKRONİZE YÜK DENGELEME (LOAD BALANCING) ALGORİTMASI
     function generateScheduleData(checkedSubeler, serviceRequests) {
         window.aiScheduleData = {};
@@ -2467,10 +2466,12 @@
         let hasGenel = serviceRequests.some(s => s.ad.toLowerCase().includes("genel"));
 
         let dailyUsage = {};
-        for(let d=1; d<=90; d++) dailyUsage[d] = { cam: 0, genel: 0, camIl: null, genelIl: null };
+        // HATA BURADAYDI: Taşeron sayıları günlük hafızada tutulmuyordu! Şimdi eklendi.
+        for(let d=1; d<=90; d++) dailyUsage[d] = { cam: 0, genel: 0, taseronCam: 0, taseronGenel: 0, camIl: null, genelIl: null };
 
         let subelerData = checkedSubeler.map(cb => allSubeler.find(x => x.id == cb.value)).filter(Boolean);
-        // Büyük şubeleri önce yerleştirmek yük dengelemenin altın kuralıdır.
+        
+        // Büyük şubeleri ilk önce yerleştirmek yük dengelemenin altın kuralıdır.
         subelerData.sort((a, b) => {
             let ilCompare = (a.il || "").localeCompare(b.il || "", 'tr-TR');
             if(ilCompare !== 0) return ilCompare;
@@ -2482,6 +2483,7 @@
             if(!window.aiScheduleData[sId][d]) window.aiScheduleData[sId][d] = {cam:0, genel:0, ekstra:0, taseronCam:0, taseronGenel:0};
         };
 
+        // KULLANICININ VERDİĞİ KUSURSUZ M2/PERSONEL MATEMATİĞİ
         function getPersCount(m2) {
             if(m2 <= 250) return 1; if(m2 <= 500) return 2; if(m2 <= 750) return 3;
             if(m2 <= 1000) return 4; if(m2 <= 1250) return 5; if(m2 <= 1500) return 6;
@@ -2505,33 +2507,31 @@
                     let endDay = (m * 30) + 30;
                     
                     let bestDay = null;
-                    let bestScore = -9999; // En yüksek boş kapasiteye sahip günü arıyoruz
+                    let minLoad = 999999; // En az personelin (Kadro + Taşeron) atandığı günü arıyoruz
 
+                    // 1. Önce Kendi İline Ait Günlere Veya Boş Günlere Bak
                     for(let d = startDay; d <= endDay; d++) {
                         if (d % 7 === 0) continue; // Pazar pas geçilir
                         
                         let currentIl = dailyUsage[d].camIl;
-                        let isSameIl = (currentIl === sube.il || !currentIl);
+                        if (currentIl && currentIl !== sube.il) continue; // İl kuralı
                         
-                        // Lojistik: Sadece aynı il olan günlere veya tamamen boş günlere atama yap!
-                        if (!isSameIl) continue;
-
-                        let idleCap = capCam - dailyUsage[d].cam;
+                        let totalLoad = dailyUsage[d].cam + dailyUsage[d].taseronCam; // GERÇEK YÜK
                         
-                        // O GÜNKÜ BOŞLUK daha fazlaysa bu günü seç! (Yükü aya dümdüz yayar)
-                        if (idleCap > bestScore) {
-                            bestScore = idleCap;
+                        if (totalLoad < minLoad) {
+                            minLoad = totalLoad;
                             bestDay = d;
                         }
                     }
 
-                    // Kendi ilinde hiç boşluk kalmadıysa (çok yoğun bir il ise), ay içindeki HERHANGİ bir en boş güne ata
+                    // 2. Kendi ilinde yer yoksa (veya tüm günler başka illere verildiyse), o ayki EN BOŞ güne zorla ata
                     if (!bestDay) {
+                        minLoad = 999999;
                         for(let d = startDay; d <= endDay; d++) {
                             if (d % 7 === 0) continue;
-                            let idleCap = capCam - dailyUsage[d].cam;
-                            if (idleCap > bestScore) {
-                                bestScore = idleCap;
+                            let totalLoad = dailyUsage[d].cam + dailyUsage[d].taseronCam;
+                            if (totalLoad < minLoad) {
+                                minLoad = totalLoad;
                                 bestDay = d;
                             }
                         }
@@ -2545,6 +2545,7 @@
                     if(assignTaseron > 0) window.aiScheduleData[sube.id][bestDay].taseronCam = assignTaseron;
 
                     dailyUsage[bestDay].cam += assignCam;
+                    dailyUsage[bestDay].taseronCam += assignTaseron; // HATA BURADAYDI!
                     dailyUsage[bestDay].camIl = sube.il;
                     assignedCamDays[m] = bestDay;
                 }
@@ -2557,38 +2558,39 @@
                 let endDay = (targetMonthIndex * 30) + 30;
 
                 let bestDay = null;
-                let bestScore = -9999;
+                let minLoad = 999999;
 
-                // ÖNCELİK: Lojistik maliyeti düşürmek için Camcılarla aynı gün gitsinler!
+                // ÖNCELİK 1: Lojistik maliyeti düşürmek için Camcılarla aynı gün gitsinler!
                 let preferDay = assignedCamDays[targetMonthIndex];
                 if (preferDay) {
                     let currentIl = dailyUsage[preferDay].genelIl;
-                    let isSameIl = (currentIl === sube.il || !currentIl);
-                    if (isSameIl) {
+                    if (!currentIl || currentIl === sube.il) {
                         bestDay = preferDay; // Arabada onlara da yer var, beraber gitsinler
                     }
                 }
 
-                // Camcılarla gidemedilerse, Genel Temizlik ekibi için en boş günü (Yük Dengeleme) bul
+                // ÖNCELİK 2: Camcılarla gidemedilerse, o ildeki EN BOŞ günü bul
                 if (!bestDay) {
                     for(let d = startDay; d <= endDay; d++) {
                         if (d % 7 === 0) continue;
                         let currentIl = dailyUsage[d].genelIl;
-                        let isSameIl = (currentIl === sube.il || !currentIl);
-                        if (!isSameIl) continue;
+                        if (currentIl && currentIl !== sube.il) continue;
 
-                        let idleCap = capGenel - dailyUsage[d].genel;
-                        if (idleCap > bestScore) {
-                            bestScore = idleCap;
+                        let totalLoad = dailyUsage[d].genel + dailyUsage[d].taseronGenel;
+                        if (totalLoad < minLoad) {
+                            minLoad = totalLoad;
                             bestDay = d;
                         }
                     }
+                    
+                    // ÖNCELİK 3: Kendi ilinde hiç yer yoksa o ayın EN BOŞ gününü bul
                     if (!bestDay) {
+                        minLoad = 999999;
                         for(let d = startDay; d <= endDay; d++) {
                             if (d % 7 === 0) continue;
-                            let idleCap = capGenel - dailyUsage[d].genel;
-                            if (idleCap > bestScore) {
-                                bestScore = idleCap;
+                            let totalLoad = dailyUsage[d].genel + dailyUsage[d].taseronGenel;
+                            if (totalLoad < minLoad) {
+                                minLoad = totalLoad;
                                 bestDay = d;
                             }
                         }
@@ -2603,6 +2605,7 @@
                 if(assignTaseron > 0) window.aiScheduleData[sube.id][bestDay].taseronGenel = assignTaseron;
 
                 dailyUsage[bestDay].genel += assignGenel;
+                dailyUsage[bestDay].taseronGenel += assignTaseron; // HATA BURADAYDI!
                 dailyUsage[bestDay].genelIl = sube.il;
             }
         });
