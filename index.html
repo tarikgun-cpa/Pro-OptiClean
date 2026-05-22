@@ -8,8 +8,13 @@
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
     <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
     <style>
-        /* GENEL TEMA VE TİPOGRAFİ (Kompakt ve Modern) */
-        body { background-color: #f1f5f9; font-family: 'Segoe UI', Roboto, Helvetica, Arial, sans-serif; font-size: 13px; color: #334155; }
+        /* GENEL TEMA VE TİPOGRAFİ (Premium SaaS Tasarımı) */
+        body { background-color: #f8fafc; font-family: 'Inter', sans-serif; font-size: 13px; color: #334155; display: flex; flex-direction: column; min-height: 100vh; margin: 0; }
+        
+        /* Flexbox Sayfa Yapısı */
+        #mainApp { display: flex; flex-direction: column; flex-grow: 1; padding-top: 15px !important; }
+        .tab-content { flex-grow: 1; display: flex; flex-direction: column; }
+        .tab-pane { flex-grow: 1; }
         
         /* KARTLAR (Daha ince kenarlık, yumuşak gölgeler, daraltılmış iç boşluklar) */
         .card { border: 1px solid #e2e8f0; border-radius: 12px; box-shadow: 0 4px 6px -1px rgba(0,0,0,0.05); margin-bottom: 16px; background-color: #ffffff; }
@@ -61,21 +66,17 @@
         .bg-sakarya { background-color: #f0fdf4 !important; }
         .bg-yalova { background-color: #fffbeb !important; }
         .sunday-col { background-color: #fef2f2 !important; }
-        /* ================= PLANLAMA MATRİSİ YENİ ARAYÜZÜ ================= */
-        .matrix-wrapper { height: calc(100vh - 160px); display: flex; flex-direction: column; background: #fff; border-radius: 12px; border: 1px solid #cbd5e1; box-shadow: 0 4px 6px -1px rgba(0,0,0,0.05); overflow: hidden; }
-        .matrix-header { padding: 12px 20px; background: #f8fafc; border-bottom: 1px solid #e2e8f0; display: flex; justify-content: space-between; align-items: center; }
-        .matrix-summary { background: #fff; padding: 12px 20px; border-bottom: 1px solid #e2e8f0; display: flex; justify-content: space-between; align-items: center; font-size: 13px; }
+        /* ================= PLANLAMA MATRİSİ ================= */
+        #planlama-modulu { display: flex; flex-direction: column; height: 100%; }
+        .matrix-wrapper { flex-grow: 1; display: flex; flex-direction: column; background: #fff; border-radius: 12px; border: 1px solid #cbd5e1; box-shadow: 0 4px 12px rgba(0,0,0,0.04); overflow: hidden; min-height: 500px;}
+        .matrix-header { padding: 10px 20px; background: #f8fafc; border-bottom: 1px solid #e2e8f0; display: flex; justify-content: space-between; align-items: center; }
+        .matrix-summary { background: #fff; padding: 10px 20px; border-bottom: 1px solid #e2e8f0; display: flex; justify-content: space-between; align-items: center; font-size: 12px; }
         
-        /* EN ÖNEMLİ DÜZELTME: 500px ölü boşluk limitini matris için eziyoruz */
-        #planlama-modulu .table-responsive { max-height: none !important; height: 100%; border: none; border-radius: 0; margin: 0; }
+        #planlama-modulu .table-responsive { max-height: none !important; height: 100%; border: none; border-radius: 0; margin: 0; box-shadow: none; }
         
-        /* Tablo Header ve Sabit Sütunların Koyu & Şık Tasarımı */
-        .schedule-table thead th { position: sticky; top: 0; z-index: 10; background-color: #1e293b !important; color: #f8fafc !important; border-color: #334155 !important; box-shadow: 0 2px 4px rgba(0,0,0,0.15); font-size: 11px; padding: 8px 4px !important; }
+        .schedule-table thead th { position: sticky; top: 0; z-index: 10; background-color: #1e293b !important; color: #f8fafc !important; border-color: #334155 !important; box-shadow: 0 2px 4px rgba(0,0,0,0.15); font-size: 10px; padding: 6px 4px !important; }
         .schedule-table .sticky-col { position: sticky; left: 0; z-index: 11; background-color: #f8fafc; box-shadow: 2px 0 5px rgba(0,0,0,0.05); border-right: 2px solid #cbd5e1 !important; }
         .schedule-table thead .sticky-col { z-index: 12; background-color: #0f172a !important; color: #fff !important; border-right: 2px solid #334155 !important; }
-        /* SAYFA YÜKSEKLİK VE BOŞLUK DÜZELTMESİ */
-        .matrix-wrapper { height: calc(100vh - 240px); min-height: 500px; }
-        .tab-content { padding-bottom: 20px; }
     </style>
 </head>
 <body>
@@ -645,11 +646,14 @@
             </div>
         </div>
         
-    </div> <div class="text-center mt-5 mb-4 text-muted" style="font-size: 13px; font-weight: 600; letter-spacing: 0.5px;">
-        Yazılım & Altyapı: <img src="Logo2.png" alt="CPA-FTC Logo" style="height: 20px; margin: 0 6px; vertical-align: middle;"> ERP © 2026
+    </div> 
+    
+    <div class="footer-area text-center mt-auto py-3 border-top w-100" style="font-size: 12px; font-weight: 600; color: #64748b; letter-spacing: 0.5px; background: #f8fafc;">
+        Yazılım & Altyapı: <img src="Logo2.png" alt="CPA-FTC Logo" style="height: 16px; margin: 0 6px; vertical-align: text-bottom; opacity: 0.8;"> ERP © 2026
     </div>
 
-</div> <script>
+</div> 
+<script>
     // ================== FIREBASE BAĞLANTISI VE GİRİŞ (YENİ) ==================
     const firebaseConfig = {
             apiKey: "AIzaSyDffhsJ8iFPAzY-XEJoY6ffkwD4OH3Y7zs",
@@ -1607,23 +1611,29 @@
         
         // HIZLI AYAR PANELİ (MODAL İÇİNE EKLENEN KISIM)
         let hizliAyarHTML = `
-            <div class="bg-light p-3 rounded mt-3 border">
-                <h6 class="text-primary fw-bold mb-2" style="font-size:12px;">Hızlı İstihdam Güncellemesi</h6>
-                <div class="row g-2">
-                    <div class="col-4">
-                        <label style="font-size:10px;" class="text-muted fw-bold">Cam FT</label>
-                        <input type="number" id="hizliCamFT" class="form-control form-control-sm" value="${camFT}">
+            <div class="bg-light p-3 rounded mt-3 border shadow-sm">
+                <h6 class="text-primary fw-bold mb-3" style="font-size:13px;"><i class="align-middle me-1">⚡</i> Hızlı İstihdam Güncellemesi</h6>
+                <div class="row g-2 mb-2">
+                    <div class="col-6">
+                        <label style="font-size:10px;" class="text-info fw-bold text-uppercase">🧽 Cam FT</label>
+                        <input type="number" id="hizliCamFT" class="form-control form-control-sm border-info" value="${camFT}">
                     </div>
-                    <div class="col-4">
-                        <label style="font-size:10px;" class="text-muted fw-bold">Cam PT</label>
-                        <input type="number" id="hizliCamPT" class="form-control form-control-sm" value="${camPT}">
-                    </div>
-                    <div class="col-4">
-                        <label style="font-size:10px;" class="text-muted fw-bold">Genel FT</label>
-                        <input type="number" id="hizliGenelFT" class="form-control form-control-sm" value="${genelFT}">
+                    <div class="col-6">
+                        <label style="font-size:10px;" class="text-info fw-bold text-uppercase">🧽 Cam PT</label>
+                        <input type="number" id="hizliCamPT" class="form-control form-control-sm border-info" value="${camPT}">
                     </div>
                 </div>
-                <button onclick="hizliAyarKaydetVeYenidenHesapla()" class="btn btn-sm btn-success w-100 mt-2 fw-bold">Kaydet ve Yeniden Analiz Et</button>
+                <div class="row g-2">
+                    <div class="col-6">
+                        <label style="font-size:10px;" class="text-secondary fw-bold text-uppercase">🧹 Genel FT</label>
+                        <input type="number" id="hizliGenelFT" class="form-control form-control-sm border-secondary" value="${genelFT}">
+                    </div>
+                    <div class="col-6">
+                        <label style="font-size:10px;" class="text-secondary fw-bold text-uppercase">🧹 Genel PT</label>
+                        <input type="number" id="hizliGenelPT" class="form-control form-control-sm border-secondary" value="${genelPT}">
+                    </div>
+                </div>
+                <button onclick="hizliAyarKaydetVeYenidenHesapla()" class="btn btn-sm btn-success w-100 mt-3 fw-bold py-2 shadow-sm">💾 Kaydet ve Yeniden Analiz Et</button>
             </div>
         `;
 
@@ -1658,6 +1668,7 @@
         ayarlar.camFT = document.getElementById('hizliCamFT').value;
         ayarlar.camPT = document.getElementById('hizliCamPT').value;
         ayarlar.genelFT = document.getElementById('hizliGenelFT').value;
+        ayarlar.genelPT = document.getElementById('hizliGenelPT').value;
         
         localStorage.setItem(KEYS.AYARLAR, JSON.stringify(ayarlar));
         
@@ -1665,6 +1676,7 @@
         document.getElementById('ayarCamFT').value = ayarlar.camFT;
         document.getElementById('ayarCamPT').value = ayarlar.camPT;
         document.getElementById('ayarGenelFT').value = ayarlar.genelFT;
+        document.getElementById('ayarGenelPT').value = ayarlar.genelPT;
 
         let modalEl = document.getElementById('istihdamModal');
         let modalObj = bootstrap.Modal.getInstance(modalEl);
@@ -1863,6 +1875,7 @@
             <html>
                 <head>
                     <title>İç Finansal Analiz Raporu</title>
+                    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
                     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
                     <style>
                         body { padding: 20px; font-family: Arial, sans-serif; }
@@ -3146,12 +3159,14 @@
         activeCell = { subeId: null, day: null };
     }
     
-    // Ekranda menü dışı boş bir yere tıklayınca menüyü kapat
-    document.addEventListener('click', function(e) {
-        let menu = document.getElementById('cellMenu');
-        if(menu.style.display === 'block' && !menu.contains(e.target)) {
-            closeCellMenu();
-        }
+    // SEKMELER DEĞİŞTİĞİNDE HAYALET MENÜYÜ KAPATAN DİNLEYİCİ
+    document.addEventListener("DOMContentLoaded", function() {
+        const tabs = document.querySelectorAll('button[data-bs-toggle="tab"]');
+        tabs.forEach(tab => {
+            tab.addEventListener('show.bs.tab', function (event) {
+                closeCellMenu(); // Sekme değiştiği an menüyü yok et
+            });
+        });
     });
     
     function printSchedule() {
