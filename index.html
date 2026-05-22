@@ -336,15 +336,34 @@
                                     <span class="input-group-text bg-primary text-white">₺</span>
                                 </div>
                                 
-                                <h6 class="mt-4 border-bottom border-secondary pb-1 text-secondary">Personel Kapasitesi (AI Dağıtımı İçin)</h6>
-                                <div class="row g-2 mb-3">
-                                    <div class="col-6">
-                                        <label class="form-label fw-bold" style="font-size:12px;">Mevcut Camcı Sayısı</label>
-                                        <input type="number" id="ayarMevcutCam" class="form-control border-info" placeholder="Örn: 2" value="2">
+                                <h6 class="mt-4 border-bottom border-secondary pb-1 text-secondary">Kapasite ve İstihdam Ayarları (AI İçin)</h6>
+                                <div class="row g-2 mb-3 bg-white p-2 border rounded">
+                                    <div class="col-12 text-info fw-bold mb-1" style="font-size:12px;">🧽 Cam Silici Kadrosu</div>
+                                    <div class="col-4">
+                                        <label class="form-label fw-bold" style="font-size:10px;">Tam Zamanlı (FT)</label>
+                                        <input type="number" id="ayarCamFT" class="form-control border-info form-control-sm" placeholder="Örn: 2" value="2">
                                     </div>
-                                    <div class="col-6">
-                                        <label class="form-label fw-bold" style="font-size:12px;">Mevcut Temizlik Ekibi</label>
-                                        <input type="number" id="ayarMevcutGenel" class="form-control border-secondary" placeholder="Örn: 3" value="3">
+                                    <div class="col-4">
+                                        <label class="form-label fw-bold" style="font-size:10px;">Part-Time (PT)</label>
+                                        <input type="number" id="ayarCamPT" class="form-control border-info form-control-sm" placeholder="Örn: 1" value="0">
+                                    </div>
+                                    <div class="col-4">
+                                        <label class="form-label fw-bold" style="font-size:10px;">PT Çalışma (Gün)</label>
+                                        <input type="number" id="ayarCamPTGun" class="form-control border-info form-control-sm" placeholder="Örn: 10" value="10">
+                                    </div>
+                                    
+                                    <div class="col-12 text-secondary fw-bold mt-2 mb-1" style="font-size:12px;">🧹 Genel Temizlik Kadrosu</div>
+                                    <div class="col-4">
+                                        <label class="form-label fw-bold" style="font-size:10px;">Tam Zamanlı (FT)</label>
+                                        <input type="number" id="ayarGenelFT" class="form-control border-secondary form-control-sm" placeholder="Örn: 1" value="1">
+                                    </div>
+                                    <div class="col-4">
+                                        <label class="form-label fw-bold" style="font-size:10px;">Part-Time (PT)</label>
+                                        <input type="number" id="ayarGenelPT" class="form-control border-secondary form-control-sm" placeholder="Örn: 4" value="4">
+                                    </div>
+                                    <div class="col-4">
+                                        <label class="form-label fw-bold" style="font-size:10px;">PT Çalışma (Gün)</label>
+                                        <input type="number" id="ayarGenelPTGun" class="form-control border-secondary form-control-sm" placeholder="Örn: 15" value="15">
                                     </div>
                                 </div>
                                 
@@ -987,8 +1006,12 @@
             sarf: document.getElementById('ayarSarfOran').value,
             kar: document.getElementById('ayarKarOran').value,
             taban: document.getElementById('ayarTabanFiyat').value,
-            mevcutCam: document.getElementById('ayarMevcutCam').value, // YENİ
-            mevcutGenel: document.getElementById('ayarMevcutGenel').value // YENİ
+            camFT: document.getElementById('ayarCamFT').value,
+            camPT: document.getElementById('ayarCamPT').value,
+            camPTGun: document.getElementById('ayarCamPTGun').value,
+            genelFT: document.getElementById('ayarGenelFT').value,
+            genelPT: document.getElementById('ayarGenelPT').value,
+            genelPTGun: document.getElementById('ayarGenelPTGun').value
         };
         localStorage.setItem(KEYS.AYARLAR, JSON.stringify(ayarlar));
         document.getElementById('teklifKarOrani').value = ayarlar.kar;
@@ -1091,8 +1114,12 @@
         document.getElementById('ayarSarfOran').value = ayarlar.sarf || "15";
         document.getElementById('ayarKarOran').value = ayarlar.kar || "50";
         document.getElementById('ayarTabanFiyat').value = ayarlar.taban || "5000";
-        document.getElementById('ayarMevcutCam').value = ayarlar.mevcutCam || "2"; // YENİ
-        document.getElementById('ayarMevcutGenel').value = ayarlar.mevcutGenel || "3"; // YENİ
+        document.getElementById('ayarCamFT').value = ayarlar.camFT || "2";
+        document.getElementById('ayarCamPT').value = ayarlar.camPT || "0";
+        document.getElementById('ayarCamPTGun').value = ayarlar.camPTGun || "10";
+        document.getElementById('ayarGenelFT').value = ayarlar.genelFT || "1";
+        document.getElementById('ayarGenelPT').value = ayarlar.genelPT || "4";
+        document.getElementById('ayarGenelPTGun').value = ayarlar.genelPTGun || "15";
         document.getElementById('teklifKarOrani').value = ayarlar.kar || "50";
         
         // Teklif Modülü için hizmetleri dinamik oluştur
@@ -1479,16 +1506,195 @@
         document.getElementById('resKar').innerText = karTutari.toLocaleString('tr-TR', {maximumFractionDigits:2}) + " TL";
         document.getElementById('resSatis').innerText = teklifSatisTutari.toLocaleString('tr-TR', {maximumFractionDigits:2}) + " TL";
         document.getElementById('teklifAnalizTablosu').innerHTML = tableHTML;
-        // YENİ: 3 AYLIK İNTERAKTİF GÖREV DAĞILIM MATRİSİ (AI OTOMATİK DOLDURUR)
-        generateScheduleData(checkedSubeler, serviceRequests);
+        // ================== UYARI MODALI VE AI TETİKLEME ==================
+        function getPersCountMatrix(m) {
+            if(m <= 250) return 1; if(m <= 500) return 2; if(m <= 750) return 3;
+            if(m <= 1000) return 4; if(m <= 1250) return 5; if(m <= 1500) return 6;
+            return Math.ceil(m / 250); 
+        }
 
-        // Tabloyu arka planda yeni sekmeye (Planlama) çiz
+        let maxCamIhtiyac = 0; let maxGenelIhtiyac = 0;
+        let hasCamModal = serviceRequests.some(s => s.ad.toLowerCase().includes("cam"));
+        let hasGenelModal = serviceRequests.some(s => s.ad.toLowerCase().includes("genel"));
+
+        checkedSubeler.forEach(cb => {
+            let sube = allSubeler.find(x => x.id == cb.value);
+            let cM2 = Number(sube.camM2) ? Number(sube.camM2) : (Number(sube.m2)||200)/2;
+            let cReq = getPersCountMatrix(cM2);
+            let gReq = getPersCountMatrix(Number(sube.m2)||200);
+            if (cReq > maxCamIhtiyac) maxCamIhtiyac = cReq;
+            if (gReq > maxGenelIhtiyac) maxGenelIhtiyac = gReq;
+        });
+
+        const ayarlarModal = JSON.parse(localStorage.getItem(KEYS.AYARLAR)) || {};
+        let totalCamCap = (Number(ayarlarModal.camFT)||0) + (Number(ayarlarModal.camPT)||0);
+        let totalGenelCap = (Number(ayarlarModal.genelFT)||0) + (Number(ayarlarModal.genelPT)||0);
+
+        let uyariHTML = "";
+        if(hasCamModal && maxCamIhtiyac > totalCamCap) uyariHTML += `<li>👉 Cam Temizliği: Tek günde ${maxCamIhtiyac} kişi gerekiyor (Mevcut Kapasite: ${totalCamCap})</li>`;
+        if(hasGenelModal && maxGenelIhtiyac > totalGenelCap) uyariHTML += `<li>👉 Genel Temizlik: Tek günde ${maxGenelIhtiyac} kişi gerekiyor (Mevcut Kapasite: ${totalGenelCap})</li>`;
+
+        window.pendingMatrixArgs = { subeler: checkedSubeler, services: serviceRequests };
+
+        if(uyariHTML !== "") {
+            document.getElementById('istihdamUyariListesi').innerHTML = uyariHTML;
+            let modal = new bootstrap.Modal(document.getElementById('istihdamModal'));
+            modal.show();
+        } else {
+            proceedWithAI();
+        }
+    } 
+
+    function proceedWithAI() {
+        let modalEl = document.getElementById('istihdamModal');
+        let modalObj = bootstrap.Modal.getInstance(modalEl);
+        if(modalObj) modalObj.hide();
+
+        generateScheduleData(window.pendingMatrixArgs.subeler, window.pendingMatrixArgs.services);
         window.currentScheduleMonth = 1;
         setTimeout(() => renderScheduleGrid(), 100);
-
-        // Gizli olan analiz kutusunu görünür yap
         document.getElementById('aiResultBox').style.display = 'block';
     }
+
+    // ================== YENİ NESİL FT/PT DESTEKLİ PLANLAMA MOTORU ==================
+    window.aiScheduleData = {}; 
+    window.currentScheduleMonth = 1;
+
+    function generateScheduleData(checkedSubeler, serviceRequests) {
+        window.aiScheduleData = {};
+        const allSubeler = getData(KEYS.SUBELER);
+        const ayarlar = JSON.parse(localStorage.getItem(KEYS.AYARLAR)) || {};
+        
+        let capCamFT = Number(ayarlar.camFT) || 0; let capCamPT = Number(ayarlar.camPT) || 0; let ptCamGun = Number(ayarlar.camPTGun) || 0;
+        let capGenelFT = Number(ayarlar.genelFT) || 0; let capGenelPT = Number(ayarlar.genelPT) || 0; let ptGenelGun = Number(ayarlar.genelPTGun) || 0;
+
+        let hasCam = serviceRequests.some(s => s.ad.toLowerCase().includes("cam"));
+        let hasGenel = serviceRequests.some(s => s.ad.toLowerCase().includes("genel"));
+
+        let subelerData = checkedSubeler.map(cb => allSubeler.find(x => x.id == cb.value)).filter(Boolean);
+        subelerData.sort((a, b) => (Number(b.m2) || 0) - (Number(a.m2) || 0));
+
+        function getPersCount(m2) {
+            if(m2 <= 250) return 1; if(m2 <= 500) return 2; if(m2 <= 750) return 3;
+            if(m2 <= 1000) return 4; if(m2 <= 1250) return 5; if(m2 <= 1500) return 6;
+            return Math.ceil(m2 / 250); 
+        }
+
+        let dailyUsage = {};
+        for(let d=1; d<=90; d++) dailyUsage[d] = { camFT: 0, camPT: 0, genelFT: 0, genelPT: 0, taseronCam: 0, taseronGenel: 0, camIl: null, genelIl: null };
+
+        let monthPTCamRemaining = [capCamPT * ptCamGun, capCamPT * ptCamGun, capCamPT * ptCamGun];
+        let monthPTGenelRemaining = [capGenelPT * ptGenelGun, capGenelPT * ptGenelGun, capGenelPT * ptGenelGun];
+
+        const ensureCell = (sId, d) => {
+            if(!window.aiScheduleData[sId]) window.aiScheduleData[sId] = {};
+            if(!window.aiScheduleData[sId][d]) window.aiScheduleData[sId][d] = {cam:0, genel:0, ekstra:0, taseronCam:0, taseronGenel:0};
+        };
+
+        subelerData.forEach((sube, index) => {
+            let reqGenel = getPersCount(Number(sube.m2) || 200);
+            let subeCamM2 = Number(sube.camM2) ? Number(sube.camM2) : (Number(sube.m2) || 200) / 2;
+            let reqCam = getPersCount(subeCamM2);
+            let assignedCamDays = [null, null, null]; 
+
+            if (hasCam) {
+                for (let m = 0; m < 3; m++) {
+                    let startDay = (m * 30) + 1; let endDay = (m * 30) + 30;
+                    let bestDay = null; let maxBosKadro = -1;
+
+                    for(let step = 0; step < 2; step++) {
+                        for(let d = startDay; d <= endDay; d++) {
+                            if (d % 7 === 0) continue; 
+                            let currentIl = dailyUsage[d].camIl;
+                            if (step === 0 && currentIl && currentIl !== sube.il) continue; 
+                            
+                            let ftIdle = capCamFT - dailyUsage[d].camFT;
+                            let ptIdle = Math.min(capCamPT - dailyUsage[d].camPT, monthPTCamRemaining[m]);
+                            let totalIdle = ftIdle + ptIdle;
+
+                            if (totalIdle > maxBosKadro) { maxBosKadro = totalIdle; bestDay = d; }
+                        }
+                        if(bestDay) break;
+                    }
+                    if(!bestDay) { for(let d = startDay; d <= endDay; d++) { if (d % 7 !== 0) { bestDay = d; break; } } }
+
+                    ensureCell(sube.id, bestDay);
+                    
+                    let kalanis = reqCam;
+                    let ftIdle = capCamFT - dailyUsage[bestDay].camFT;
+                    let ftAssign = Math.min(kalanis, ftIdle);
+                    kalanis -= ftAssign;
+
+                    let ptIdle = Math.min(capCamPT - dailyUsage[bestDay].camPT, monthPTCamRemaining[m]);
+                    let ptAssign = Math.min(kalanis, ptIdle);
+                    kalanis -= ptAssign;
+
+                    window.aiScheduleData[sube.id][bestDay].cam = ftAssign + ptAssign;
+                    window.aiScheduleData[sube.id][bestDay].taseronCam = kalanis;
+
+                    dailyUsage[bestDay].camFT += ftAssign;
+                    dailyUsage[bestDay].camPT += ptAssign;
+                    dailyUsage[bestDay].taseronCam += kalanis;
+                    dailyUsage[bestDay].camIl = sube.il;
+                    monthPTCamRemaining[m] -= ptAssign;
+                    assignedCamDays[m] = bestDay;
+                }
+            }
+
+            if (hasGenel) {
+                let m = index % 3; 
+                let startDay = (m * 30) + 1; let endDay = (m * 30) + 30;
+                let bestDay = null; let maxBosKadro = -1;
+
+                let preferDay = assignedCamDays[m];
+                if (preferDay) {
+                    let currentIl = dailyUsage[preferDay].genelIl;
+                    let ftIdle = capGenelFT - dailyUsage[preferDay].genelFT;
+                    let ptIdle = Math.min(capGenelPT - dailyUsage[preferDay].genelPT, monthPTGenelRemaining[m]);
+                    if ((!currentIl || currentIl === sube.il) && (ftIdle + ptIdle) >= reqGenel) bestDay = preferDay;
+                }
+
+                if (!bestDay) {
+                    for(let step = 0; step < 2; step++) {
+                        for(let d = startDay; d <= endDay; d++) {
+                            if (d % 7 === 0) continue;
+                            let currentIl = dailyUsage[d].genelIl;
+                            if (step === 0 && currentIl && currentIl !== sube.il) continue; 
+                            
+                            let ftIdle = capGenelFT - dailyUsage[d].genelFT;
+                            let ptIdle = Math.min(capGenelPT - dailyUsage[d].genelPT, monthPTGenelRemaining[m]);
+                            let totalIdle = ftIdle + ptIdle;
+
+                            if (totalIdle > maxBosKadro) { maxBosKadro = totalIdle; bestDay = d; }
+                        }
+                        if(bestDay) break;
+                    }
+                }
+                if(!bestDay) { for(let d = startDay; d <= endDay; d++) { if (d % 7 !== 0) { bestDay = d; break; } } }
+
+                ensureCell(sube.id, bestDay);
+                let kalanis = reqGenel;
+
+                let ptIdle = Math.min(capGenelPT - dailyUsage[bestDay].genelPT, monthPTGenelRemaining[m]);
+                let ptAssign = Math.min(kalanis, ptIdle);
+                kalanis -= ptAssign;
+
+                let ftIdle = capGenelFT - dailyUsage[bestDay].genelFT;
+                let ftAssign = Math.min(kalanis, ftIdle);
+                kalanis -= ftAssign;
+
+                window.aiScheduleData[sube.id][bestDay].genel = ftAssign + ptAssign;
+                window.aiScheduleData[sube.id][bestDay].taseronGenel = kalanis;
+
+                dailyUsage[bestDay].genelFT += ftAssign;
+                dailyUsage[bestDay].genelPT += ptAssign;
+                dailyUsage[bestDay].taseronGenel += kalanis;
+                dailyUsage[bestDay].genelIl = sube.il;
+                monthPTGenelRemaining[m] -= ptAssign;
+            }
+        });
+    }
+
     // ================== FİRMA VE LOGO İŞLEMLERİ ==================
     document.getElementById('firmaLogoFile').addEventListener('change', function() {
         const file = this.files[0];
@@ -2694,8 +2900,8 @@
         if(!currentGeneratedQuote || !currentGeneratedQuote.subeler) return;
         
         const ayarlar = JSON.parse(localStorage.getItem(KEYS.AYARLAR)) || {};
-        const capCam = Number(ayarlar.mevcutCam) || 0;
-        const capGenel = Number(ayarlar.mevcutGenel) || 0;
+        const capCam = (Number(ayarlar.camFT) || 0) + (Number(ayarlar.camPT) || 0);
+        const capGenel = (Number(ayarlar.genelFT) || 0) + (Number(ayarlar.genelPT) || 0);
 
         const thead = document.getElementById('scheduleThead');
         const tbody = document.getElementById('scheduleTbody');
@@ -3034,6 +3240,27 @@
         </div>
     </div>
 </div>
+<div class="modal fade" id="istihdamModal" tabindex="-1" data-bs-backdrop="static">
+  <div class="modal-dialog modal-dialog-centered">
+    <div class="modal-content border-0 shadow-lg">
+      <div class="modal-header bg-warning text-dark border-0">
+        <h5 class="modal-title fw-bold">⚠️ Kapasite & İstihdam Raporu</h5>
+        <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+      </div>
+      <div class="modal-body bg-light">
+        <p class="mb-3 text-dark">Bu projedeki bazı büyük şubelerin temizliğinin <strong>"1 günde bitirilmesi"</strong> kuralına göre mevcut kadronuz yetersiz kalıyor:</p>
+        <ul id="istihdamUyariListesi" class="text-danger fw-bold" style="font-size: 13px;"></ul>
+        <hr>
+        <p class="mb-0 text-secondary" style="font-size: 13px;">Sistem eksik personelleri ilgili günler için otomatik olarak <b>Taşeron (Dış Ekip)</b> olarak atasın mı? İptal edip "Ayarlar" sekmesinden personel sayınızı artırabilirsiniz.</p>
+      </div>
+      <div class="modal-footer border-0 bg-white">
+        <button type="button" class="btn btn-outline-secondary btn-sm fw-bold px-3" data-bs-dismiss="modal">İptal Et</button>
+        <button type="button" class="btn btn-warning text-dark btn-sm fw-bold px-4 shadow-sm" onclick="proceedWithAI()">Taşeron Onayı ile Devam Et</button>
+      </div>
+    </div>
+  </div>
+</div>
+
 <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
 </body>
 </html>
