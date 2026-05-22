@@ -1608,8 +1608,9 @@
                             let currentIl = dailyUsage[d].camIl;
                             if (step === 0 && currentIl && currentIl !== sube.il) continue; 
                             
-                            let ftIdle = capCamFT - dailyUsage[d].camFT;
-                            let ptIdle = Math.min(capCamPT - dailyUsage[d].camPT, monthPTCamRemaining[m]);
+                            // ZIRH EKLENDİ: Math.max ile negatif kapasite önlendi
+                            let ftIdle = Math.max(0, capCamFT - dailyUsage[d].camFT);
+                            let ptIdle = Math.max(0, Math.min(capCamPT - dailyUsage[d].camPT, monthPTCamRemaining[m]));
                             let totalIdle = ftIdle + ptIdle;
 
                             if (totalIdle > maxBosKadro) { maxBosKadro = totalIdle; bestDay = d; }
@@ -1621,11 +1622,11 @@
                     ensureCell(sube.id, bestDay);
                     
                     let kalanis = reqCam;
-                    let ftIdle = capCamFT - dailyUsage[bestDay].camFT;
+                    let ftIdle = Math.max(0, capCamFT - dailyUsage[bestDay].camFT);
                     let ftAssign = Math.min(kalanis, ftIdle);
                     kalanis -= ftAssign;
 
-                    let ptIdle = Math.min(capCamPT - dailyUsage[bestDay].camPT, monthPTCamRemaining[m]);
+                    let ptIdle = Math.max(0, Math.min(capCamPT - dailyUsage[bestDay].camPT, monthPTCamRemaining[m]));
                     let ptAssign = Math.min(kalanis, ptIdle);
                     kalanis -= ptAssign;
 
@@ -1649,8 +1650,8 @@
                 let preferDay = assignedCamDays[m];
                 if (preferDay) {
                     let currentIl = dailyUsage[preferDay].genelIl;
-                    let ftIdle = capGenelFT - dailyUsage[preferDay].genelFT;
-                    let ptIdle = Math.min(capGenelPT - dailyUsage[preferDay].genelPT, monthPTGenelRemaining[m]);
+                    let ftIdle = Math.max(0, capGenelFT - dailyUsage[preferDay].genelFT);
+                    let ptIdle = Math.max(0, Math.min(capGenelPT - dailyUsage[preferDay].genelPT, monthPTGenelRemaining[m]));
                     if ((!currentIl || currentIl === sube.il) && (ftIdle + ptIdle) >= reqGenel) bestDay = preferDay;
                 }
 
@@ -1661,8 +1662,8 @@
                             let currentIl = dailyUsage[d].genelIl;
                             if (step === 0 && currentIl && currentIl !== sube.il) continue; 
                             
-                            let ftIdle = capGenelFT - dailyUsage[d].genelFT;
-                            let ptIdle = Math.min(capGenelPT - dailyUsage[d].genelPT, monthPTGenelRemaining[m]);
+                            let ftIdle = Math.max(0, capGenelFT - dailyUsage[d].genelFT);
+                            let ptIdle = Math.max(0, Math.min(capGenelPT - dailyUsage[d].genelPT, monthPTGenelRemaining[m]));
                             let totalIdle = ftIdle + ptIdle;
 
                             if (totalIdle > maxBosKadro) { maxBosKadro = totalIdle; bestDay = d; }
@@ -1675,11 +1676,11 @@
                 ensureCell(sube.id, bestDay);
                 let kalanis = reqGenel;
 
-                let ptIdle = Math.min(capGenelPT - dailyUsage[bestDay].genelPT, monthPTGenelRemaining[m]);
+                let ptIdle = Math.max(0, Math.min(capGenelPT - dailyUsage[bestDay].genelPT, monthPTGenelRemaining[m]));
                 let ptAssign = Math.min(kalanis, ptIdle);
                 kalanis -= ptAssign;
 
-                let ftIdle = capGenelFT - dailyUsage[bestDay].genelFT;
+                let ftIdle = Math.max(0, capGenelFT - dailyUsage[bestDay].genelFT);
                 let ftAssign = Math.min(kalanis, ftIdle);
                 kalanis -= ftAssign;
 
@@ -1694,7 +1695,6 @@
             }
         });
     }
-
     // ================== FİRMA VE LOGO İŞLEMLERİ ==================
     document.getElementById('firmaLogoFile').addEventListener('change', function() {
         const file = this.files[0];
