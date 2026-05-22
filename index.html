@@ -73,6 +73,10 @@
         .schedule-table thead th { position: sticky; top: 0; z-index: 10; background-color: #1e293b !important; color: #f8fafc !important; border-color: #334155 !important; box-shadow: 0 2px 4px rgba(0,0,0,0.15); font-size: 11px; padding: 8px 4px !important; }
         .schedule-table .sticky-col { position: sticky; left: 0; z-index: 11; background-color: #f8fafc; box-shadow: 2px 0 5px rgba(0,0,0,0.05); border-right: 2px solid #cbd5e1 !important; }
         .schedule-table thead .sticky-col { z-index: 12; background-color: #0f172a !important; color: #fff !important; border-right: 2px solid #334155 !important; }
+        /* SAYFA YÜKSEKLİK VE BOŞLUK DÜZELTMESİ */
+        html, body { min-height: 100vh; display: flex; flex-direction: column; }
+        #mainApp { flex: 1; display: flex; flex-direction: column; }
+        .tab-content { flex: 1; }
     </style>
 </head>
 <body>
@@ -1531,18 +1535,40 @@
         let totalGenelCap = (Number(ayarlarModal.genelFT)||0) + (Number(ayarlarModal.genelPT)||0);
 
         let uyariHTML = "";
-        if(hasCamModal && maxCamIhtiyac > totalCamCap) uyariHTML += `<li>👉 Cam Temizliği: Tek günde ${maxCamIhtiyac} kişi gerekiyor (Mevcut Kapasite: ${totalCamCap})</li>`;
-        if(hasGenelModal && maxGenelIhtiyac > totalGenelCap) uyariHTML += `<li>👉 Genel Temizlik: Tek günde ${maxGenelIhtiyac} kişi gerekiyor (Mevcut Kapasite: ${totalGenelCap})</li>`;
+        let isKapasiteYetersiz = false;
+
+        // RAPOR HER TÜRLÜ ÇIKAR (YETERLİ / YETERSİZ KONTROLÜ)
+        if (hasCamModal) {
+            if (maxCamIhtiyac > totalCamCap) {
+                uyariHTML += `<li class="text-danger border-bottom pb-2 mb-2">❌ <b>Cam Temizliği:</b> Tek günde en az ${maxCamIhtiyac} kişi gerekiyor. (Kapasite: ${totalCamCap}) <br><small class="text-muted fw-normal">Eksik ${maxCamIhtiyac - totalCamCap} personel o gün için <b>Taşeron</b> olarak atanacaktır.</small></li>`;
+                isKapasiteYetersiz = true;
+            } else {
+                uyariHTML += `<li class="text-success border-bottom pb-2 mb-2">✅ <b>Cam Temizliği:</b> Tek günde ${maxCamIhtiyac} kişi gerekiyor. (Kapasite: ${totalCamCap} - <b>Yeterli</b>)</li>`;
+            }
+        }
+        if (hasGenelModal) {
+            if (maxGenelIhtiyac > totalGenelCap) {
+                uyariHTML += `<li class="text-danger mb-2">❌ <b>Genel Temizlik:</b> Tek günde en az ${maxGenelIhtiyac} kişi gerekiyor. (Kapasite: ${totalGenelCap}) <br><small class="text-muted fw-normal">Eksik ${maxGenelIhtiyac - totalGenelCap} personel o gün için <b>Taşeron</b> olarak atanacaktır.</small></li>`;
+                isKapasiteYetersiz = true;
+            } else {
+                uyariHTML += `<li class="text-success mb-2">✅ <b>Genel Temizlik:</b> Tek günde ${maxGenelIhtiyac} kişi gerekiyor. (Kapasite: ${totalGenelCap} - <b>Yeterli</b>)</li>`;
+            }
+        }
 
         window.pendingMatrixArgs = { subeler: checkedSubeler, services: serviceRequests };
-
-        if(uyariHTML !== "") {
-            document.getElementById('istihdamUyariListesi').innerHTML = uyariHTML;
-            let modal = new bootstrap.Modal(document.getElementById('istihdamModal'));
-            modal.show();
+        document.getElementById('istihdamUyariListesi').innerHTML = uyariHTML;
+        
+        let mTitle = document.getElementById('istihdamModalTitle');
+        if(isKapasiteYetersiz) {
+            mTitle.innerHTML = "⚠️ Kapasite Yetersizliği Raporu";
+            mTitle.className = "modal-title fw-bold text-danger";
         } else {
-            proceedWithAI();
+            mTitle.innerHTML = "✅ İstihdam ve Kapasite Raporu";
+            mTitle.className = "modal-title fw-bold text-success";
         }
+
+        let modal = new bootstrap.Modal(document.getElementById('istihdamModal'));
+        modal.show();
     } 
 
     function proceedWithAI() {
@@ -1601,6 +1627,7 @@
                 for (let m = 0; m < 3; m++) {
                     let startDay = (m * 30) + 1; let endDay = (m * 30) + 30;
                     let bestDay = null; let maxBosKadro = -1;
+                    let minTaseron = 999999; let bestTaseronDay = null; // TAŞERON DAĞITIM ZIRHI
 
                     for(let step = 0; step < 2; step++) {
                         for(let d = startDay; d <= endDay; d++) {
@@ -1608,15 +1635,21 @@
                             let currentIl = dailyUsage[d].camIl;
                             if (step === 0 && currentIl && currentIl !== sube.il) continue; 
                             
-                            // ZIRH EKLENDİ: Math.max ile negatif kapasite önlendi
                             let ftIdle = Math.max(0, capCamFT - dailyUsage[d].camFT);
                             let ptIdle = Math.max(0, Math.min(capCamPT - dailyUsage[d].camPT, monthPTCamRemaining[m]));
                             let totalIdle = ftIdle + ptIdle;
 
-                            if (totalIdle > maxBosKadro) { maxBosKadro = totalIdle; bestDay = d; }
+                            // Kapasite varsa o güne yerleştir
+                            if (totalIdle > 0 && totalIdle > maxBosKadro) { maxBosKadro = totalIdle; bestDay = d; }
+                            
+                            // Kapasite HİÇ YOKSA, taşeron sayısının en az olduğu güne yay (Yığılmayı önler)
+                            if (totalIdle === 0 && dailyUsage[d].taseronCam < minTaseron) {
+                                minTaseron = dailyUsage[d].taseronCam; bestTaseronDay = d;
+                            }
                         }
                         if(bestDay) break;
                     }
+                    if(!bestDay && bestTaseronDay) bestDay = bestTaseronDay; // Yedek planı devreye sok
                     if(!bestDay) { for(let d = startDay; d <= endDay; d++) { if (d % 7 !== 0) { bestDay = d; break; } } }
 
                     ensureCell(sube.id, bestDay);
@@ -1646,6 +1679,7 @@
                 let m = index % 3; 
                 let startDay = (m * 30) + 1; let endDay = (m * 30) + 30;
                 let bestDay = null; let maxBosKadro = -1;
+                let minTaseron = 999999; let bestTaseronDay = null; // TAŞERON DAĞITIM ZIRHI
 
                 let preferDay = assignedCamDays[m];
                 if (preferDay) {
@@ -1666,11 +1700,16 @@
                             let ptIdle = Math.max(0, Math.min(capGenelPT - dailyUsage[d].genelPT, monthPTGenelRemaining[m]));
                             let totalIdle = ftIdle + ptIdle;
 
-                            if (totalIdle > maxBosKadro) { maxBosKadro = totalIdle; bestDay = d; }
+                            if (totalIdle > 0 && totalIdle > maxBosKadro) { maxBosKadro = totalIdle; bestDay = d; }
+
+                            if (totalIdle === 0 && dailyUsage[d].taseronGenel < minTaseron) {
+                                minTaseron = dailyUsage[d].taseronGenel; bestTaseronDay = d;
+                            }
                         }
                         if(bestDay) break;
                     }
                 }
+                if(!bestDay && bestTaseronDay) bestDay = bestTaseronDay;
                 if(!bestDay) { for(let d = startDay; d <= endDay; d++) { if (d % 7 !== 0) { bestDay = d; break; } } }
 
                 ensureCell(sube.id, bestDay);
@@ -3061,19 +3100,17 @@
 <div class="modal fade" id="istihdamModal" tabindex="-1" data-bs-backdrop="static">
   <div class="modal-dialog modal-dialog-centered">
     <div class="modal-content border-0 shadow-lg">
-      <div class="modal-header bg-warning text-dark border-0">
-        <h5 class="modal-title fw-bold">⚠️ Kapasite & İstihdam Raporu</h5>
+      <div class="modal-header bg-light border-bottom">
+        <h5 class="modal-title fw-bold" id="istihdamModalTitle">İstihdam ve Kapasite Raporu</h5>
         <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
       </div>
-      <div class="modal-body bg-light">
-        <p class="mb-3 text-dark">Bu projedeki bazı büyük şubelerin temizliğinin <strong>"1 günde bitirilmesi"</strong> kuralına göre mevcut kadronuz yetersiz kalıyor:</p>
-        <ul id="istihdamUyariListesi" class="text-danger fw-bold" style="font-size: 13px;"></ul>
-        <hr>
-        <p class="mb-0 text-secondary" style="font-size: 13px;">Sistem eksik personelleri ilgili günler için otomatik olarak <b>Taşeron (Dış Ekip)</b> olarak atasın mı? İptal edip "Ayarlar" sekmesinden personel sayınızı artırabilirsiniz.</p>
+      <div class="modal-body bg-white">
+        <p class="mb-3 text-secondary" style="font-size:13px;">Bu projedeki şubelerin temizliğinin "tek günde bitirilmesi" kuralına göre günlük personel ihtiyacı analizi aşağıdadır:</p>
+        <ul id="istihdamUyariListesi" class="list-unstyled fw-bold" style="font-size: 14px;"></ul>
       </div>
-      <div class="modal-footer border-0 bg-white">
+      <div class="modal-footer border-0 bg-light">
         <button type="button" class="btn btn-outline-secondary btn-sm fw-bold px-3" data-bs-dismiss="modal">İptal Et</button>
-        <button type="button" class="btn btn-warning text-dark btn-sm fw-bold px-4 shadow-sm" onclick="proceedWithAI()">Taşeron Onayı ile Devam Et</button>
+        <button type="button" class="btn btn-primary btn-sm fw-bold px-4 shadow-sm" onclick="proceedWithAI()">Onayla ve Planlamayı Çiz</button>
       </div>
     </div>
   </div>
