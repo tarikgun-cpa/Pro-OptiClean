@@ -72,11 +72,14 @@
         .matrix-header { padding: 10px 20px; background: #f8fafc; border-bottom: 1px solid #e2e8f0; display: flex; justify-content: space-between; align-items: center; }
         .matrix-summary { background: #fff; padding: 10px 20px; border-bottom: 1px solid #e2e8f0; display: flex; justify-content: space-between; align-items: center; font-size: 12px; }
         
-        #planlama-modulu .table-responsive { max-height: none !important; height: 100%; border: none; border-radius: 0; margin: 0; box-shadow: none; }
-        
-        .schedule-table thead th { position: sticky; top: 0; z-index: 10; background-color: #1e293b !important; color: #f8fafc !important; border-color: #334155 !important; box-shadow: 0 2px 4px rgba(0,0,0,0.15); font-size: 10px; padding: 6px 4px !important; }
-        .schedule-table .sticky-col { position: sticky; left: 0; z-index: 11; background-color: #f8fafc; box-shadow: 2px 0 5px rgba(0,0,0,0.05); border-right: 2px solid #cbd5e1 !important; }
-        .schedule-table thead .sticky-col { z-index: 12; background-color: #0f172a !important; color: #fff !important; border-right: 2px solid #334155 !important; }
+        /* MEVCUT SATIRI BULUN VE SİLİN: */
+/* #planlama-modulu .table-responsive { max-height: none !important; height: 100%; border: none; ... } */
+
+/* YERİNE BUNU YAPIŞTIRIN: */
+#planlama-modulu .table-responsive { max-height: 65vh !important; overflow-y: auto; border: 1px solid #e2e8f0; border-radius: 8px; }
+.schedule-table thead { position: sticky; top: 0; z-index: 100; }
+.schedule-table thead tr:first-child th { top: 0; z-index: 101; box-shadow: 0 2px 4px rgba(0,0,0,0.1); }
+.schedule-table thead tr:nth-child(2) th { top: 35px; z-index: 100; box-shadow: 0 4px 4px -2px rgba(0,0,0,0.1); }
     </style>
 </head>
 <body>
@@ -520,97 +523,73 @@
                     </div>
                 </div> </div> </div> 
                 <div class="tab-pane fade" id="hakedis-modulu" role="tabpanel">
-            <div class="card p-2 shadow-sm border-danger mb-2">
-                <div class="d-flex justify-content-between align-items-center border-bottom pb-1 mb-2">
-                    <h5 class="text-danger fw-bold mb-0">Aylık Hakediş ve Operasyon Yönetimi</h5>
-                    <div>
-                        <button onclick="deleteContract()" class="btn btn-outline-danger btn-sm py-0">🗑️ Sil</button>
-                        <button onclick="updateContractPrices()" class="btn btn-outline-warning btn-sm py-0">💰 Fiyat Güncelle</button>
-                        <button onclick="openTaskModal()" class="btn btn-outline-info btn-sm py-0">👷 Görevlendir</button>
-                    </div>
-                </div>
-
-                <div class="row g-2 align-items-end bg-light p-2 rounded border">
-                    <div class="col-md-3">
-                        <label class="form-label mb-0" style="font-size:10px;">Aktif Sözleşme</label>
-                        <select id="hakedisSozlesmeSecim" class="form-select form-select-sm border-danger"></select>
-                    </div>
-                    <div class="col-md-2">
-                        <label class="form-label mb-0" style="font-size:10px;">Dönem/Ay</label>
-                        <input type="month" id="hakedisAy" class="form-control form-control-sm border-danger">
-                    </div>
-                    <div class="col-md-4">
-                        <label class="form-label mb-0" style="font-size:10px;">Açıklama (Fatura Notu)</label>
-                        <input type="text" id="hakedisAciklama" class="form-control form-control-sm border-danger" placeholder="Örn: 1. Bölge Kesimi">
-                    </div>
-                    <div class="col-md-3">
-                        <button onclick="loadHakedisTablosu()" class="btn btn-danger btn-sm w-100 fw-bold shadow-sm">Tabloyu Getir</button>
-                    </div>
-                </div>
+    <div class="card p-3 shadow-sm border-danger mb-3">
+        <div class="d-flex justify-content-between align-items-center border-bottom pb-2 mb-3">
+            <h5 class="text-danger fw-bold mb-0">📄 Yeni Hakediş & Fatura Oluştur</h5>
+            <div>
+                <button onclick="updateContractPrices()" class="btn btn-outline-warning btn-sm fw-bold">💰 Güncel Fiyatları Çek</button>
+                <button onclick="deleteContract()" class="btn btn-outline-danger btn-sm fw-bold">🗑️ Sözleşmeyi Sil</button>
             </div>
+        </div>
 
-                <div class="card p-3 shadow-sm mt-2 border-info mb-4" id="gorevCizelgesiAlani" style="display:none;">
-                    <h5 class="section-title text-info mb-3">📅 Personel Görev Çizelgesi</h5>
-                    <div class="row g-2 mb-3 align-items-center">
-                        <div class="col-md-2">
-                            <label class="form-label text-muted small mb-0">Tarih</label>
-                            <input type="date" id="gorevTarihi" class="form-control form-control-sm">
-                        </div>
-                        <div class="col-md-4">
-                            <label class="form-label text-muted small mb-0">Şubeler (CTRL ile Çoklu Seçim)</label>
-                            <select id="gorevSubeSecim" class="form-select form-select-sm border-info" multiple size="3"></select>
-                        </div>
-                        <div class="col-md-3">
-                            <label class="form-label text-muted small mb-0">Personel Adı Soyadı</label>
-                            <input type="text" id="gorevPersonelIsmi" class="form-control form-control-sm border-info" placeholder="Örn: Ahmet Yılmaz">
-                        </div>
-                        <div class="col-md-3 mt-4">
-                            <button onclick="addTask()" class="btn btn-info btn-sm text-white w-100 fw-bold py-2">Seçili Şubelere Ata</button>
-                        </div>
-                    </div>
-                    <div class="table-responsive bg-white">
-                        <table class="table table-sm table-bordered mb-0">
-                            <thead class="table-info"><tr><th width="20%">Tarih</th><th width="40%">Şube</th><th width="30%">Görevli Personel</th><th width="10%">İşlem</th></tr></thead>
-                            <tbody id="gorevListesiTbody"></tbody>
-                        </table>
-                    </div>
-                </div>
+        <div class="row g-2 align-items-end">
+            <div class="col-md-3">
+                <label class="form-label fw-bold text-dark">Aktif Sözleşme</label>
+                <select id="hakedisSozlesmeSecim" class="form-select border-danger shadow-sm" onchange="hakedisSozlesmeDegisti()"></select>
+            </div>
+            <div class="col-md-2">
+                <label class="form-label fw-bold text-dark">Dönem/Ay</label>
+                <input type="month" id="hakedisAy" class="form-control border-danger shadow-sm">
+            </div>
+            <div class="col-md-3">
+                <label class="form-label fw-bold text-primary">Faturalandırılacak Hizmet</label>
+                <select id="hakedisHizmetFiltre" class="form-select border-primary shadow-sm">
+                    <option value="TÜMÜ">-- Tüm Hizmetler --</option>
+                </select>
+            </div>
+            <div class="col-md-2">
+                <label class="form-label fw-bold text-dark">Açıklama / Fatura Notu</label>
+                <input type="text" id="hakedisAciklama" class="form-control shadow-sm" placeholder="Örn: Sadece Cam">
+            </div>
+            <div class="col-md-2">
+                <button onclick="loadHakedisTablosu()" class="btn btn-danger w-100 fw-bold shadow">Tabloyu Getir</button>
+            </div>
+        </div>
+    </div>
 
-                <div id="hakedisTabloAlani" style="display:none;">
-                    <div class="d-flex justify-content-between align-items-center mb-2">
-                        <div class="alert alert-info border-info mb-0 py-2 w-75" style="font-size:13px;">
-                            <strong>Yıllık Sözleşme İşleyişi:</strong> Sadece bu ay gerçekleşen hizmetleri işaretleyin.
-                        </div>
-                        <div class="w-25 ms-2">
-                            <input type="text" id="hakedisAra" class="form-control form-control-sm border-primary" placeholder="🔍 Şube Ara..." onkeyup="filterHakedisTable()">
-                        </div>
-                    </div>
-                    
-                    <div class="table-responsive bg-white border rounded">
-                        <table class="table table-bordered table-hover table-sm align-middle mb-0">
-                            <thead class="table-dark sticky-top" id="hakedisThead"></thead>
-                            <tbody id="hakedisTbody"></tbody>
-                        </table>
-                    </div>
-                    <div class="d-flex justify-content-between align-items-center mt-3 bg-light p-3 rounded border">
-                        <h4 class="text-success fw-bold m-0" id="hakedisToplamTutar">Toplam: 0,00 TL</h4>
-                        <div>
-                            <button onclick="saveHakedis()" class="btn btn-success fw-bold px-4 me-2">💾 Faturayı Kaydet</button>
-                            <button onclick="printHakedis()" class="btn btn-primary fw-bold px-3 me-2">🖨️ Finansal Fatura Al</button>
-                            <button onclick="printOperasyonRaporu()" class="btn btn-secondary fw-bold px-3">📄 Müşteri Raporu Al</button>
-                        </div>
-                    </div>
-                </div>
-                
-                <div class="card p-3 shadow-sm mt-5 border-secondary">
-                    <h5 class="section-title text-secondary">📁 Kayıtlı Hakediş ve Fatura Dökümleri</h5>
-                    <div class="table-responsive">
-                        <table class="table table-hover table-sm align-middle">
-                            <thead class="table-light"><tr><th>Ay / Dönem</th><th>Sözleşme Adı</th><th>Müşteri</th><th>Fatura Tutarı</th><th style="min-width:240px;">İşlemler</th></tr></thead>
-                            <tbody id="kayitliHakedislerListesi"></tbody>
-                        </table>
-                    </div>
-                </div>
+    <div class="card p-3 shadow-sm border-dark mb-4" id="hakedisTabloAlani" style="display:none;">
+        <div class="d-flex justify-content-between align-items-center mb-2">
+            <h6 class="fw-bold text-secondary mb-0">Operasyon İşaretleme Tablosu</h6>
+            <div class="w-25">
+                <input type="text" id="hakedisAra" class="form-control form-control-sm border-secondary" placeholder="🔍 Şube Adı ile Filtrele..." onkeyup="filterHakedisTable()">
+            </div>
+        </div>
+        
+        <div class="table-responsive bg-white border rounded" style="max-height: 500px; overflow-y: auto;">
+            <table class="table table-bordered table-hover table-sm align-middle mb-0">
+                <thead class="table-dark sticky-top" id="hakedisThead" style="z-index: 10;"></thead>
+                <tbody id="hakedisTbody"></tbody>
+            </table>
+        </div>
+        
+        <div class="d-flex justify-content-between align-items-center mt-3 bg-light p-3 rounded border border-success">
+            <h4 class="text-success fw-bolder m-0" id="hakedisToplamTutar">Toplam: 0,00 TL + KDV</h4>
+            <div class="d-flex gap-2">
+                <button onclick="saveHakedis()" class="btn btn-success fw-bold px-4 shadow-sm">💾 Faturayı Kaydet ve Arşive Al</button>
+            </div>
+        </div>
+    </div>
+    
+    <div class="card p-3 shadow-sm border-secondary">
+        <h5 class="section-title text-secondary">📁 Kayıtlı Hakediş ve Fatura Dökümleri</h5>
+        <div class="table-responsive">
+            <table class="table table-hover align-middle">
+                <thead class="table-light"><tr><th>Ay / Dönem</th><th>Sözleşme Adı</th><th>Müşteri</th><th>Fatura Tutarı</th><th style="min-width:350px;">İşlemler (Yazdır / Düzenle)</th></tr></thead>
+                <tbody id="kayitliHakedislerListesi"></tbody>
+            </table>
+        </div>
+    </div>
+</div>
             </div> 
         </div> 
         <div class="tab-pane fade" id="planlama-modulu" role="tabpanel">
@@ -1159,10 +1138,9 @@
         // YENİ: Kayıtlı teklifleri listele
         renderQuotes();
         
-        // YENİ: Sözleşmeleri Dropdown'a yükle
+        // YENİ EKLENENLER: Sözleşmeleri, filtreleri ve geçmiş faturaları yükle
         renderContracts();
-        
-        // YENİ: Kayıtlı Hakediş (Fatura) geçmişini listele
+        hakedisSozlesmeDegisti();
         renderHakedisList();
     }
 
@@ -2399,98 +2377,9 @@
         hesaplaHakedisToplam();
     }
 
-    function loadHakedisTablosu() {
-        const sozlesmeId = document.getElementById('hakedisSozlesmeSecim').value;
-        const ay = document.getElementById('hakedisAy').value;
-        const aciklama = document.getElementById('hakedisAciklama').value.trim() || "Genel Hakediş";
-        
-        if(!sozlesmeId || !ay) return alert("Sözleşme ve Ay seçimi zorunludur!");
+   
 
-        const sozlesme = getData(KEYS.SOZLESMELER).find(s => s.id == sozlesmeId);
-        const teklif = sozlesme.data;
-        
-        // Eğer "İncele/Düzenle" butonundan gelinmediyse, TEPYENİ boş bir tablo aç
-        let mevcutHakedis = { isaretliler: [], miktarlar: {} };
-        if(windowEditingHakedisId) {
-            mevcutHakedis = getData(KEYS.HAKEDISLER).find(h => h.id === windowEditingHakedisId) || mevcutHakedis;
-        }
 
-        activeHakedisData = { 
-            id: windowEditingHakedisId, // Varsa eski ID, yoksa null
-            sozlesme: sozlesme, 
-            ay: ay, 
-            aciklama: aciklama 
-        };
-        
-        // Düzenleme ID'sini sıfırla ki sonraki "Tabloyu Getir" tıklamaları YENİ kayıt açsın
-        windowEditingHakedisId = null; 
-
-        // Tablo Başlıkları (Checkboxlı Sütunlar)
-        let th = `<tr><th class="align-middle">Şube Kodu</th><th class="align-middle">Şube Adı</th>`;
-        teklif.hizmetler.forEach(h => { 
-            let srvLower = h.ad.toLowerCase();
-            let isFixed = !(srvLower.includes("koltuk") || srvLower.includes("halı") || srvLower.includes("hali") || srvLower.includes("jaluzi") || srvLower.includes("iskele") || srvLower.includes("dağcı") || srvLower.includes("dagci") || srvLower.includes("saat"));
-            
-            if(isFixed) {
-                // Tümünü Seç eklendi
-                th += `<th class="text-center align-middle">${h.ad}<br><input type="checkbox" onchange="toggleCol('${h.ad}', this.checked)" title="Sütunu Tümünü Seç" style="cursor:pointer; width:16px; height:16px; margin-top:5px;"></th>`;
-            } else {
-                th += `<th class="text-center align-middle">${h.ad}</th>`;
-            }
-        });
-        th += `</tr>`;
-        document.getElementById('hakedisThead').innerHTML = th;
-
-        let tr = "";
-        teklif.subeler.forEach(sube => {
-            tr += `<tr><td>${sube.kodu || '-'}</td><td>${sube.adi}</td>`;
-            
-            teklif.hizmetler.forEach(srv => {
-                let dbFiyat = teklif.fiyatlar.find(f => f.hizmet.trim().toLowerCase() === srv.ad.trim().toLowerCase() && f.il.trim().toLowerCase() === sube.il.trim().toLowerCase());
-                let birimFiyat = dbFiyat ? dbFiyat.tutar : 0;
-                let srvLower = srv.ad.toLowerCase();
-                let chkId = `${sube.id}_${srv.ad}`;
-                
-                let isFixedCell = !(srvLower.includes("koltuk") || srvLower.includes("halı") || srvLower.includes("hali") || srvLower.includes("jaluzi") || srvLower.includes("iskele") || srvLower.includes("dağcı") || srvLower.includes("dagci") || srvLower.includes("saat"));
-
-                // Dinamik Hizmetler (Koltuk, İskele vb.)
-                if(!isFixedCell) {
-                    let val = mevcutHakedis.miktarlar[chkId] || "";
-                    tr += `<td class="text-center">
-                        <input type="number" class="form-control form-control-sm mx-auto hakedis-input" data-birim="${birimFiyat}" data-id="${chkId}" value="${val}" onchange="hesaplaHakedisToplam()" placeholder="Miktar" style="width:70px;">
-                        <small class="text-muted">(${birimFiyat} ₺/Br)</small>
-                    </td>`;
-                } 
-                // Sabit Çarpanlı Hizmetler
-                else {
-                    let carpimM2 = sube.m2;
-                    if(srvLower.includes("cam")) carpimM2 = sube.camM2 || sube.m2;
-                    if(srvLower.includes("tadilat")) carpimM2 = sube.tadilatM2 || sube.m2;
-                    let finalFiyat = birimFiyat * carpimM2;
-
-                    // Taban Fiyat Kontrolü Eklendi
-                    const ayarlar = JSON.parse(localStorage.getItem(KEYS.AYARLAR)) || {};
-                    const tabanFiyat = Number(ayarlar.taban) || 5000;
-                    if (finalFiyat > 0 && finalFiyat < tabanFiyat) {
-                        finalFiyat = tabanFiyat;
-                    }
-                    let isChecked = mevcutHakedis.isaretliler.includes(chkId) ? "checked" : "";
-                    
-                    tr += `<td class="text-center">
-                        <div class="form-check d-flex flex-column align-items-center justify-content-center">
-                            <input class="form-check-input hakedis-chk" type="checkbox" data-srv="${srv.ad}" data-fiyat="${finalFiyat}" data-id="${chkId}" onchange="hesaplaHakedisToplam()" ${isChecked} style="width:20px; height:20px; cursor:pointer;">
-                            <small class="text-muted mt-1">(${finalFiyat.toLocaleString('tr-TR')} ₺)</small>
-                        </div>
-                    </td>`;
-                }
-            });
-            tr += `</tr>`;
-        });
-        
-        document.getElementById('hakedisTbody').innerHTML = tr;
-        document.getElementById('hakedisTabloAlani').style.display = 'block';
-        hesaplaHakedisToplam();
-    }
 
     function hesaplaHakedisToplam() {
         let toplam = 0;
@@ -2543,40 +2432,163 @@
         renderHakedisList();
     }
 
-    function renderHakedisList() {
-        const hakedisler = getData(KEYS.HAKEDISLER);
-        const sozlesmeler = getData(KEYS.SOZLESMELER);
-        let html = "";
-        
-        hakedisler.slice().reverse().forEach(h => {
-            let s = sozlesmeler.find(x => x.id === h.sozlesmeId);
-            if(!s) return;
-            let title = h.aciklama ? `<span class="badge bg-secondary">${h.aciklama}</span>` : "";
-            html += `<tr>
-                <td class="fw-bold">${h.ay} ${title}</td>
-                <td>${s.adi}</td>
-                <td>${s.musteri}</td>
-                <td class="text-danger fw-bold">${h.tutar.toLocaleString('tr-TR')} ₺</td>
-                <td>
-                    <button onclick="loadSavedHakedis(${h.id})" class="btn btn-sm btn-warning py-0 me-1">✏️ İncele/Düzenle</button>
-                    <button onclick="deleteHakedis(${h.id})" class="btn btn-sm btn-danger py-0">Sil</button>
-                </td>
-            </tr>`;
-        });
-        document.getElementById('kayitliHakedislerListesi').innerHTML = html;
+    // =========================================================================
+// RENEWED OPERASYON VE HAKEDİŞ SİSTEMİ - KESİNTİSİZ TAM KOD
+// =========================================================================
+
+// 1. Sözleşme Seçildiğinde Hizmetleri Filtre Dropdown'ına Dolduran Dinleyici (Yeni)
+function hakedisSozlesmeDegisti() {
+    const sId = document.getElementById('hakedisSozlesmeSecim').value;
+    const filtre = document.getElementById('hakedisHizmetFiltre');
+    if (!sId) {
+        filtre.innerHTML = '<option value="TÜMÜ">-- Tüm Hizmetler --</option>';
+        return;
+    }
+    const sozlesme = getData(KEYS.SOZLESMELER).find(s => s.id == sId);
+    if (!sozlesme || !sozlesme.data || !sozlesme.data.hizmetler) return;
+
+    let optHtml = '<option value="TÜMÜ">-- Tüm Hizmetler --</option>';
+    sozlesme.data.hizmetler.forEach(h => {
+        optHtml += `<option value="${h.ad}">${h.ad} Faturası Kes</option>`;
+    });
+    filtre.innerHTML = optHtml;
+}
+
+// 2. Yenilenmiş ve Hizmet Filtresiyle Uyumlu Hakediş Tablosunu Getirme Fonksiyonu
+function loadHakedisTablosu() {
+    const sozlesmeId = document.getElementById('hakedisSozlesmeSecim').value;
+    const ay = document.getElementById('hakedisAy').value;
+    const aciklama = document.getElementById('hakedisAciklama').value.trim() || "Genel Hakediş";
+    const filtreHizmet = document.getElementById('hakedisHizmetFiltre').value;
+    
+    if (!sozlesmeId || !ay) return alert("Sözleşme ve Ay seçimi zorunludur!");
+
+    const sozlesme = getData(KEYS.SOZLESMELER).find(s => s.id == sozlesmeId);
+    if (!sozlesme) return alert("Sözleşme bulunamadı!");
+    const teklif = sozlesme.data;
+    
+    let mevcutHakedis = { isaretliler: [], miktarlar: {} };
+    if (windowEditingHakedisId) {
+        mevcutHakedis = getData(KEYS.HAKEDISLER).find(h => h.id === windowEditingHakedisId) || mevcutHakedis;
     }
 
-    function loadSavedHakedis(hakedisId) {
-        const h = getData(KEYS.HAKEDISLER).find(x => x.id === hakedisId);
-        if(!h) return;
+    activeHakedisData = { 
+        id: windowEditingHakedisId, 
+        sozlesme: sozlesme, 
+        ay: ay, 
+        aciklama: aciklama 
+    };
+    
+    windowEditingHakedisId = null; 
+
+    // Tablo Başlıkları Oluşturma (Filtre Uyumlu)
+    let th = `<tr><th class="align-middle">Şube Kodu</th><th class="align-middle">Şube Adı</th>`;
+    teklif.hizmetler.forEach(h => { 
+        if (filtreHizmet !== "TÜMÜ" && h.ad !== filtreHizmet) return; // Seçili hizmet değilse başlığı atla
+
+        let srvLower = h.ad.toLowerCase();
+        let isFixed = !(srvLower.includes("koltuk") || srvLower.includes("halı") || srvLower.includes("hali") || srvLower.includes("jaluzi") || srvLower.includes("iskele") || srvLower.includes("dağcı") || srvLower.includes("dagci") || srvLower.includes("saat"));
         
-        windowEditingHakedisId = hakedisId; // Tablo motoruna eski faturayı açmasını söyler
-        document.getElementById('hakedisSozlesmeSecim').value = h.sozlesmeId;
-        document.getElementById('hakedisAy').value = h.ay;
-        document.getElementById('hakedisAciklama').value = h.aciklama || "";
-        loadHakedisTablosu();
-        window.scrollTo(0, 0);
-    }
+        if (isFixed) {
+            th += `<th class="text-center align-middle bg-primary text-white">${h.ad}<br><input type="checkbox" onchange="toggleCol('${h.ad}', this.checked)" title="Sütunu Tümünü Seç" style="cursor:pointer; width:16px; height:16px; margin-top:5px;"></th>`;
+        } else {
+            th += `<th class="text-center align-middle bg-warning text-dark">${h.ad}</th>`;
+        }
+    });
+    th += `</tr>`;
+    document.getElementById('hakedisThead').innerHTML = th;
+
+    // Tablo Satırları ve Hücreleri Oluşturma
+    let tr = "";
+    teklif.subeler.forEach(sube => {
+        tr += `<tr><td>${sube.kodu || '-'}</td><td class="fw-bold">${sube.adi}</td>`;
+        
+        teklif.hizmetler.forEach(srv => {
+            if (filtreHizmet !== "TÜMÜ" && srv.ad !== filtreHizmet) return; // Seçili hizmet değilse hücreyi atla
+
+            let dbFiyat = teklif.fiyatlar.find(f => f.hizmet.trim().toLowerCase() === srv.ad.trim().toLowerCase() && f.il.trim().toLowerCase() === sube.il.trim().toLowerCase());
+            let birimFiyat = dbFiyat ? dbFiyat.tutar : 0;
+            let srvLower = srv.ad.toLowerCase();
+            let chkId = `${sube.id}_${srv.ad}`;
+            
+            let isFixedCell = !(srvLower.includes("koltuk") || srvLower.includes("halı") || srvLower.includes("hali") || srvLower.includes("jaluzi") || srvLower.includes("iskele") || srvLower.includes("dağcı") || srvLower.includes("dagci") || srvLower.includes("saat"));
+
+            if (!isFixedCell) {
+                // Dinamik Hizmet Girişleri (Saatlik/Miktarlı)
+                let val = mevcutHakedis.miktarlar[chkId] || "";
+                tr += `<td class="text-center">
+                    <input type="number" class="form-control form-control-sm mx-auto hakedis-input" data-birim="${birimFiyat}" data-id="${chkId}" value="${val}" onchange="hesaplaHakedisToplam()" placeholder="Miktar" style="width:70px;">
+                    <small class="text-muted">(${birimFiyat} ₺/Br)</small>
+                </td>`;
+            } else {
+                // Sabit ve m² Çarpanlı Alan Girişleri
+                let carpimM2 = sube.m2;
+                if (srvLower.includes("cam")) carpimM2 = sube.camM2 || sube.m2;
+                if (srvLower.includes("tadilat")) carpimM2 = sube.tadilatM2 || sube.m2;
+                let finalFiyat = birimFiyat * carpimM2;
+
+                const ayarlar = JSON.parse(localStorage.getItem(KEYS.AYARLAR)) || {};
+                const tabanFiyat = Number(ayarlar.taban) || 5000;
+                if (finalFiyat > 0 && finalFiyat < tabanFiyat) {
+                    finalFiyat = tabanFiyat;
+                }
+                let isChecked = mevcutHakedis.isaretliler.includes(chkId) ? "checked" : "";
+                
+                tr += `<td class="text-center">
+                    <div class="form-check d-flex flex-column align-items-center justify-content-center">
+                        <input class="form-check-input hakedis-chk" type="checkbox" data-srv="${srv.ad}" data-fiyat="${finalFiyat}" data-id="${chkId}" onchange="hesaplaHakedisToplam()" ${isChecked} style="width:20px; height:20px; cursor:pointer;">
+                        <small class="text-muted mt-1">(${finalFiyat.toLocaleString('tr-TR')} ₺)</small>
+                    </div>
+                </td>`;
+            }
+        });
+        tr += `</tr>`;
+    });
+    
+    document.getElementById('hakedisTbody').innerHTML = tr;
+    document.getElementById('hakedisTabloAlani').style.display = 'block';
+    hesaplaHakedisToplam();
+}
+
+// 3. Arşiv Geçmişini Listeleme ve Doğrudan Yazdırma Tetikleyicileri
+function renderHakedisList() {
+    const hakedisler = getData(KEYS.HAKEDISLER);
+    const sozlesmeler = getData(KEYS.SOZLESMELER);
+    let html = "";
+    
+    hakedisler.slice().reverse().forEach(h => {
+        let s = sozlesmeler.find(x => x.id === h.sozlesmeId);
+        if (!s) return;
+        let title = h.aciklama ? `<span class="badge bg-secondary ms-2">${h.aciklama}</span>` : "";
+        html += `<tr>
+            <td class="fw-bold">${h.ay} ${title}</td>
+            <td class="text-muted fw-bold">${s.adi}</td>
+            <td>${s.musteri}</td>
+            <td class="text-danger fw-bold">${h.tutar.toLocaleString('tr-TR')} ₺</td>
+            <td>
+                <button onclick="printSavedHakedis(${h.id})" class="btn btn-sm btn-primary fw-bold py-1 me-1 shadow-sm">🖨️ Fatura Yazdır</button>
+                <button onclick="printSavedOpRapor(${h.id})" class="btn btn-sm btn-info text-white fw-bold py-1 me-1 shadow-sm">📄 Operasyon Raporu</button>
+                <button onclick="loadSavedHakedis(${h.id})" class="btn btn-sm btn-warning py-1 me-1 fw-bold">✏️ Düzenle</button>
+                <button onclick="deleteHakedis(${h.id})" class="btn btn-sm btn-outline-danger py-1 fw-bold">Sil</button>
+            </td>
+        </tr>`;
+    });
+    document.getElementById('kayitliHakedislerListesi').innerHTML = html;
+}
+
+// 4. Kayıtlı Hakedişi Düzenleme Moduna Alan Fonksiyon (Dropdown Senkronizasyonlu)
+function loadSavedHakedis(hakedisId) {
+    const h = getData(KEYS.HAKEDISLER).find(x => x.id === hakedisId);
+    if (!h) return;
+    
+    windowEditingHakedisId = hakedisId; 
+    document.getElementById('hakedisSozlesmeSecim').value = h.sozlesmeId;
+    hakedisSozlesmeDegisti(); // Hizmet filtre dropdown listesini tetikler
+    document.getElementById('hakedisAy').value = h.ay;
+    document.getElementById('hakedisAciklama').value = h.aciklama || "";
+    loadHakedisTablosu();
+    window.scrollTo(0, 0);
+}
 
     function deleteHakedis(id) {
         if(!confirm("Bu faturayı/hakedişi silmek istediğinize emin misiniz?")) return;
@@ -3231,8 +3243,20 @@
             </html>
         `);
         printWindow.document.close();
+
         setTimeout(() => printWindow.print(), 800);
     }
+
+    // GLOBAL TIKLAMA DİNLEYİCİSİ - Hayalet menüyü kapatır
+document.addEventListener('click', function(event) {
+    const menu = document.getElementById('cellMenu');
+    if (menu && menu.style.display === 'block') {
+        // Tıklanan yer menünün içi değilse VE tıklanan yer menüyü açan hücre (td) değilse kapat
+        if (!menu.contains(event.target) && !event.target.closest('td[onclick*="openCellMenu"]')) {
+            closeCellMenu();
+        }
+    }
+});
     window.onload = renderAll; 
 </script>
 <div id="cellMenu" class="card shadow-lg border-primary" style="display:none; position:absolute; z-index:9999; width:220px; font-size:11px;">
