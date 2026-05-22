@@ -11,10 +11,11 @@
         /* GENEL TEMA VE TİPOGRAFİ (Premium SaaS Tasarımı) */
         body { background-color: #f8fafc; font-family: 'Inter', sans-serif; font-size: 13px; color: #334155; display: flex; flex-direction: column; min-height: 100vh; margin: 0; }
         
-        /* Flexbox Sayfa Yapısı */
+        /* Flexbox Sayfa Yapısı (Tam Çözüm) */
         #mainApp { display: flex; flex-direction: column; flex-grow: 1; padding-top: 15px !important; }
-        .tab-content { flex-grow: 1; display: flex; flex-direction: column; }
-        .tab-pane { flex-grow: 1; }
+        .tab-content { padding-bottom: 20px; }
+        
+        /* Not: tab-content ve tab-pane flex özellikleri Bootstrap ile çakıştığı için silindi. */
         
         /* KARTLAR (Daha ince kenarlık, yumuşak gölgeler, daraltılmış iç boşluklar) */
         .card { border: 1px solid #e2e8f0; border-radius: 12px; box-shadow: 0 4px 6px -1px rgba(0,0,0,0.05); margin-bottom: 16px; background-color: #ffffff; }
@@ -67,19 +68,16 @@
         .bg-yalova { background-color: #fffbeb !important; }
         .sunday-col { background-color: #fef2f2 !important; }
         /* ================= PLANLAMA MATRİSİ ================= */
-        #planlama-modulu { display: flex; flex-direction: column; height: 100%; }
-        .matrix-wrapper { flex-grow: 1; display: flex; flex-direction: column; background: #fff; border-radius: 12px; border: 1px solid #cbd5e1; box-shadow: 0 4px 12px rgba(0,0,0,0.04); overflow: hidden; min-height: 500px;}
+        /* ================= PLANLAMA MATRİSİ (Düzeltildi) ================= */
+        #planlama-modulu { padding-bottom: 20px; }
+        .matrix-wrapper { background: #fff; border-radius: 12px; border: 1px solid #cbd5e1; box-shadow: 0 4px 12px rgba(0,0,0,0.04); overflow: hidden; margin-bottom: 20px;}
         .matrix-header { padding: 10px 20px; background: #f8fafc; border-bottom: 1px solid #e2e8f0; display: flex; justify-content: space-between; align-items: center; }
         .matrix-summary { background: #fff; padding: 10px 20px; border-bottom: 1px solid #e2e8f0; display: flex; justify-content: space-between; align-items: center; font-size: 12px; }
         
-        /* MEVCUT SATIRI BULUN VE SİLİN: */
-/* #planlama-modulu .table-responsive { max-height: none !important; height: 100%; border: none; ... } */
-
-/* YERİNE BUNU YAPIŞTIRIN: */
-#planlama-modulu .table-responsive { max-height: 65vh !important; overflow-y: auto; border: 1px solid #e2e8f0; border-radius: 8px; }
-.schedule-table thead { position: sticky; top: 0; z-index: 100; }
-.schedule-table thead tr:first-child th { top: 0; z-index: 101; box-shadow: 0 2px 4px rgba(0,0,0,0.1); }
-.schedule-table thead tr:nth-child(2) th { top: 35px; z-index: 100; box-shadow: 0 4px 4px -2px rgba(0,0,0,0.1); }
+        #planlama-modulu .table-responsive { max-height: 65vh !important; overflow-y: auto; border: 1px solid #e2e8f0; border-radius: 8px; }
+        .schedule-table thead { position: sticky; top: 0; z-index: 100; }
+        .schedule-table thead tr:first-child th { top: 0; z-index: 101; box-shadow: 0 2px 4px rgba(0,0,0,0.1); }
+        .schedule-table thead tr:nth-child(2) th { top: 35px; z-index: 100; box-shadow: 0 4px 4px -2px rgba(0,0,0,0.1); }
     </style>
 </head>
 <body>
@@ -3193,12 +3191,13 @@ function loadSavedHakedis(hakedisId) {
         activeCell = { subeId: null, day: null };
     }
     
-    // SEKMELER DEĞİŞTİĞİNDE HAYALET MENÜYÜ KAPATAN DİNLEYİCİ
+    // SEKMELER DEĞİŞTİĞİNDE HAYALET MENÜYÜ KAPATAN DİNLEYİCİ (GÜNCELLENDİ)
     document.addEventListener("DOMContentLoaded", function() {
-        const tabs = document.querySelectorAll('button[data-bs-toggle="tab"]');
-        tabs.forEach(tab => {
-            tab.addEventListener('show.bs.tab', function (event) {
-                closeCellMenu(); // Sekme değiştiği an menüyü yok et
+        // Bootstrap'in yerleşik sekme tetikleyicilerini (show.bs.tab) dinleyerek kesin çözüm sağlıyoruz.
+        const triggerTabList = [].slice.call(document.querySelectorAll('button[data-bs-toggle="tab"], button[data-bs-toggle="pill"]'));
+        triggerTabList.forEach(function (tabEl) {
+            tabEl.addEventListener('show.bs.tab', function (event) {
+                closeCellMenu(); 
             });
         });
     });
