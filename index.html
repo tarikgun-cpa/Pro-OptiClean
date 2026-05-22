@@ -2017,6 +2017,23 @@
         let firma = JSON.parse(localStorage.getItem(KEYS.FIRMA)) || {}; 
         if(!teklif) return;
 
+        // YENİ: Ayarlardan taban fiyatı çek
+        const ayarlar = JSON.parse(localStorage.getItem(KEYS.AYARLAR)) || {};
+        const tabanFiyat = Number(ayarlar.taban) || 5000;
+        
+        // YENİ: İstek üzerine yapılacak hizmetleri tespit et
+        let istekUzereHizmetler = [];
+        teklif.hizmetler.forEach(h => {
+            if (h.periyotCarpan == 0) istekUzereHizmetler.push(h.ad);
+        });
+        
+        let istekUzereHtml = "";
+        if (istekUzereHizmetler.length > 0) {
+            istekUzereHtml = `<li style="margin-top: 6px;"><strong style="color: #0275d8;">İstek Üzerine Yapılacak Hizmetler (${istekUzereHizmetler.join(', ')}):</strong> Bu hizmetler rutin plana dahil değildir. Yalnızca kurumunuzun talebi doğrultusunda yapılacak ve yapıldığı tarihte ek olarak faturalandırılacaktır.</li>`;
+        } else {
+            istekUzereHtml = `<li style="margin-top: 6px;"><strong>İstek Üzerine Hizmetler:</strong> Yalnızca kurumunuzun talebi doğrultusunda yapılacak ve yapıldığı tarihte ek olarak faturalandırılacaktır.</li>`;
+        }
+
         // Seçilen hizmetlere göre Dinamik Sütun Başlıkları
         let thHizmetler = "";
         teklif.hizmetler.forEach(h => {
@@ -2118,12 +2135,17 @@
 
                 <div style="background-color: #f9f9f9; border: 1px solid #ccc; padding: 15px; margin-top: 20px;">
                     <h4 style="margin-top: 0; color: #333;">FİYATLANDIRMA VE FATURALANDIRMA ESASLARI</h4>
-                    <ul style="font-size: 11px; margin-bottom: 10px;">
+                    <ul style="font-size: 11px; margin-bottom: 15px; line-height: 1.5;">
                         <li>Tabloda belirtilen hizmet birim fiyatları üzerinden, sadece <strong>işlem yapıldıkça ve yapıldığı ay itibariyle</strong> faturalandırma yapılacaktır.</li>
                         <li><strong>Cam Silim Hizmetleri:</strong> Ayda 1 kez gerçekleştirilecek olup, her ay düzenli fatura edilecektir.</li>
                         <li><strong>Genel Temizlik Hizmetleri:</strong> 3 Ayda 1 kez (Yılda 4 kez) gerçekleştirilecek olup, gerçekleştirildiği ayın sonunda faturaya yansıtılacaktır.</li>
-                        <li><strong>İstek Üzerine Hizmetler:</strong> Yalnızca kurumunuzun talebi doğrultusunda yapılacak ve yapıldığı tarihte ek olarak faturalandırılacaktır.</li>
+                        ${istekUzereHtml}
                     </ul>
+                    
+                    <div style="background: #fff3f3; color: #d9534f; padding: 10px; border-left: 4px solid #d9534f; font-size: 12px; margin-bottom: 15px;">
+                        <strong>⚠️ DİKKAT (Şube Hizmet Taban Fiyatı):</strong> Şube bazlı hizmetlerde uygulanacak minimum fatura tutarı <strong>${tabanFiyat.toLocaleString('tr-TR')} TL</strong>'dir. Hesaplanan işlem hacmi bu tutarın altında kalsa dahi bu taban fiyat faturaya esas alınır.
+                    </div>
+                    
                     <div style="text-align: right; font-size: 14px; font-weight: bold; margin-top: 15px; border-top: 1px dashed #ccc; padding-top: 10px;">
                         Planlanan Aylık Ortalama Operasyon Bütçesi: ${teklif.satis.toLocaleString('tr-TR', {maximumFractionDigits:2})} TL + KDV
                     </div>
