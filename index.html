@@ -479,6 +479,21 @@
                                 </div>
                             </div>
                         </div>
+                        
+                        <div class="row text-center mb-4" id="globalQuoteStaffingRow" style="display:none;">
+                            <div class="col-md-6">
+                                <div class="p-2 border border-info rounded text-start" style="background-color: #f0f9ff;">
+                                    <span class="fw-bold text-info small d-block mb-1">🧽 GLOBAL CAM KADROSU ÖZETİ</span>
+                                    <div id="globalResCamStats" style="font-size: 11px; line-height: 1.4;" class="text-dark fw-semibold"></div>
+                                </div>
+                            </div>
+                            <div class="col-md-6">
+                                <div class="p-2 border border-secondary rounded text-start" style="background-color: #f8fafc;">
+                                    <span class="fw-bold text-secondary small d-block mb-1">🧹 GLOBAL GENEL TEMİZLİK KADROSU ÖZETİ</span>
+                                    <div id="globalResGenelStats" style="font-size: 11px; line-height: 1.4;" class="text-dark fw-semibold"></div>
+                                </div>
+                            </div>
+                        </div>
 
                         <h6 class="fw-bold text-secondary border-bottom pb-2">İl ve Operasyon Dağılımı</h6>
                         <div class="table-responsive bg-white rounded p-2 shadow-sm">
@@ -1430,6 +1445,10 @@
 
         let totalAylikMaliyet = 0;
         let tableHTML = "";
+        
+        // YENİ: Global kadro bütçe sayaçları
+        let globalCamManDays = 0;
+        let globalGenelManDays = 0;
 
         // Seçilen hizmetleri ve periyot (sıklık) çarpanlarını al
         let serviceRequests = [];
@@ -1516,9 +1535,14 @@
             let aylikCamYuk = requiredCamManDays;
 
             let ekipAciklama = "";
-            if(aylikCamYuk > 0) ekipAciklama += `<span class="badge bg-info text-dark mb-1 border border-info">🧽 Cam: Toplam ${aylikCamYuk} Adam/Gün</span><br>`;
-            if(aylikGenelYuk > 0) ekipAciklama += `<span class="badge bg-secondary mb-1">🧹 Genel: Toplam ${aylikGenelYuk} Adam/Gün</span><br>`;
-
+            if(aylikCamYuk > 0) {
+                ekipAciklama += `<span class="badge bg-info text-dark mb-1 border border-info">🧽 Cam: Toplam ${aylikCamYuk} Adam/Gün</span><br>`;
+                globalCamManDays += aylikCamYuk; // Global sayaca ekle
+            }
+            if(aylikGenelYuk > 0) {
+                ekipAciklama += `<span class="badge bg-secondary mb-1">🧹 Genel: Toplam ${aylikGenelYuk} Adam/Gün</span><br>`;
+                globalGenelManDays += aylikGenelYuk; // Global sayaca ekle
+            }
             // İSTİHDAM ÖNERİSİ HESAPLAMA (Aylık 22 İş Günü / Yaklaşık 165 Saat üzerinden)
             let camFT = Math.floor(aylikCamYuk / 22);
             let camPT = aylikCamYuk % 22;
@@ -1589,6 +1613,16 @@
         document.getElementById('resSarf').innerText = sarfTutar.toLocaleString('tr-TR', {maximumFractionDigits:2}) + " TL";
         document.getElementById('resIscilik').innerText = iscilikTutar.toLocaleString('tr-TR', {maximumFractionDigits:2}) + " TL";
         document.getElementById('teklifAnalizTablosu').innerHTML = tableHTML;
+        
+        // YENİ: Global kadro istatistiklerini hesapla ve ekrana yansıt
+        let gCamFT = Math.floor(globalCamManDays / 22);
+        let gCamPT = globalCamManDays % 22;
+        let gGenelFT = Math.floor(globalGenelManDays / 22);
+        let gGenelPT = globalGenelManDays % 22;
+
+        document.getElementById('globalQuoteStaffingRow').style.display = 'flex';
+        document.getElementById('globalResCamStats').innerHTML = `🔹 <b>Toplam Yük:</b> ${globalCamManDays} Adam/Gün<br>🔹 <b>Öneri:</b> ${gCamFT} Tam Zamanlı + ${gCamPT} Taşeron/PT Personel`;
+        document.getElementById('globalResGenelStats').innerHTML = `🔹 <b>Toplam Yük:</b> ${globalGenelManDays} Adam/Gün<br>🔹 <b>Öneri:</b> ${gGenelFT} Tam Zamanlı + ${gGenelPT} Taşeron/PT Personel`;
         // ================== UYARI MODALI VE AI TETİKLEME ==================
         function getPersCountMatrix(m) {
             if(m <= 250) return 1; if(m <= 500) return 2; if(m <= 750) return 3;
@@ -2018,7 +2052,8 @@
                 <body>
                     <h3 class="text-center border-bottom pb-2">PROJE İÇ MALİYET VE FİNANSAL ANALİZ (ÇALIŞMA KAĞIDI)</h3>
                     ${printContent}
-                </body>
+<div style="text-align:center; margin-top:40px; font-size:11px; color:#aaa; font-weight:bold; border-top:1px dashed #ccc; padding-top:10px; letter-spacing:1px;">Altyapı & Altyazılım Desteği: CPA-FTC Temizlik ERP © 2026</div>
+</body>
             </html>
         `);
         printWindow.document.close();
@@ -2272,26 +2307,90 @@
                 </table>
 
                 <div style="background-color: #f9f9f9; border: 1px solid #ccc; padding: 15px; margin-top: 20px;">
-                    <h4 style="margin-top: 0; color: #333;">FİYATLANDIRMA VE FATURALANDIRMA ESASLARI</h4>
-                    <ul style="font-size: 11px; margin-bottom: 15px; line-height: 1.5;">
-                        <li>Tabloda belirtilen hizmet birim fiyatları üzerinden, sadece <strong>işlem yapıldıkça ve yapıldığı ay itibariyle</strong> faturalandırma yapılacaktır.</li>
-                        <li><strong>Cam Silim Hizmetleri:</strong> Ayda 1 kez gerçekleştirilecek olup, her ay düzenli fatura edilecektir.</li>
-                        <li><strong>Genel Temizlik Hizmetleri:</strong> 3 Ayda 1 kez (Yılda 4 kez) gerçekleştirilecek olup, gerçekleştirildiği ayın sonunda faturaya yansıtılacaktır.</li>
+                    <h4 style="margin-top: 0; color: #333; border-bottom: 1px solid #ddd; padding-bottom: 5px;">FİYATLANDIRMA VE OPERASYON BÜTÇE ESASLARI</h4>
+                    
+                    <ul style="font-size: 11px; margin-bottom: 15px; line-height: 1.6; padding-left: 20px;">
+                        <li>Tabloda belirtilen hizmet birim fiyatları üzerinden, sadece <strong>işlem gerçekleştirildikçe ve işlemin yapıldığı ay itibariyle</strong> faturalandırma yapılacaktır.</li>
+                        <li><strong>🧽 Rutin Cam Silim Hizmeti:</strong> Belirtilen birim fiyatlar üzerinden her ay düzenli olarak gerçekleştirilecek ve aylık olarak faturalandırılacaktır.</li>
+                        <li><strong>🧹 Dönemsel Genel Temizlik Hizmeti:</strong> 3 Ayda 1 kez (Yılda 4 kez) gerçekleştirilecek olup, yalnızca hizmetin sunulduğu ayın sonunda faturaya yansıtılacaktır.</li>
                         ${istekUzereHtml}
                     </ul>
                     
-                    <div style="background: #fff3f3; color: #d9534f; padding: 10px; border-left: 4px solid #d9534f; font-size: 12px; margin-bottom: 15px;">
-                        <strong>⚠️ DİKKAT (Şube Hizmet Taban Fiyatı):</strong> Şube bazlı hizmetlerde uygulanacak minimum fatura tutarı <strong>${tabanFiyat.toLocaleString('tr-TR')} TL</strong>'dir. Hesaplanan işlem hacmi bu tutarın altında kalsa dahi bu taban fiyat faturaya esas alınır.
+                    <div style="background: #fff3f3; color: #d9534f; padding: 10px; border-left: 4px solid #d9534f; font-size: 11px; margin-bottom: 15px; border-radius: 4px;">
+                        <strong>⚠️ ÖNEMLİ NOT (Şube Hizmet Taban Fiyatı):</strong> Şube bazlı operasyonlarda uygulanacak minimum fatura tutarı şube/hizmet başına <strong>${tabanFiyat.toLocaleString('tr-TR')} TL</strong>'dir. Hesaplanan işlem hacmi bu tutarın altında kalsa dahi bu taban fiyat faturaya esas alınır.
                     </div>
                     
-                    <div style="text-align: right; font-size: 14px; font-weight: bold; margin-top: 15px; border-top: 1px dashed #ccc; padding-top: 10px;">
-                        Planlanan Aylık Ortalama Operasyon Bütçesi: ${teklif.satis.toLocaleString('tr-TR', {maximumFractionDigits:2})} TL + KDV
-                    </div>
+                    <table style="width: 100%; border-collapse: collapse; margin-top: 15px; font-size: 12px;">
+                        <thead>
+                            <tr style="background-color: #e2e8f0; font-weight: bold;">
+                                <th style="border: 1px solid #cbd5e1; padding: 8px; text-align: left;">Hizmet Tipi / Kapsamı</th>
+                                <th style="border: 1px solid #cbd5e1; padding: 8px; text-align: center; width: 150px;">Uygulama Sıklığı</th>
+                                <th style="border: 1px solid #cbd5e1; padding: 8px; text-align: right; width: 220px;">Operasyon Bütçesi (TL + KDV)</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <tr>
+                                <td style="border: 1px solid #e2e8f0; padding: 8px; font-weight: bold; color: #1e3a8a;">🧽 Rutin Aylık Operasyon Bütçesi</td>
+                                <td style="border: 1px solid #e2e8f0; padding: 8px; text-align: center; color: #475569;">Her Ay (12 Kez/Yıl)</td>
+                                <td style="border: 1px solid #e2e8f0; padding: 8px; text-align: right; font-weight: bold; color: #1e3a8a;">
+                                    ${(() => {
+                                        let camSatis = 0;
+                                        teklif.subeler.forEach(sube => {
+                                            teklif.hizmetler.forEach(srv => {
+                                                if (srv.ad.toLowerCase().includes("cam") && srv.periyotCarpan != 0) {
+                                                    let dbFiyat = teklif.fiyatlar.find(f => f.hizmet.trim().toLowerCase() === srv.ad.trim().toLowerCase() && f.il.trim().toLowerCase() === sube.il.trim().toLowerCase());
+                                                    let birimFiyat = dbFiyat ? dbFiyat.tutar : 0;
+                                                    let fiyat = birimFiyat * (sube.camM2 || sube.m2 || 0);
+                                                    if (fiyat > 0 && fiyat < tabanFiyat) fiyat = tabanFiyat;
+                                                    camSatis += fiyat;
+                                                }
+                                            });
+                                        });
+                                        // Teklifteki kâr oranını üzerine ekleyelim
+                                        let karOrani = teklif.maliyet > 0 ? (teklif.kar / teklif.maliyet) : 0.2;
+                                        let totalCamBudget = camSatis * (1 + karOrani);
+                                        return totalCamBudget.toLocaleString('tr-TR', {maximumFractionDigits:2}) + " ₺";
+                                    })()}
+                                </td>
+                            </tr>
+                            <tr>
+                                <td style="border: 1px solid #e2e8f0; padding: 8px; font-weight: bold; color: #b45309;">🧹 Dönemsel Operasyon Bütçesi (Uygulama Başı)</td>
+                                <td style="border: 1px solid #e2e8f0; padding: 8px; text-align: center; color: #475569;">3 Ayda 1 Kez (4 Kez/Yıl)</td>
+                                <td style="border: 1px solid #e2e8f0; padding: 8px; text-align: right; font-weight: bold; color: #b45309;">
+                                    ${(() => {
+                                        let genelSatis = 0;
+                                        teklif.subeler.forEach(sube => {
+                                            teklif.hizmetler.forEach(srv => {
+                                                if (srv.ad.toLowerCase().includes("genel") && srv.periyotCarpan != 0) {
+                                                    let dbFiyat = teklif.fiyatlar.find(f => f.hizmet.trim().toLowerCase() === srv.ad.trim().toLowerCase() && f.il.trim().toLowerCase() === sube.il.trim().toLowerCase());
+                                                    let birimFiyat = dbFiyat ? dbFiyat.tutar : 0;
+                                                    let fiyat = birimFiyat * (sube.m2 || 0);
+                                                    if (fiyat > 0 && fiyat < tabanFiyat) fiyat = tabanFiyat;
+                                                    genelSatis += fiyat;
+                                                }
+                                            });
+                                        });
+                                        let karOrani = teklif.maliyet > 0 ? (teklif.kar / teklif.maliyet) : 0.2;
+                                        let totalGenelBudget = genelSatis * (1 + karOrani);
+                                        return totalGenelBudget.toLocaleString('tr-TR', {maximumFractionDigits:2}) + " ₺";
+                                    })()}
+                                </td>
+                            </tr>
+                            <tr style="background-color: #f8fafc;">
+                                <td style="border: 1px solid #e2e8f0; padding: 8px; font-weight: bold; color: #475569;">📋 İstek Üzerine Ekstra Hizmetler</td>
+                                <td style="border: 1px solid #e2e8f0; padding: 8px; text-align: center; color: #475569;">Talep Halinde</td>
+                                <td style="border: 1px solid #e2e8f0; padding: 8px; text-align: right; font-weight: bold; color: #475569; font-style: italic;">
+                                    Yukarıdaki Birim Fiyatlar Esas Alınır
+                                </td>
+                            </tr>
+                        </tbody>
+                    </table>
                 </div>
 
                 <div class="footer">
-                    <p><strong>Açıklamalar:</strong> Fiyatlara %20 KDV dahil değildir. Form sistem tarafından otomatik üretilmiştir.</p>
-                </div>
+    <p><strong>Açıklamalar:</strong> Fiyatlara %20 KDV dahil değildir. Form sistem tarafından otomatik üretilmiştir.</p>
+    <div style="text-align:center; margin-top:30px; font-size:10px; color:#bbb; border-top:1px dashed #ddd; padding-top:8px;">Sistem Altyapısı: CPA-FTC ERP Çözümleri</div>
+</div>
             `;
 
         // YENİ: İŞ PLANI VE ŞARTNAMELERİ PDF'İN SONUNA YENİ SAYFA OLARAK EKLEME BÖLÜMÜ
@@ -2356,7 +2455,7 @@
             html += `<tr><td><b>${p.musteri}</b></td><td>${p.grup || '-'}</td><td>${p.madde}</td></tr>`;
         });
         
-        html += `</table></body></html>`;
+        html += `</table><div style="text-align:center; margin-top:40px; font-size:11px; color:#aaa; border-top:1px dashed #ccc; padding-top:10px;">Yazılım Güvencesi: CPA-FTC Sistem Yönetimi</div></body></html>`;
         
         const printWindow = window.open('', '_blank');
         printWindow.document.write(html);
@@ -2882,9 +2981,10 @@ function loadSavedHakedis(hakedisId) {
                     <span style="font-size:12px; color:#555;">ÖDENECEK KDV HARİÇ TUTAR:</span><br>
                     <span style="color:#dc3545; font-size:22px; font-weight:bold;">${toplamTutar.toLocaleString('tr-TR', {maximumFractionDigits:2})} TL</span>
                 </div>
-                <div class="clearfix"></div>
-                
-                <div style="margin-top: 60px; display:flex; justify-content:space-between; width:80%;">
+<div class="clearfix"></div>
+<div style="text-align:center; margin-top:20px; font-size:10px; color:#ccc;">Bu fatura dökümü CPA-FTC ERP Akıllı Hakediş Modülü tarafından mühürlenmiştir.</div>
+
+<div style="margin-top: 40px; display:flex; justify-content:space-between; width:80%;">
                     <div style="text-align:center;"><b>Hizmeti Veren</b><br><br>Kaşe / İmza</div>
                     <div style="text-align:center;"><b>Kurum Yetkilisi / Onay</b><br><br>İmza</div>
                 </div>
@@ -3008,9 +3108,10 @@ function loadSavedHakedis(hakedisId) {
                     <tbody>
                         ${trRows}
                     </tbody>
-                </table>
-                
-                <div style="margin-top: 60px; display:flex; justify-content:space-between; width:80%;">
+</table>
+<div style="text-align:center; margin-top:15px; font-size:10px; color:#ccc;">Operasyon Güvence Raporlama Sistemi: CPA-FTC</div>
+
+<div style="margin-top: 40px; display:flex; justify-content:space-between; width:80%;">
                     <div style="text-align:center;"><b>Hizmeti Teslim Eden</b><br><br>Kaşe / İmza</div>
                     <div style="text-align:center;"><b>Hizmeti Teslim Alan / Onay</b><br><br>İmza</div>
                 </div>
@@ -3404,7 +3505,8 @@ function loadSavedHakedis(hakedisId) {
                 <h2>${firma.unvan || 'Temizlik Operasyon'} - ${monthLabel} Görev Matrisi</h2>
                 <div class="summary-box">Aylık Tahmini Toplam Personel Bütçesi: ${totalBudget}</div>
                 ${tableHtml}
-            </body>
+<div style="text-align:center; margin-top:30px; font-size:10px; color:#999; border-top:1px solid #000; padding-top:5px;">Ortak Kaynak Planlama Optimizasyonu: CPA-FTC ERP Dağıtım Motoru</div>
+</body>
             </html>
         `);
         printWindow.document.close();
@@ -3432,15 +3534,129 @@ document.addEventListener('click', function(event) {
 
         if(teklifler.length === 0) return alert("Sistemde raporlanacak kayıtlı proje bulunmuyor.");
 
-        let html = `<div class="alert alert-info border-info text-dark shadow-sm pb-1 pt-2 px-3 mb-3">
-            <strong>Bilgi:</strong> Aşağıdaki tablo, projelerin <b>AYLIK (30 Günlük)</b> ortalama personel maliyetlerini ve aylık cirolarını kıyaslamak üzere tasarlanmıştır. Brüt kâr, personel giderleri düşüldükten sonra kalan tutardır (Sarf malzeme hariç).
+        // Şirket kapasite sınırları (Veri Merkezi Ayarlarından)
+        let capCamFT = Number(ayarlar.camFT) || 0;
+        let capCamPT = Number(ayarlar.camPT) || 0;
+        let ptCamGun = Number(ayarlar.camPTGun) || 0;
+        let capGenelFT = Number(ayarlar.genelFT) || 0;
+        let capGenelPT = Number(ayarlar.genelPT) || 0;
+        let ptGenelGun = Number(ayarlar.genelPTGun) || 0;
+
+        // 90 Günlük global takvim matrisi oluştur (Tüm projelerin toplam günlük yükü için)
+        let globalCamDemand = {}, globalGenelDemand = {};
+        let globalTasCamDemand = {}, globalTasGenelDemand = {};
+        for(let d=1; d<=90; d++) {
+            globalCamDemand[d] = 0; globalGenelDemand[d] = 0;
+            globalTasCamDemand[d] = 0; globalTasGenelDemand[d] = 0;
+        }
+
+        teklifler.forEach(t => {
+            if(t.matrix) {
+                Object.keys(t.matrix).forEach(subeId => {
+                    let subeDays = t.matrix[subeId];
+                    for(let d=1; d<=90; d++) {
+                        if(subeDays[d]) {
+                            globalCamDemand[d] += (subeDays[d].cam || 0);
+                            globalGenelDemand[d] += (subeDays[d].genel || 0);
+                            globalTasCamDemand[d] += (subeDays[d].taseronCam || 0);
+                            globalTasGenelDemand[d] += (subeDays[d].taseronGenel || 0);
+                        }
+                    }
+                });
+            }
+        });
+
+        // 90 Günü gün gün analiz edip şirket kadro kullanımı ve taşeron taşmalarını hesapla
+        let totalUtilCamFT = 0, totalUtilCamPT = 0, totalUtilTasCam = 0;
+        let totalUtilGenelFT = 0, totalUtilGenelPT = 0, totalUtilTasGenel = 0;
+
+        for(let d=1; d<=90; d++) {
+            if(d % 7 === 0) continue; // Pazar günlerini hesaplama dışı bırak
+
+            // Camcı analizi
+            let uCamFT = Math.min(globalCamDemand[d], capCamFT);
+            let remCam = globalCamDemand[d] - uCamFT;
+            let uCamPT = Math.min(remCam, capCamPT);
+            let overflowCam = remCam - uCamPT;
+            totalUtilCamFT += uCamFT; totalUtilCamPT += uCamPT;
+            totalUtilTasCam += (globalTasCamDemand[d] + overflowCam);
+
+            // Genel temizlik analizi
+            let uGenelFT = Math.min(globalGenelDemand[d], capGenelFT);
+            let remGenel = globalGenelDemand[d] - uGenelFT;
+            let uGenelPT = Math.min(remGenel, capGenelPT);
+            let overflowGenel = remGenel - uGenelPT;
+            totalUtilGenelFT += uGenelFT; totalUtilGenelPT += uGenelPT;
+            totalUtilTasGenel += (globalTasGenelDemand[d] + overflowGenel);
+        }
+
+        // 3 Aylık toplamları Aylık Ortalama Değerlere Çevir
+        let avgCamFT = Math.ceil(totalUtilCamFT / 3);
+        let avgCamPT = Math.ceil(totalUtilCamPT / 3);
+        let avgTasCam = Math.ceil(totalUtilTasCam / 3);
+        let avgGenelFT = Math.ceil(totalUtilGenelFT / 3);
+        let avgGenelPT = Math.ceil(totalUtilGenelPT / 3);
+        let avgTasGenel = Math.ceil(totalUtilTasGenel / 3);
+
+        // Aylık Kullanılabilir Şirket Havuz Kapasiteleri (FT: 26 Gün, PT: Ayarlar Kotası)
+        let availCamFT = capCamFT * 26;
+        let availCamPT = capCamPT * ptCamGun;
+        let availGenelFT = capGenelFT * 26;
+        let availGenelPT = capGenelPT * ptGenelGun;
+
+        // Atıl (Boşta Kalan) Kadro Hesaplaması
+        let idleCamFT = Math.max(0, availCamFT - avgCamFT);
+        let idleCamPT = Math.max(0, availCamPT - avgCamPT);
+        let idleGenelFT = Math.max(0, availGenelFT - avgGenelFT);
+        let idleGenelPT = Math.max(0, availGenelPT - avgGenelPT);
+
+        // Şirket İçi Personel Verimlilik Oranı Hesaplama
+        let totalCompanyCapacity = availCamFT + availCamPT + availGenelFT + availGenelPT;
+        let totalCompanyUsage = avgCamFT + avgCamPT + avgGenelFT + avgGenelPT;
+        let efficiency = totalCompanyCapacity > 0 ? Math.round((totalCompanyUsage / totalCompanyCapacity) * 100) : 0;
+
+        let effBadgeColor = efficiency > 75 ? "bg-success" : (efficiency > 45 ? "bg-warning text-dark" : "bg-danger");
+
+        // Gelişmiş Dashboard Üst Paneli Oluşturma
+        let html = `
+        <div class="card p-3 border-dark mb-4 bg-white shadow-sm">
+            <h6 class="text-uppercase fw-bold text-dark border-bottom pb-2 mb-3"><i class="align-middle me-2 fs-5">📊</i> KONSOLİDE İNSAN KAYNAKLARI VE VERİMLİLİK DASHBOARDU (AYLIK ORTALAMA)</h6>
+            <div class="row g-3">
+                <div class="col-md-3 text-center border-end">
+                    <div class="p-3 rounded d-flex flex-column align-items-center justify-content-center h-100 ${effBadgeColor} text-white shadow-sm">
+                        <span class="small fw-bold text-uppercase opacity-75">Genel Havuz Verimliliği</span>
+                        <h2 class="fw-black m-0 mt-1">%${efficiency}</h2>
+                        <small class="mt-1 opacity-75">${totalCompanyUsage} / ${totalCompanyCapacity} Gün Aktif</small>
+                    </div>
+                </div>
+                <div class="col-md-4 border-end">
+                    <span class="fw-bold text-info small d-block mb-2">🧽 CAM SILICI KADRO ANALİZİ:</span>
+                    <ul class="list-unstyled mb-0 small" style="line-height:1.6;">
+                        <li>• Tam Zamanlı (FT) Kullanım: <b>${avgCamFT} Gün</b> / ${availCamFT} Gün</li>
+                        <li>• Part-Time (PT) Kullanım: <b>${avgCamPT} Gün</b> / ${availCamPT} Gün</li>
+                        <li class="text-muted">• Atıl Boşa Düşen Süre: <span class="badge bg-light text-dark border border-secondary">${idleCamFT + idleCamPT} Gün Boşta</span></li>
+                        <li class="text-danger fw-bold">• Bağımlı Olunan Ek Taşeron: <span>${avgTasCam} Gün Vardiya</span></li>
+                    </ul>
+                </div>
+                <div class="col-md-5">
+                    <span class="fw-bold text-secondary small d-block mb-2">🧹 GENEL TEMİZLİK KADRO ANALİZİ:</span>
+                    <ul class="list-unstyled mb-0 small" style="line-height:1.6;">
+                        <li>• Tam Zamanlı (FT) Kullanım: <b>${avgGenelFT} Gün</b> / ${availGenelFT} Gün</li>
+                        <li>• Part-Time (PT) Kullanım: <b>${avgGenelPT} Gün</b> / ${availGenelPT} Gün</li>
+                        <li class="text-muted">• Atıl Boşa Düşen Süre: <span class="badge bg-light text-dark border border-secondary">${idleGenelFT + idleGenelPT} Gün Boşta</span></li>
+                        <li class="text-danger fw-bold">• Bağımlı Olunan Ek Taşeron: <span>${avgTasGenel} Gün Vardiya</span></li>
+                    </ul>
+                </div>
+            </div>
         </div>
+
         <div class="table-responsive bg-white rounded border shadow-sm">
             <table class="table table-bordered table-sm table-hover align-middle mb-0" style="font-size:12px;">
                 <thead class="table-dark text-center">
                     <tr>
                         <th class="text-start">Müşteri / Proje Adı</th>
-                        <th>Aylık Personel Yükü<br><small>(Adam/Gün)</small></th>
+                        <th>Ortalama Aylık Yük<br><small>(Toplam Süre)</small></th>
+                        <th>Kadro / Taşeron Dağılımı<br><small>(İç Kadro vs Dış Taşeron)</small></th>
                         <th>Aylık Pers. Maliyeti<br><small>(Gider)</small></th>
                         <th>Aylık Fatura Tutarı<br><small>(Ciro)</small></th>
                         <th class="text-end">Aylık Brüt Kâr<br><small>(Ciro - Maliyet)</small></th>
@@ -3454,24 +3670,28 @@ document.addEventListener('click', function(event) {
         teklifler.forEach(t => {
             if(t.matrix && Object.keys(t.matrix).length > 0) {
                 aktifProjeSayisi++;
-                let pCam = 0, pGenel = 0, pEkstra = 0;
+                let pCamInternal = 0, pCamTas = 0;
+                let pGenelInternal = 0, pGenelTas = 0;
+                let pEkstra = 0;
                 
-                // 90 Günlük toplamı çekiyoruz
                 Object.values(t.matrix).forEach(subeDays => {
                     for(let d=1; d<=90; d++) {
                         if(subeDays[d]) {
-                            pCam += (subeDays[d].cam || 0) + (subeDays[d].taseronCam || 0);
-                            pGenel += (subeDays[d].genel || 0) + (subeDays[d].taseronGenel || 0);
+                            pCamInternal += (subeDays[d].cam || 0);
+                            pCamTas += (subeDays[d].taseronCam || 0);
+                            pGenelInternal += (subeDays[d].genel || 0);
+                            pGenelTas += (subeDays[d].taseronGenel || 0);
                             pEkstra += (subeDays[d].ekstra || 0);
                         }
                     }
                 });
 
-                // AYLIK ORTALAMAYA ÇEVİR (90 Günü 3'e böl)
-                let aylikAdamGun = Math.ceil((pCam + pGenel + pEkstra) / 3);
+                // Proje bazlı aylık ortalama iç kadro ve dış taşeron süre kırılımları
+                let avgProjInternal = Math.ceil((pCamInternal + pGenelInternal + pEkstra) / 3);
+                let avgProjTas = Math.ceil((pCamTas + pGenelTas) / 3);
+                let aylikAdamGun = avgProjInternal + avgProjTas;
+
                 let aylikMaliyet = aylikAdamGun * baseDailyCost;
-                
-                // Ciro zaten teklifte aylık olarak tutuluyor (t.satis)
                 let aylikCiro = t.satis || 0; 
                 let aylikBrutKar = aylikCiro - aylikMaliyet;
 
@@ -3486,7 +3706,11 @@ document.addEventListener('click', function(event) {
                     <td class="fw-bold text-primary">
                         ${t.musteri} <br><small class="text-muted fw-normal">${t.adi}</small>
                     </td>
-                    <td class="text-center fw-bold text-secondary">${aylikAdamGun} Gün</td>
+                    <td class="text-center fw-bold text-dark">${aylikAdamGun} Gün / Ay</td>
+                    <td class="text-center">
+                        <span class="badge bg-success shadow-sm" style="font-size:10px; padding:4px 6px;">🏠 Kendi Kadromuz: ${avgProjInternal} Gün</span>
+                        <span class="badge bg-danger shadow-sm ms-1" style="font-size:10px; padding:4px 6px;">👷 Taşeron: ${avgProjTas} Gün</span>
+                    </td>
                     <td class="text-center fw-bold text-danger">${aylikMaliyet.toLocaleString('tr-TR')} ₺</td>
                     <td class="text-center fw-bold text-primary">${aylikCiro.toLocaleString('tr-TR', {maximumFractionDigits:0})} ₺</td>
                     <td class="text-end fw-bolder ${karRenk}">${aylikBrutKar.toLocaleString('tr-TR', {maximumFractionDigits:0})} ₺</td>
@@ -3495,7 +3719,7 @@ document.addEventListener('click', function(event) {
         });
 
         if(aktifProjeSayisi === 0) {
-            html += `<tr><td colspan="5" class="text-center py-4 text-muted">Hiçbir projede kaydedilmiş görev matrisi bulunamadı.</td></tr>`;
+            html += `<tr><td colspan="6" class="text-center py-4 text-muted">Hiçbir projede kaydedilmiş görev matrisi bulunamadı.</td></tr>`;
         }
 
         let genelKarRenk = globalKar < 0 ? "text-danger" : "text-success";
@@ -3503,8 +3727,9 @@ document.addEventListener('click', function(event) {
         html += `</tbody>
             <tfoot class="table-light fs-6">
                 <tr>
-                    <td class="text-end fw-bolder">GENEL TOPLAM (AYLIK):</td>
-                    <td class="text-center fw-bolder text-secondary">${globalAdamGun} Gün</td>
+                    <td class="text-end fw-bolder" colspan="1">GENEL TOPLAM (AYLIK):</td>
+                    <td class="text-center fw-bolder text-dark">${globalAdamGun} Gün</td>
+                    <td class="text-center text-muted small fw-bold">Kadro ve Taşeron Kırılımları Yukarıdadır</td>
                     <td class="text-center fw-bolder text-danger">${globalCost.toLocaleString('tr-TR')} ₺</td>
                     <td class="text-center fw-bolder text-primary">${globalCiro.toLocaleString('tr-TR', {maximumFractionDigits:0})} ₺</td>
                     <td class="text-end fw-bolder ${genelKarRenk} fs-5">${globalKar.toLocaleString('tr-TR', {maximumFractionDigits:0})} ₺</td>
@@ -3515,7 +3740,6 @@ document.addEventListener('click', function(event) {
         document.getElementById('globalStaffingBody').innerHTML = html;
         new bootstrap.Modal(document.getElementById('globalStaffingModal')).show();
     }
-
     function printGlobalStaffingReport() {
         const reportContent = document.getElementById('globalStaffingBody').innerHTML;
         const printWindow = window.open('', '_blank');
@@ -3533,7 +3757,8 @@ document.addEventListener('click', function(event) {
             <body>
                 <h3>TÜM PROJELER - KONSOLİDE İSTİHDAM VE MALİYET RAPORU (90 GÜNLÜK)</h3>
                 ${reportContent}
-            </body>
+<div style="text-align:center; margin-top:30px; font-size:11px; color:#777; font-weight:bold; border-top:1px solid #333; padding-top:10px;">Konsolide Analiz Denetim Masası Altyapısı: CPA-FTC Gelişmiş ERP Analitiği © 2026</div>
+</body>
             </html>
         `);
         printWindow.document.close();
