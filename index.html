@@ -2570,14 +2570,17 @@ function loadHakedisTablosu() {
         tr += `<tr><td>${sube.kodu || '-'}</td><td class="fw-bold">${sube.adi}</td>`;
         
         teklif.hizmetler.forEach(srv => {
-                let srvLower = srv.ad.toLowerCase();
-                let chkId = `${sube.id}_${srv.ad}`;
-                let dbFiyat = teklif.fiyatlar.find(f => f.hizmet.trim().toLowerCase() === srv.ad.trim().toLowerCase() && f.il.trim().toLowerCase() === sube.il.trim().toLowerCase());
-                let birimFiyat = dbFiyat ? dbFiyat.tutar : 0;
-                
-                let isFixed = !(srvLower.includes("koltuk") || srvLower.includes("halı") || srvLower.includes("hali") || srvLower.includes("jaluzi") || srvLower.includes("iskele") || srvLower.includes("dağcı") || srvLower.includes("dagci") || srvLower.includes("saat"));
-                
-                const ayarlar = JSON.parse(localStorage.getItem(KEYS.AYARLAR)) || {};
+            if (filtreHizmet !== "TÜMÜ" && srv.ad !== filtreHizmet) return; // Seçili hizmet değilse hücreyi atla
+
+            let dbFiyat = teklif.fiyatlar.find(f => f.hizmet.trim().toLowerCase() === srv.ad.trim().toLowerCase() && f.il.trim().toLowerCase() === sube.il.trim().toLowerCase());
+            let birimFiyat = dbFiyat ? dbFiyat.tutar : 0;
+            let chkId = `${sube.id}_${srv.ad}`;
+            let srvLower = srv.ad.toLowerCase();
+            
+            // YENİ MANTIK: Sıklığı 0 ise İstek Üzerine hücredir
+            let isFixedCell = (srv.periyotCarpan !== 0);
+
+            if (!isFixedCell) {
                 // Dinamik Hizmet Girişleri (Saatlik/Miktarlı)
                 let val = mevcutHakedis.miktarlar[chkId] || "";
                 tr += `<td class="text-center" style="background-color: #fff3cd;">
