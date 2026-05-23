@@ -592,7 +592,6 @@
         </div> 
         <div class="tab-pane fade" id="planlama-modulu" role="tabpanel">
             <div class="matrix-wrapper">
-                
                 <div class="matrix-header">
                     <div class="d-flex align-items-center gap-4">
                         <h5 class="text-primary fw-bolder mb-0"><i class="fs-4 align-middle me-2">📅</i> Görev Matrisi</h5>
@@ -609,6 +608,7 @@
                         </select>
                         <button onclick="saveCurrentMatrix()" class="btn btn-success fw-bold shadow-sm py-1 px-3">💾 Kaydet</button>
                         <button onclick="printSchedule()" class="btn btn-primary fw-bold shadow-sm py-1 px-3">🖨️ Yazdır</button>
+                        <button onclick="generateGlobalStaffingReport()" class="btn btn-warning text-dark fw-bold shadow-sm py-1 px-3 ms-2">🌍 Tüm Projeler Raporu</button>
                     </div>
                 </div>
 
@@ -620,11 +620,58 @@
                         <tbody id="scheduleTbody"></tbody>
                     </table>
                 </div>
-            </div>
+                
+                <div id="cellMenu" class="card shadow-lg border-primary" style="display:none; position:fixed; z-index:9999; width:220px; font-size:11px;">
+                    <div class="card-header bg-primary text-white p-2 text-center fw-bold" style="font-size:12px;">
+                        <span id="cMenuTitle"></span>
+                    </div>
+                    <div class="card-body p-2">
+                        <h6 class="border-bottom pb-1 text-muted" style="font-size:10px;">KADROLU EKİP</h6>
+                        <div class="d-flex justify-content-between align-items-center mb-1">
+                            <span class="fw-bold text-primary">🧽 Cam:</span>
+                            <div class="input-group input-group-sm w-50 shadow-sm">
+                                <button class="btn btn-outline-secondary py-0 px-2 fw-bold" onclick="updateCellVal('cam', -1)">-</button>
+                                <input type="text" id="cMenuCam" class="form-control text-center py-0 px-1 fw-bold" readonly>
+                                <button class="btn btn-outline-secondary py-0 px-2 fw-bold" onclick="updateCellVal('cam', 1)">+</button>
+                            </div>
+                        </div>
+                        <div class="d-flex justify-content-between align-items-center mb-2">
+                            <span class="fw-bold text-secondary">🧹 Genel:</span>
+                            <div class="input-group input-group-sm w-50 shadow-sm">
+                                <button class="btn btn-outline-secondary py-0 px-2 fw-bold" onclick="updateCellVal('genel', -1)">-</button>
+                                <input type="text" id="cMenuGenel" class="form-control text-center py-0 px-1 fw-bold" readonly>
+                                <button class="btn btn-outline-secondary py-0 px-2 fw-bold" onclick="updateCellVal('genel', 1)">+</button>
+                            </div>
+                        </div>
+
+                        <h6 class="border-bottom pb-1 mt-2 text-danger" style="font-size:10px;">DIŞ TAŞERON</h6>
+                        <div class="d-flex justify-content-between align-items-center mb-1">
+                            <span class="fw-bold text-danger">👷 Taşeron Cam:</span>
+                            <div class="input-group input-group-sm w-50 shadow-sm">
+                                <button class="btn btn-outline-danger py-0 px-2 fw-bold" onclick="updateCellVal('taseronCam', -1)">-</button>
+                                <input type="text" id="cMenuTasCam" class="form-control text-center py-0 px-1 fw-bold" readonly>
+                                <button class="btn btn-outline-danger py-0 px-2 fw-bold" onclick="updateCellVal('taseronCam', 1)">+</button>
+                            </div>
+                        </div>
+                        <div class="d-flex justify-content-between align-items-center mb-2">
+                            <span class="fw-bold text-danger">👷 Taşeron Genel:</span>
+                            <div class="input-group input-group-sm w-50 shadow-sm">
+                                <button class="btn btn-outline-danger py-0 px-2 fw-bold" onclick="updateCellVal('taseronGenel', -1)">-</button>
+                                <input type="text" id="cMenuTasGenel" class="form-control text-center py-0 px-1 fw-bold" readonly>
+                                <button class="btn btn-outline-danger py-0 px-2 fw-bold" onclick="updateCellVal('taseronGenel', 1)">+</button>
+                            </div>
+                        </div>
+
+                        <div class="d-flex gap-1 mt-3 border-top pt-2">
+                            <button class="btn btn-danger btn-sm w-50 py-1 fw-bold" onclick="updateCellVal('sil', 0)">🗑️ Sıfırla</button>
+                            <button class="btn btn-success btn-sm w-50 py-1 fw-bold" onclick="closeCellMenu()">✅ Tamam</button>
+                        </div>
+                    </div>
+                </div>
+                </div>
         </div>
-        
-    </div> 
-    
+    </div>
+   
     <div class="footer-area text-center mt-auto py-3 border-top w-100" style="font-size: 12px; font-weight: 600; color: #64748b; letter-spacing: 0.5px; background: #f8fafc;">
         Yazılım & Altyapı: <img src="Logo2.png" alt="CPA-FTC Logo" style="height: 16px; margin: 0 6px; vertical-align: text-bottom; opacity: 0.8;"> ERP © 2026
     </div>
@@ -3256,55 +3303,87 @@ document.addEventListener('click', function(event) {
         }
     }
 });
+
+// ================== KONSOLİDE (TÜM PROJELER) İSTİHDAM RAPORU ==================
+    function generateGlobalStaffingReport() {
+        const teklifler = getData(KEYS.TEKLIFLER);
+        const ayarlar = JSON.parse(localStorage.getItem(KEYS.AYARLAR)) || {};
+
+        if(teklifler.length === 0) return alert("Sistemde raporlanacak kayıtlı proje bulunmuyor.");
+
+        let capCam = (Number(ayarlar.camFT) || 0) + (Number(ayarlar.camPT) || 0);
+        let capGenel = (Number(ayarlar.genelFT) || 0) + (Number(ayarlar.genelPT) || 0);
+
+        let globalDaily = {};
+        for(let i=1; i<=90; i++) globalDaily[i] = {cam:0, genel:0, taseronCam:0, taseronGenel:0};
+
+        let totalCamShifts = 0, totalGenelShifts = 0;
+        let projelerListesi = [];
+
+        // Tüm projelerin matrislerini üst üste topla
+        teklifler.forEach(t => {
+            if(t.matrix && Object.keys(t.matrix).length > 0) {
+                projelerListesi.push(t.adi);
+                Object.values(t.matrix).forEach(subeDays => {
+                    for(let d=1; d<=90; d++) {
+                        if(subeDays[d]) {
+                            globalDaily[d].cam += (subeDays[d].cam || 0);
+                            globalDaily[d].genel += (subeDays[d].genel || 0);
+                            globalDaily[d].taseronCam += (subeDays[d].taseronCam || 0);
+                            globalDaily[d].taseronGenel += (subeDays[d].taseronGenel || 0);
+
+                            totalCamShifts += (subeDays[d].cam || 0) + (subeDays[d].taseronCam || 0);
+                            totalGenelShifts += (subeDays[d].genel || 0) + (subeDays[d].taseronGenel || 0);
+                        }
+                    }
+                });
+            }
+        });
+
+        // Darboğaz (En yoğun gün) hesabı
+        let maxCamReq = 0, maxGenelReq = 0;
+        for(let d=1; d<=90; d++) {
+            let dailyCam = globalDaily[d].cam + globalDaily[d].taseronCam;
+            let dailyGenel = globalDaily[d].genel + globalDaily[d].taseronGenel;
+            if(dailyCam > maxCamReq) maxCamReq = dailyCam;
+            if(dailyGenel > maxGenelReq) maxGenelReq = dailyGenel;
+        }
+
+        let html = `
+            <div class="alert alert-warning text-dark border-warning shadow-sm">
+                Sistemdeki <b>${projelerListesi.length}</b> adet aktif projenin (<small>${projelerListesi.join(', ')}</small>) matrisleri birleştirilerek şirket genel ihtiyacı hesaplanmıştır.
+            </div>
+            <div class="row text-center mb-2">
+                <div class="col-md-6">
+                    <div class="card p-3 border-info shadow-sm">
+                        <h6 class="fw-bold text-info">🧽 Toplam Cam İş Yükü (90 Gün)</h6>
+                        <h3 class="text-dark">${totalCamShifts} Adam/Gün</h3>
+                        <hr class="my-2">
+                        <small class="d-block">En Yoğun Gün İhtiyacı: <b>${maxCamReq} Personel</b></small>
+                        <small class="d-block">Mevcut Şirket Kapasitesi: <b>${capCam} Personel</b></small>
+                        ${maxCamReq > capCam ? `<div class="text-danger fw-bold mt-2 p-1 bg-light rounded">⚠️ Kapasite Aşımı! Taşeron Gerekli</div>` : `<div class="text-success fw-bold mt-2 p-1 bg-light rounded">✅ Kapasite Yeterli</div>`}
+                    </div>
+                </div>
+                <div class="col-md-6">
+                    <div class="card p-3 border-secondary shadow-sm">
+                        <h6 class="fw-bold text-secondary">🧹 Toplam Genel Temizlik (90 Gün)</h6>
+                        <h3 class="text-dark">${totalGenelShifts} Adam/Gün</h3>
+                        <hr class="my-2">
+                        <small class="d-block">En Yoğun Gün İhtiyacı: <b>${maxGenelReq} Personel</b></small>
+                        <small class="d-block">Mevcut Şirket Kapasitesi: <b>${capGenel} Personel</b></small>
+                        ${maxGenelReq > capGenel ? `<div class="text-danger fw-bold mt-2 p-1 bg-light rounded">⚠️ Kapasite Aşımı! Taşeron Gerekli</div>` : `<div class="text-success fw-bold mt-2 p-1 bg-light rounded">✅ Kapasite Yeterli</div>`}
+                    </div>
+                </div>
+            </div>
+        `;
+
+        document.getElementById('globalStaffingBody').innerHTML = html;
+        new bootstrap.Modal(document.getElementById('globalStaffingModal')).show();
+    }
+
     window.onload = renderAll; 
 </script>
-<div id="cellMenu" class="card shadow-lg border-primary" style="display:none; position:absolute; z-index:9999; width:220px; font-size:11px;">
-    <div class="card-header bg-primary text-white p-2 text-center fw-bold" style="font-size:12px;">
-        <span id="cMenuTitle"></span>
-    </div>
-    <div class="card-body p-2">
-        <h6 class="border-bottom pb-1 text-muted" style="font-size:10px;">KADROLU EKİP</h6>
-        <div class="d-flex justify-content-between align-items-center mb-1">
-            <span class="fw-bold text-primary">🧽 Cam:</span>
-            <div class="input-group input-group-sm w-50 shadow-sm">
-                <button class="btn btn-outline-secondary py-0 px-2 fw-bold" onclick="updateCellVal('cam', -1)">-</button>
-                <input type="text" id="cMenuCam" class="form-control text-center py-0 px-1 fw-bold" readonly>
-                <button class="btn btn-outline-secondary py-0 px-2 fw-bold" onclick="updateCellVal('cam', 1)">+</button>
-            </div>
-        </div>
-        <div class="d-flex justify-content-between align-items-center mb-2">
-            <span class="fw-bold text-secondary">🧹 Genel:</span>
-            <div class="input-group input-group-sm w-50 shadow-sm">
-                <button class="btn btn-outline-secondary py-0 px-2 fw-bold" onclick="updateCellVal('genel', -1)">-</button>
-                <input type="text" id="cMenuGenel" class="form-control text-center py-0 px-1 fw-bold" readonly>
-                <button class="btn btn-outline-secondary py-0 px-2 fw-bold" onclick="updateCellVal('genel', 1)">+</button>
-            </div>
-        </div>
 
-        <h6 class="border-bottom pb-1 mt-2 text-danger" style="font-size:10px;">DIŞ TAŞERON</h6>
-        <div class="d-flex justify-content-between align-items-center mb-1">
-            <span class="fw-bold text-danger">👷 Taşeron Cam:</span>
-            <div class="input-group input-group-sm w-50 shadow-sm">
-                <button class="btn btn-outline-danger py-0 px-2 fw-bold" onclick="updateCellVal('taseronCam', -1)">-</button>
-                <input type="text" id="cMenuTasCam" class="form-control text-center py-0 px-1 fw-bold" readonly>
-                <button class="btn btn-outline-danger py-0 px-2 fw-bold" onclick="updateCellVal('taseronCam', 1)">+</button>
-            </div>
-        </div>
-        <div class="d-flex justify-content-between align-items-center mb-2">
-            <span class="fw-bold text-danger">👷 Taşeron Genel:</span>
-            <div class="input-group input-group-sm w-50 shadow-sm">
-                <button class="btn btn-outline-danger py-0 px-2 fw-bold" onclick="updateCellVal('taseronGenel', -1)">-</button>
-                <input type="text" id="cMenuTasGenel" class="form-control text-center py-0 px-1 fw-bold" readonly>
-                <button class="btn btn-outline-danger py-0 px-2 fw-bold" onclick="updateCellVal('taseronGenel', 1)">+</button>
-            </div>
-        </div>
-
-        <div class="d-flex gap-1 mt-3 border-top pt-2">
-            <button class="btn btn-danger btn-sm w-50 py-1 fw-bold" onclick="updateCellVal('sil', 0)">🗑️ Sıfırla</button>
-            <button class="btn btn-success btn-sm w-50 py-1 fw-bold" onclick="closeCellMenu()">✅ Tamam</button>
-        </div>
-    </div>
-</div>
 <div class="modal fade" id="istihdamModal" tabindex="-1" data-bs-backdrop="static">
   <div class="modal-dialog modal-dialog-centered">
     <div class="modal-content border-0 shadow-lg">
@@ -3325,5 +3404,18 @@ document.addEventListener('click', function(event) {
 </div>
 
 <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+
+<div class="modal fade" id="globalStaffingModal" tabindex="-1">
+  <div class="modal-dialog modal-lg modal-dialog-centered">
+    <div class="modal-content border-0 shadow-lg">
+      <div class="modal-header bg-warning">
+        <h5 class="modal-title fw-bold text-dark">🌍 Konsolide Şirket İstihdam Raporu (Tüm Projeler)</h5>
+        <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+      </div>
+      <div class="modal-body bg-light" id="globalStaffingBody">
+      </div>
+    </div>
+  </div>
+</div>
 </body>
 </html>
