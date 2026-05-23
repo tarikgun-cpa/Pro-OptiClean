@@ -1214,8 +1214,11 @@
                     let musteriAdi = (row["Müşteri"] || "Tanımsız").trim();
                     let subeAdi = (row["Şube Adı"] || "").trim();
                     
-                    // Şube daha önce eklenmiş mi kontrol et (Boşlukları temizleyerek)
-                    let isDuplicate = existing.some(s => s.musteri === musteriAdi && s.adi === subeAdi);
+                    // Şube daha önce eklenmiş mi kontrol et (Büyük/küçük harf duyarsız)
+                    let isDuplicate = existing.some(s => 
+                        s.musteri.toLowerCase() === musteriAdi.toLowerCase() && 
+                        s.adi.toLowerCase() === subeAdi.toLowerCase()
+                    );
                     
                     if(!isDuplicate) {
                         existing.push({
@@ -2549,13 +2552,13 @@ function loadHakedisTablosu() {
     teklif.hizmetler.forEach(h => { 
         if (filtreHizmet !== "TÜMÜ" && h.ad !== filtreHizmet) return; // Seçili hizmet değilse başlığı atla
 
-        let srvLower = h.ad.toLowerCase();
-        let isFixed = !(srvLower.includes("koltuk") || srvLower.includes("halı") || srvLower.includes("hali") || srvLower.includes("jaluzi") || srvLower.includes("iskele") || srvLower.includes("dağcı") || srvLower.includes("dagci") || srvLower.includes("saat"));
+        // YENİ MANTIK: Sıklığı "0" (İstek Üzere) olanları ayırıyoruz
+        let isFixed = (h.periyotCarpan !== 0);
         
         if (isFixed) {
             th += `<th class="text-center align-middle bg-primary text-white">${h.ad}<br><input type="checkbox" onchange="toggleCol('${h.ad}', this.checked)" title="Sütunu Tümünü Seç" style="cursor:pointer; width:16px; height:16px; margin-top:5px;"></th>`;
         } else {
-            th += `<th class="text-center align-middle bg-warning text-dark">${h.ad}</th>`;
+            th += `<th class="text-center align-middle" style="background-color: #ffc107; color: #000;">${h.ad}<br>(İstek Üzere)</th>`;
         }
     });
     th += `</tr>`;
@@ -2567,16 +2570,14 @@ function loadHakedisTablosu() {
         tr += `<tr><td>${sube.kodu || '-'}</td><td class="fw-bold">${sube.adi}</td>`;
         
         teklif.hizmetler.forEach(srv => {
-            if (filtreHizmet !== "TÜMÜ" && srv.ad !== filtreHizmet) return; // Seçili hizmet değilse hücreyi atla
-
-            let dbFiyat = teklif.fiyatlar.find(f => f.hizmet.trim().toLowerCase() === srv.ad.trim().toLowerCase() && f.il.trim().toLowerCase() === sube.il.trim().toLowerCase());
-            let birimFiyat = dbFiyat ? dbFiyat.tutar : 0;
-            let srvLower = srv.ad.toLowerCase();
-            let chkId = `${sube.id}_${srv.ad}`;
-            
-            let isFixedCell = !(srvLower.includes("koltuk") || srvLower.includes("halı") || srvLower.includes("hali") || srvLower.includes("jaluzi") || srvLower.includes("iskele") || srvLower.includes("dağcı") || srvLower.includes("dagci") || srvLower.includes("saat"));
-
-            if (!isFixedCell) {
+                let srvLower = srv.ad.toLowerCase();
+                let chkId = `${sube.id}_${srv.ad}`;
+                let dbFiyat = teklif.fiyatlar.find(f => f.hizmet.trim().toLowerCase() === srv.ad.trim().toLowerCase() && f.il.trim().toLowerCase() === sube.il.trim().toLowerCase());
+                let birimFiyat = dbFiyat ? dbFiyat.tutar : 0;
+                
+                let isFixed = !(srvLower.includes("koltuk") || srvLower.includes("halı") || srvLower.includes("hali") || srvLower.includes("jaluzi") || srvLower.includes("iskele") || srvLower.includes("dağcı") || srvLower.includes("dagci") || srvLower.includes("saat"));
+                
+                const ayarlar = JSON.parse(localStorage.getItem(KEYS.AYARLAR)) || {};
                 // Dinamik Hizmet Girişleri (Saatlik/Miktarlı)
                 let val = mevcutHakedis.miktarlar[chkId] || "";
                 tr += `<td class="text-center" style="background-color: #fff3cd;">
