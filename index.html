@@ -408,11 +408,15 @@
         <div class="tab-pane fade" id="teklif-modulu" role="tabpanel">
             <div class="row">
                 
-                <div class="col-md-4">
+                <div class="col-md-4" id="teklifSolPanel">
                     <div class="card p-3 shadow-sm border-info">
-                        <h5 class="text-info fw-bold">1. Teklif Parametreleri</h5>
+                        <div class="d-flex justify-content-between align-items-center mb-2">
+                            <h5 class="text-info fw-bold mb-0">1. Teklif Parametreleri</h5>
+                            <button class="btn btn-sm btn-outline-info fw-bold py-0 px-2" onclick="toggleTeklifParametreleri()">↔ Daralt</button>
+                        </div>
                         
-                        <label class="form-label mt-2 fw-bold text-dark">Müşteri Seçin</label>
+                        <div id="teklifParametreIcerik">
+                            <label class="form-label mt-2 fw-bold text-dark">Müşteri Seçin</label>
                         <select id="teklifMusteri" class="form-select border-info" onchange="loadBranchesForQuote()"></select>
                         
                         <label class="form-label mt-3 fw-bold text-dark">Şubeler</label>
@@ -434,10 +438,10 @@
                         </div>
 
                         <button onclick="generateAIQuote()" class="btn btn-primary w-100 mt-2 fw-bold py-2 shadow">🤖 AI Teklifi Hesapla</button>
-                    </div>
+                        </div> </div>
                 </div>
 
-                <div class="col-md-8">
+                <div class="col-md-8" id="teklifSagPanel">
                     <div class="ai-box shadow-sm mb-3" id="aiResultBox" style="display:none;">
                         <h4 class="mb-4 text-center text-primary fw-bold">📊 AI Aylık Teklif ve Finansal Analiz</h4>
                         
@@ -1302,6 +1306,21 @@
     }
 
     // ================== TEKLİF VE AI MODÜLÜ MANTIĞI ==================
+    function toggleTeklifParametreleri() {
+        let sol = document.getElementById('teklifSolPanel');
+        let sag = document.getElementById('teklifSagPanel');
+        let icerik = document.getElementById('teklifParametreIcerik');
+        
+        if (icerik.style.display === 'none') {
+            icerik.style.display = 'block';
+            sol.className = 'col-md-4';
+            sag.className = 'col-md-8';
+        } else {
+            icerik.style.display = 'none';
+            sol.className = 'col-md-12 mb-2'; // Yukarıda ince bir bar olarak kalır
+            sag.className = 'col-md-12';      // Sağ taraf ekranın %100'ünü kaplar
+        }
+    }
     function loadBranchesForQuote() {
         const selectedMusteri = document.getElementById('teklifMusteri').value;
         const subelerListesi = getData(KEYS.SUBELER).filter(s => s.musteri === selectedMusteri);
@@ -1754,11 +1773,81 @@
             return Math.ceil(m2 / 250); 
         }
 
-        let dailyUsage = {};
-        for(let d=1; d<=90; d++) dailyUsage[d] = { camFT: 0, camPT: 0, genelFT: 0, genelPT: 0, taseronCam: 0, taseronGenel: 0, camIl: null, genelIl: null };
+        // =========================================================================
+        // YENİ: GLOBAL (ORTAK) HAVUZ VE GEÇMİŞ PROJELERİ OKUMA BÖLÜMÜ
+        // =========================================================================
+        let globalUsage = {};
+        for(let d=1; d<=90; d++) globalUsage[d] = { cam: 0, genel: 0, il: null };
+        
+        const tumTeklifler = getData(KEYS.TEKLIFLER);
+        tumTeklifler.forEach(t => {
+            // Eğer şu an bu teklifi düzenliyorsak kendi eski matrisini hesaba katma (çift saymamak için)
+            if (editStates.quote && t.id === editStates.quote) return; 
 
-        let monthPTCamRemaining = [capCamPT * ptCamGun, capCamPT * ptCamGun, capCamPT * ptCamGun];
-        let monthPTGenelRemaining = [capGenelPT * ptGenelGun, capGenelPT * ptGenelGun, capGenelPT * ptGenelGun];
+            if (t.matrix) {
+                Object.keys(t.matrix).forEach(subeId => {
+                    let subeGunler = t.matrix[subeId];
+                    // O şubenin ilini bul (aynı gün farklı illere dağılmayı engellemek için)
+                    let pSube = allSubeler.find(x => x.id == subeId);
+                    let pIl = pSube ? pSube.il : null;
+
+                    for(let d=1; d<=90; d++) {
+                        if(subeGunler[d]) {
+                            globalUsage[d].cam += (subeGunler[d].cam || 0);
+                            globalUsage[d].genel += (subeGunler[d].genel || 0);
+                            if(pIl && (subeGunler[d].cam > 0 || subeGunler[d].genel > 0)) {
+                                globalUsage[d].il = pIl; // O günkü ekibin bulunduğu İl kilitlenir
+                            }
+                        }
+                    }
+                });
+            }
+        });
+
+        let globalMonthPTCamUsed = [0, 0, 0];
+        let globalMonthPTGenelUsed = [0, 0, 0];
+
+        let dailyUsage = {};
+        for(let d=1; d<=90; d++) {
+            let mIndex = Math.floor((d-1)/30);
+            
+            // Kayıtlı projelerin Cam Kullanımını Tam Zamanlı (FT) ve Part-Time (PT) havuzuna yazdır
+            let gCam = globalUsage[d].cam;
+            let uFTCam = Math.min(gCam, capCamFT);
+            let uPTCam = Math.max(0, gCam - capCamFT);
+            globalMonthPTCamUsed[mIndex] += uPTCam;
+
+            // Kayıtlı projelerin Genel Temizlik Kullanımını FT ve PT havuzuna yazdır
+            let gGenel = globalUsage[d].genel;
+            let uFTGenel = Math.min(gGenel, capGenelFT);
+            let uPTGenel = Math.max(0, gGenel - capGenelFT);
+            globalMonthPTGenelUsed[mIndex] += uPTGenel;
+
+            // Boş takvim yerine artık diğer projelerin dolu olduğu takvimi başlatıyoruz!
+            dailyUsage[d] = { 
+                camFT: uFTCam, 
+                camPT: uPTCam, 
+                genelFT: uFTGenel, 
+                genelPT: uPTGenel, 
+                taseronCam: 0, 
+                taseronGenel: 0, 
+                camIl: globalUsage[d].il, 
+                genelIl: globalUsage[d].il 
+            };
+        }
+
+        // Aylık Part-Time kotalarını da diğer projelerin kullanımlarına göre düşür
+        let monthPTCamRemaining = [
+            Math.max(0, capCamPT * ptCamGun - globalMonthPTCamUsed[0]),
+            Math.max(0, capCamPT * ptCamGun - globalMonthPTCamUsed[1]),
+            Math.max(0, capCamPT * ptCamGun - globalMonthPTCamUsed[2])
+        ];
+        let monthPTGenelRemaining = [
+            Math.max(0, capGenelPT * ptGenelGun - globalMonthPTGenelUsed[0]),
+            Math.max(0, capGenelPT * ptGenelGun - globalMonthPTGenelUsed[1]),
+            Math.max(0, capGenelPT * ptGenelGun - globalMonthPTGenelUsed[2])
+        ];
+        // =========================================================================
 
         const ensureCell = (sId, d) => {
             if(!window.aiScheduleData[sId]) window.aiScheduleData[sId] = {};
@@ -2081,7 +2170,9 @@
         // Seçilen hizmetlere göre Dinamik Sütun Başlıkları
         let thHizmetler = "";
         teklif.hizmetler.forEach(h => {
-            thHizmetler += `<th>${h.ad.toUpperCase()}<br>BİRİM TUTARI</th>`;
+            let isIstek = (h.periyotCarpan == 0);
+            let bgRenk = isIstek ? 'background-color: #ffc107; color: #000;' : '';
+            thHizmetler += `<th style="${bgRenk}">${h.ad.toUpperCase()}<br>BİRİM TUTARI</th>`;
         });
 
         // Şube verileri ve fiyat hücreleri
@@ -2094,7 +2185,10 @@
                 // Şube ili ve Hizmet adına göre birim fiyatı bul
                 let dbFiyat = teklif.fiyatlar.find(f => f.hizmet.trim().toLowerCase() === srv.ad.trim().toLowerCase() && f.il.trim().toLowerCase() === sube.il.trim().toLowerCase());
                 let birimFiyat = dbFiyat ? dbFiyat.tutar.toLocaleString('tr-TR', {maximumFractionDigits:2}) + " ₺" : "-";
-                tdFiyatlar += `<td>${birimFiyat}</td>`;
+                
+                let isIstek = (srv.periyotCarpan == 0);
+                let bgRenk = isIstek ? 'background-color: #fff3cd;' : '';
+                tdFiyatlar += `<td style="${bgRenk}">${birimFiyat}</td>`;
 
                 // Sıklık Açıklaması - SADECE "GENEL" VE "CAM" İÇERENLER
                 let srvAdLower = srv.ad.toLowerCase();
