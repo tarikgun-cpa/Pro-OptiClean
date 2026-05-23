@@ -1209,23 +1209,31 @@
             }
 
             if (target === 'subeler') {
-                const existing = getData(KEYS.SUBELER);
+                let existing = getData(KEYS.SUBELER);
                 excelData.forEach(row => {
-                    existing.push({
-                        id: Date.now() + Math.random(),
-                        musteri: row["Müşteri"] || "Tanımsız",
-                        adi: row["Şube Adı"] || "",
-                        kodu: row["Şube Kodu"] || "",
-                        il: row["İl"] || "",
-                        bolge: row["Bölge"] || "",
-                        adres: row["Açık Adres"] || "",
-                        m2: row["Şube Alanı (m2)"] || 0,
-                        tadilatM2: row["Tadilat Alanı (m2)"] || 0,
-                        camM2: row["Cam Alanı (m2)"] || 0
-                    });
+                    let musteriAdi = (row["Müşteri"] || "Tanımsız").trim();
+                    let subeAdi = (row["Şube Adı"] || "").trim();
+                    
+                    // Şube daha önce eklenmiş mi kontrol et (Boşlukları temizleyerek)
+                    let isDuplicate = existing.some(s => s.musteri === musteriAdi && s.adi === subeAdi);
+                    
+                    if(!isDuplicate) {
+                        existing.push({
+                            id: Date.now() + Math.random(),
+                            musteri: musteriAdi,
+                            adi: subeAdi,
+                            kodu: (row["Şube Kodu"] || "").toString().trim(),
+                            il: (row["İl"] || "").trim(),
+                            bolge: (row["Bölge"] || "").trim(),
+                            adres: (row["Açık Adres"] || "").trim(),
+                            m2: row["Şube Alanı (m2)"] || 0,
+                            tadilatM2: row["Tadilat Alanı (m2)"] || 0,
+                            camM2: row["Cam Alanı (m2)"] || 0
+                        });
+                    }
                 });
                 saveData(KEYS.SUBELER, existing);
-            } 
+            }
             else if (target === 'fiyatlar') {
                 const existing = getData(KEYS.FIYATLAR);
                 excelData.forEach(row => {
@@ -1637,23 +1645,31 @@
             <div class="bg-light p-3 rounded mt-3 border shadow-sm">
                 <h6 class="text-primary fw-bold mb-3" style="font-size:13px;"><i class="align-middle me-1">⚡</i> Hızlı İstihdam Güncellemesi</h6>
                 <div class="row g-2 mb-2">
-                    <div class="col-6">
+                    <div class="col-4">
                         <label style="font-size:10px;" class="text-info fw-bold text-uppercase">🧽 Cam FT</label>
                         <input type="number" id="hizliCamFT" class="form-control form-control-sm border-info" value="${camFT}">
                     </div>
-                    <div class="col-6">
+                    <div class="col-4">
                         <label style="font-size:10px;" class="text-info fw-bold text-uppercase">🧽 Cam PT</label>
                         <input type="number" id="hizliCamPT" class="form-control form-control-sm border-info" value="${camPT}">
                     </div>
+                    <div class="col-4">
+                        <label style="font-size:10px;" class="text-info fw-bold text-uppercase">🧽 PT Gün</label>
+                        <input type="number" id="hizliCamPTGun" class="form-control form-control-sm border-info" value="${camPTGun}">
+                    </div>
                 </div>
                 <div class="row g-2">
-                    <div class="col-6">
+                    <div class="col-4">
                         <label style="font-size:10px;" class="text-secondary fw-bold text-uppercase">🧹 Genel FT</label>
                         <input type="number" id="hizliGenelFT" class="form-control form-control-sm border-secondary" value="${genelFT}">
                     </div>
-                    <div class="col-6">
+                    <div class="col-4">
                         <label style="font-size:10px;" class="text-secondary fw-bold text-uppercase">🧹 Genel PT</label>
                         <input type="number" id="hizliGenelPT" class="form-control form-control-sm border-secondary" value="${genelPT}">
+                    </div>
+                    <div class="col-4">
+                        <label style="font-size:10px;" class="text-secondary fw-bold text-uppercase">🧹 PT Gün</label>
+                        <input type="number" id="hizliGenelPTGun" class="form-control form-control-sm border-secondary" value="${genelPTGun}">
                     </div>
                 </div>
                 <button onclick="hizliAyarKaydetVeYenidenHesapla()" class="btn btn-sm btn-success w-100 mt-3 fw-bold py-2 shadow-sm">💾 Kaydet ve Yeniden Analiz Et</button>
@@ -1690,8 +1706,10 @@
         let ayarlar = JSON.parse(localStorage.getItem(KEYS.AYARLAR)) || {};
         ayarlar.camFT = document.getElementById('hizliCamFT').value;
         ayarlar.camPT = document.getElementById('hizliCamPT').value;
+        ayarlar.camPTGun = document.getElementById('hizliCamPTGun').value;
         ayarlar.genelFT = document.getElementById('hizliGenelFT').value;
         ayarlar.genelPT = document.getElementById('hizliGenelPT').value;
+        ayarlar.genelPTGun = document.getElementById('hizliGenelPTGun').value;
         
         localStorage.setItem(KEYS.AYARLAR, JSON.stringify(ayarlar));
         
@@ -2561,9 +2579,9 @@ function loadHakedisTablosu() {
             if (!isFixedCell) {
                 // Dinamik Hizmet Girişleri (Saatlik/Miktarlı)
                 let val = mevcutHakedis.miktarlar[chkId] || "";
-                tr += `<td class="text-center">
+                tr += `<td class="text-center" style="background-color: #fff3cd;">
                     <input type="number" class="form-control form-control-sm mx-auto hakedis-input" data-birim="${birimFiyat}" data-id="${chkId}" value="${val}" onchange="hesaplaHakedisToplam()" placeholder="Miktar" style="width:70px;">
-                    <small class="text-muted">(${birimFiyat} ₺/Br)</small>
+                    <small class="text-muted fw-bold">(${birimFiyat} ₺/Br)</small>
                 </td>`;
             } else {
                 // Sabit ve m² Çarpanlı Alan Girişleri
@@ -2628,11 +2646,15 @@ function loadSavedHakedis(hakedisId) {
     
     windowEditingHakedisId = hakedisId; 
     document.getElementById('hakedisSozlesmeSecim').value = h.sozlesmeId;
-    hakedisSozlesmeDegisti(); // Hizmet filtre dropdown listesini tetikler
+    hakedisSozlesmeDegisti(); 
     document.getElementById('hakedisAy').value = h.ay;
     document.getElementById('hakedisAciklama').value = h.aciklama || "";
     loadHakedisTablosu();
-    window.scrollTo(0, 0);
+    
+    // Kullanıcıya ekranı göster
+    document.getElementById('tab-hakedis').click();
+    window.scrollTo({ top: 0, behavior: 'smooth' });
+    alert("Fatura kayıtları forma getirildi, üstteki tablodan düzenleyebilirsiniz.");
 }
 
     function deleteHakedis(id) {
@@ -3313,22 +3335,22 @@ document.addEventListener('click', function(event) {
         if(teklifler.length === 0) return alert("Sistemde raporlanacak kayıtlı proje bulunmuyor.");
 
         let html = `<div class="alert alert-info border-info text-dark shadow-sm pb-1 pt-2 px-3 mb-3">
-            <strong>Bilgi:</strong> Sistemde matrisi oluşturulmuş tüm projelerin 90 günlük (3 aylık) personel ihtiyacı ve tahmini maliyet analizi aşağıdadır.
+            <strong>Bilgi:</strong> Aşağıdaki tablo, projelerin <b>AYLIK (30 Günlük)</b> ortalama personel maliyetlerini ve aylık cirolarını kıyaslamak üzere tasarlanmıştır. Brüt kâr, personel giderleri düşüldükten sonra kalan tutardır (Sarf malzeme hariç).
         </div>
         <div class="table-responsive bg-white rounded border shadow-sm">
             <table class="table table-bordered table-sm table-hover align-middle mb-0" style="font-size:12px;">
                 <thead class="table-dark text-center">
                     <tr>
                         <th class="text-start">Müşteri / Proje Adı</th>
-                        <th>🧽 Cam Yükü<br><small>(Adam/Gün)</small></th>
-                        <th>🧹 Genel Yükü<br><small>(Adam/Gün)</small></th>
-                        <th>✨ Ekstra Yük<br><small>(Adam/Gün)</small></th>
-                        <th class="text-end">💰 Proje Personel Maliyeti</th>
+                        <th>Aylık Personel Yükü<br><small>(Adam/Gün)</small></th>
+                        <th>Aylık Pers. Maliyeti<br><small>(Gider)</small></th>
+                        <th>Aylık Fatura Tutarı<br><small>(Ciro)</small></th>
+                        <th class="text-end">Aylık Brüt Kâr<br><small>(Ciro - Maliyet)</small></th>
                     </tr>
                 </thead>
                 <tbody>`;
 
-        let globalCam = 0, globalGenel = 0, globalEkstra = 0, globalCost = 0;
+        let globalAdamGun = 0, globalCost = 0, globalCiro = 0, globalKar = 0;
         let aktifProjeSayisi = 0;
 
         teklifler.forEach(t => {
@@ -3336,6 +3358,7 @@ document.addEventListener('click', function(event) {
                 aktifProjeSayisi++;
                 let pCam = 0, pGenel = 0, pEkstra = 0;
                 
+                // 90 Günlük toplamı çekiyoruz
                 Object.values(t.matrix).forEach(subeDays => {
                     for(let d=1; d<=90; d++) {
                         if(subeDays[d]) {
@@ -3346,46 +3369,50 @@ document.addEventListener('click', function(event) {
                     }
                 });
 
-                let pCost = (pCam + pGenel + pEkstra) * baseDailyCost;
-                globalCam += pCam; globalGenel += pGenel; globalEkstra += pEkstra; globalCost += pCost;
+                // AYLIK ORTALAMAYA ÇEVİR (90 Günü 3'e böl)
+                let aylikAdamGun = Math.ceil((pCam + pGenel + pEkstra) / 3);
+                let aylikMaliyet = aylikAdamGun * baseDailyCost;
+                
+                // Ciro zaten teklifte aylık olarak tutuluyor (t.satis)
+                let aylikCiro = t.satis || 0; 
+                let aylikBrutKar = aylikCiro - aylikMaliyet;
+
+                globalAdamGun += aylikAdamGun; 
+                globalCost += aylikMaliyet; 
+                globalCiro += aylikCiro; 
+                globalKar += aylikBrutKar;
+
+                let karRenk = aylikBrutKar < 0 ? "text-danger" : "text-success";
 
                 html += `<tr>
                     <td class="fw-bold text-primary">
                         ${t.musteri} <br><small class="text-muted fw-normal">${t.adi}</small>
                     </td>
-                    <td class="text-center fw-bold">${pCam}</td>
-                    <td class="text-center fw-bold">${pGenel}</td>
-                    <td class="text-center fw-bold">${pEkstra}</td>
-                    <td class="text-end fw-bolder text-danger">${pCost.toLocaleString('tr-TR')} ₺</td>
+                    <td class="text-center fw-bold text-secondary">${aylikAdamGun} Gün</td>
+                    <td class="text-center fw-bold text-danger">${aylikMaliyet.toLocaleString('tr-TR')} ₺</td>
+                    <td class="text-center fw-bold text-primary">${aylikCiro.toLocaleString('tr-TR', {maximumFractionDigits:0})} ₺</td>
+                    <td class="text-end fw-bolder ${karRenk}">${aylikBrutKar.toLocaleString('tr-TR', {maximumFractionDigits:0})} ₺</td>
                 </tr>`;
             }
         });
 
         if(aktifProjeSayisi === 0) {
-            html += `<tr><td colspan="5" class="text-center py-4 text-muted">Hiçbir projede kaydedilmiş görev matrisi (personel ataması) bulunamadı.</td></tr>`;
+            html += `<tr><td colspan="5" class="text-center py-4 text-muted">Hiçbir projede kaydedilmiş görev matrisi bulunamadı.</td></tr>`;
         }
+
+        let genelKarRenk = globalKar < 0 ? "text-danger" : "text-success";
 
         html += `</tbody>
             <tfoot class="table-light fs-6">
                 <tr>
-                    <td class="text-end fw-bolder">TÜM PROJELER (GENEL TOPLAM):</td>
-                    <td class="text-center fw-bolder text-info">${globalCam}</td>
-                    <td class="text-center fw-bolder text-secondary">${globalGenel}</td>
-                    <td class="text-center fw-bolder text-warning">${globalEkstra}</td>
-                    <td class="text-end fw-bolder text-danger fs-5">${globalCost.toLocaleString('tr-TR')} ₺</td>
+                    <td class="text-end fw-bolder">GENEL TOPLAM (AYLIK):</td>
+                    <td class="text-center fw-bolder text-secondary">${globalAdamGun} Gün</td>
+                    <td class="text-center fw-bolder text-danger">${globalCost.toLocaleString('tr-TR')} ₺</td>
+                    <td class="text-center fw-bolder text-primary">${globalCiro.toLocaleString('tr-TR', {maximumFractionDigits:0})} ₺</td>
+                    <td class="text-end fw-bolder ${genelKarRenk} fs-5">${globalKar.toLocaleString('tr-TR', {maximumFractionDigits:0})} ₺</td>
                 </tr>
             </tfoot>
         </table></div>`;
-
-        // Şirket Kapasite Özeti
-        let capCam = (Number(ayarlar.camFT) || 0) + (Number(ayarlar.camPT) || 0);
-        let capGenel = (Number(ayarlar.genelFT) || 0) + (Number(ayarlar.genelPT) || 0);
-
-        html += `
-        <div class="row mt-3 text-center g-2">
-            <div class="col-6"><div class="p-2 border border-info rounded bg-light shadow-sm"><span class="d-block text-muted small fw-bold">Şirket Günlük Cam Kapasitesi</span><b class="text-info fs-5">${capCam} Personel</b></div></div>
-            <div class="col-6"><div class="p-2 border border-secondary rounded bg-light shadow-sm"><span class="d-block text-muted small fw-bold">Şirket Günlük Genel Kapasitesi</span><b class="text-secondary fs-5">${capGenel} Personel</b></div></div>
-        </div>`;
 
         document.getElementById('globalStaffingBody').innerHTML = html;
         new bootstrap.Modal(document.getElementById('globalStaffingModal')).show();
