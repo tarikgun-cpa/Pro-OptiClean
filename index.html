@@ -2056,15 +2056,22 @@ document.getElementById('fiyatListesi').innerHTML = fiyatHTML;
 
                 let bgRenk = srv.periyotCarpan == 0 ? "background-color: #fffcf2;" : "";
                 
-                // HÜCRE İÇERİĞİ OLUŞTURMA (Birim Fiyat ve Toplam Yan Yana)
+                // HÜCRE İÇERİĞİ OLUŞTURMA
                 let hucreIcerik = "-";
                 if(dbFiyat) {
                     let birimBicimi = isDynamic ? "₺/Br" : "₺/m²";
-                    hucreIcerik = `
-                        <span style="font-size:10px; color:#666;">${rawBirimFiyat.toLocaleString('tr-TR', {maximumFractionDigits:2})} ${birimBicimi}</span><br>
-                        <span style="font-size:12px; font-weight:bold; color:#000;">${islemSatis.toLocaleString('tr-TR', {maximumFractionDigits:2})} ₺</span>
-                        ${marker}
-                    `;
+                    
+                    if (srv.periyotCarpan == 0) {
+                        // İSTEK ÜZERİNE (ON-DEMAND) HİZMETLER: Sadece birim fiyat gösterilir
+                        hucreIcerik = `<span style="font-size:12px; font-weight:bold; color:#000;">${rawBirimFiyat.toLocaleString('tr-TR', {maximumFractionDigits:2})} ${birimBicimi}</span>`;
+                    } else {
+                        // RUTİN VE DÖNEMSEL HİZMETLER: Hem birim fiyat hem de M2 ile çarpılmış toplam fiyat gösterilir
+                        hucreIcerik = `
+                            <span style="font-size:10px; color:#666;">${rawBirimFiyat.toLocaleString('tr-TR', {maximumFractionDigits:2})} ${birimBicimi}</span><br>
+                            <span style="font-size:12px; font-weight:bold; color:#000;">${islemSatis.toLocaleString('tr-TR', {maximumFractionDigits:2})} ₺</span>
+                            ${marker}
+                        `;
+                    }
                 }
 
                 tdFiyatlar += `<td style="${bgRenk}">${hucreIcerik}</td>`;
