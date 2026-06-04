@@ -423,13 +423,7 @@
                         <hr>
                         <label class="form-label fw-bold text-dark">Hizmetler ve Periyotlar</label>
                         <small class="d-block text-muted mb-2">İl fiyatları tablosundaki hizmetlere göre fiyatlandırılacaktır.</small>
-                        <div id="teklifHizmetListesi" class="border p-2 rounded bg-white mb-3" style="max-height: 250px; overflow-y: auto;">
-                            </div>
-
-                        <label class="form-label fw-bold text-success">İstenilen Kar Oranı (%)</label>
-                        <div class="input-group mb-3">
-                            <input type="number" id="teklifKarOrani" class="form-control border-success" value="20" placeholder="Örn: 20">
-                            <span class="input-group-text bg-success text-white">%</span>
+                        <div id="teklifHizmetListesi" class="border p-2 rounded bg-white mb-3" style="max-height: 450px; overflow-y: auto;">
                         </div>
 
                         <button onclick="generateAIQuote()" class="btn btn-primary w-100 mt-2 fw-bold py-2 shadow">🤖 AI Teklifi Hesapla</button>
@@ -1036,7 +1030,7 @@
             genelPTGun: document.getElementById('ayarGenelPTGun').value
         };
         localStorage.setItem(KEYS.AYARLAR, JSON.stringify(ayarlar));
-        document.getElementById('teklifKarOrani').value = ayarlar.kar;
+        
         alert("Ayarlar başarıyla kaydedildi!");
     }
 
@@ -1146,7 +1140,7 @@ document.getElementById('fiyatListesi').innerHTML = fiyatHTML;
         document.getElementById('ayarGenelFT').value = ayarlar.genelFT || "1";
         document.getElementById('ayarGenelPT').value = ayarlar.genelPT || "4";
         document.getElementById('ayarGenelPTGun').value = ayarlar.genelPTGun || "15";
-        document.getElementById('teklifKarOrani').value = ayarlar.kar || "50";
+        
         
         // Teklif Modülü için hizmetleri dinamik oluştur
         loadServicesForQuoteList();
@@ -1353,16 +1347,17 @@ document.getElementById('fiyatListesi').innerHTML = fiyatHTML;
             return alert("Lütfen fiyatlandırılacak en az bir hizmet seçin!");
         }
 
-        const karOrani = Number(document.getElementById('teklifKarOrani').value) || 0;
+        const ayarlar = JSON.parse(localStorage.getItem(KEYS.AYARLAR)) || {};
+        const karOrani = Number(ayarlar.kar) || 50; 
+        const tabanFiyat = Number(ayarlar.taban) || 5000;
+        
         const allSubeler = getData(KEYS.SUBELER);
         const allFiyatlar = getData(KEYS.FIYATLAR);
         const personelList = getData(KEYS.PERSONEL);
         
-        // Veritabanından maliyet ayarlarını çek
         const baseDailyCost = personelList.length > 0 ? personelList[0].maliyet : 1500; 
-        const sarfOran = Number(localStorage.getItem(KEYS.AYARLAR) || 15) / 100;
+        const sarfOran = Number(ayarlar.sarf || 15) / 100;
 
-        // Seçilen şubeleri İl bazında gruplandır
         let ilGruplari = {};
         
         checkedSubeler.forEach(cb => {
@@ -1375,9 +1370,9 @@ document.getElementById('fiyatListesi').innerHTML = fiyatHTML;
         });
 
         let totalAylikMaliyet = 0;
+        let totalAylikSatis = 0;
         let tableHTML = "";
 
-        // Seçilen hizmetleri ve periyot (sıklık) çarpanlarını al
         let serviceRequests = [];
         checkedHizmetler.forEach(chk => {
             let selectBox = document.querySelector(`.hizmet-periyot[data-hizmet="${chk.value}"]`);
@@ -1387,15 +1382,18 @@ document.getElementById('fiyatListesi').innerHTML = fiyatHTML;
             });
         });
 
-        // AI Maliyet Hesaplama Motoru
         for (const ilAdi in ilGruplari) {
             let veri = ilGruplari[ilAdi];
             let subeSayisi = veri.subeler.length;
             let ilAylikMaliyet = 0;
+            let ilAylikSatis = 0;
             
             let aylikGenelM2 = 0;
             let aylikCamM2 = 0;
             let hizmetDetaylariHTML = "";
+            
+            let normalizedIl = ilAdi.trim().toLocaleLowerCase('tr-TR');
+            let komsuHavuzaDahilMi = ['kocaeli', 'sakarya', 'istanbul', 'yalova', 'düzce'].includes(normalizedIl);
             
             veri.subeler.forEach(sube => {
                 serviceRequests.forEach(srv => {
@@ -1405,32 +1403,130 @@ document.getElementById('fiyatListesi').innerHTML = fiyatHTML;
                     
                     if(!dbFiyat) hizmetDetaylariHTML += `<span class="badge bg-danger mt-1">! ${srv.ad} fiyatı eksik!</span><br>`;
 
-                    // İskele ve Dağcılık gibi hizmetleri Dinamik (Miktar/Saat bazlı) kabul et
                     let isDynamic = (srvLower.includes("koltuk") || srvLower.includes("halı") || srvLower.includes("hali") || srvLower.includes("jaluzi") || srvLower.includes("iskele") || srvLower.includes("dağcı") || srvLower.includes("dagci") || srvLower.includes("saat"));
 
                     let carpimM2 = sube.m2;
                     if(srvLower.includes("cam")) carpimM2 = sube.camM2 || sube.m2;
                     if(srvLower.includes("tadilat")) carpimM2 = sube.tadilatM2 || sube.m2;
-                    if(isDynamic) carpimM2 = 1; // Dinamik hizmetlerde AI genel maliyeti için varsayılan 1 birim alınır
+                    if(isDynamic) carpimM2 = 1; 
                     
                     let aylikYuku = carpimM2 * srv.periyotCarpan;
-                    
                     if(srvLower.includes("genel")) aylikGenelM2 += aylikYuku;
                     else if(srvLower.includes("cam")) aylikCamM2 += aylikYuku;
 
-                    let hesaplananMaliyet = aylikYuku * birimFiyat;
+                    // Maliyet ve Satış (İşlem Başına Ayrı Ayrı Hesaplanır)
+                    let islemMaliyet = carpimM2 * birimFiyat;
+                    let islemSatis = islemMaliyet * (1 + karOrani / 100);
 
-                    // Taban Fiyat Kontrolü (Sadece sabit hizmetlerde ve istenilen periyotlarda)
-                    const ayarlar = JSON.parse(localStorage.getItem(KEYS.AYARLAR)) || {};
-                    const tabanFiyat = Number(ayarlar.taban) || 5000;
-                    if(!isDynamic && hesaplananMaliyet > 0 && hesaplananMaliyet < tabanFiyat && srv.periyotCarpan > 0) {
-                        hesaplananMaliyet = tabanFiyat;
+                    // Uzak bölgeyse Lojistik %5 farkı ekle
+                    if(!komsuHavuzaDahilMi) {
+                        islemSatis *= 1.05;
+                        islemMaliyet *= 1.05;
                     }
 
-                    // Maliyet sadece m2 x birim fiyat (veya taban fiyat) üzerinden toplanır
-                    ilAylikMaliyet += hesaplananMaliyet;
+                    // Minimum Tutar Kontrolü (Doğrudan Tek Seferlik Fatura Bedeli Üzerinden)
+                    if(!isDynamic && islemSatis > 0 && islemSatis < tabanFiyat && srv.periyotCarpan > 0) {
+                        islemSatis = tabanFiyat;
+                    }
+
+                    // İşlemin Sıklık (Periyot) çarpanına göre aylık toplam havuza aktarılması
+                    ilAylikMaliyet += (islemMaliyet * srv.periyotCarpan);
+                    ilAylikSatis += (islemSatis * srv.periyotCarpan);
                 });
             });
+
+            function getPersCount(m) {
+                if(m <= 250) return 1; if(m <= 500) return 2; if(m <= 750) return 3;
+                if(m <= 1000) return 4; if(m <= 1250) return 5; if(m <= 1500) return 6;
+                return Math.ceil(m / 250); 
+            }
+
+            let requiredCamManDays = 0;
+            let requiredGenelManDays = 0;
+
+            veri.subeler.forEach(sube => {
+                let hasCam = serviceRequests.some(s => s.ad.toLowerCase().includes("cam"));
+                let hasGenel = serviceRequests.some(s => s.ad.toLowerCase().includes("genel"));
+
+                if (hasCam) {
+                    let cM2 = Number(sube.camM2);
+                    if(!cM2 || cM2 === 0) cM2 = (Number(sube.m2) / 2) || 50;
+                    requiredCamManDays += getPersCount(cM2);
+                }
+                if (hasGenel) {
+                    let gM2 = Number(sube.m2) || 200;
+                    requiredGenelManDays += getPersCount(gM2);
+                }
+            });
+
+            let aylikGenelYuk = Math.ceil(requiredGenelManDays / 3);
+            let aylikCamYuk = requiredCamManDays;
+
+            let ekipAciklama = "";
+            if(aylikCamYuk > 0) ekipAciklama += `<span class="badge bg-info text-dark mb-1 border border-info">🧽 Cam: Toplam ${aylikCamYuk} Adam/Gün</span><br>`;
+            if(aylikGenelYuk > 0) ekipAciklama += `<span class="badge bg-secondary mb-1">🧹 Genel: Toplam ${aylikGenelYuk} Adam/Gün</span><br>`;
+
+            let camFT = Math.floor(aylikCamYuk / 22);
+            let camPT = aylikCamYuk % 22;
+            let genelFT = Math.floor(aylikGenelYuk / 22);
+            let genelPT = aylikGenelYuk % 22;
+
+            if(camFT > 0 || camPT > 0) ekipAciklama += `<small class="text-primary fw-bold d-block mt-1" style="font-size:10px;">👉 Öneri (Cam): ${camFT} Tam Zamanlı + ${camPT} Taşeron/PT</small>`;
+            if(genelFT > 0 || genelPT > 0) ekipAciklama += `<small class="text-secondary fw-bold d-block" style="font-size:10px;">👉 Öneri (Genel): ${genelFT} Tam Zamanlı + ${genelPT} Taşeron/PT</small>`;
+            
+            if(!komsuHavuzaDahilMi) ekipAciklama += `<small class="text-danger">⚠️ Uzak Bölge: +%5 Lojistik Marjı</small>`;
+            else ekipAciklama += `<small class="text-success">✅ Komşu İl Kaydırma Havuzunda</small>`;
+
+            totalAylikMaliyet += ilAylikMaliyet;
+            totalAylikSatis += ilAylikSatis;
+            let subeIsimleri = veri.subeler.map(s => s.adi).join(', ');
+
+            tableHTML += `
+                <tr>
+                    <td class="fw-bold align-middle">${ilAdi} <br><span class="badge bg-primary mt-1">${subeSayisi} Şube</span></td>
+                    <td>
+                        <small class="text-secondary fw-bold">${subeIsimleri}</small><br>
+                        ${hizmetDetaylariHTML}
+                    </td>
+                    <td class="align-middle" style="font-size: 13px; line-height:1.5;">
+                        ${ekipAciklama}
+                    </td>
+                    <td class="align-middle text-end fw-bold text-danger">
+                        ${ilAylikMaliyet.toLocaleString('tr-TR', {maximumFractionDigits:2})} TL
+                    </td>
+                </tr>
+            `;
+        }
+
+        let teklifSatisTutari = totalAylikSatis;
+        let karTutari = teklifSatisTutari - totalAylikMaliyet;
+
+        const guncelMusteri = document.getElementById('teklifMusteri').value;
+
+        currentGeneratedQuote = {
+            musteri: guncelMusteri,
+            maliyet: totalAylikMaliyet,
+            kar: karTutari,
+            satis: teklifSatisTutari,
+            subeler: checkedSubeler.map(cb => allSubeler.find(x => x.id == cb.value)),
+            hizmetler: serviceRequests,
+            fiyatlar: allFiyatlar 
+        };
+
+        document.getElementById('resMaliyet').innerText = totalAylikMaliyet.toLocaleString('tr-TR', {maximumFractionDigits:2}) + " TL";
+        document.getElementById('resKar').innerText = karTutari.toLocaleString('tr-TR', {maximumFractionDigits:2}) + " TL";
+        document.getElementById('resSatis').innerText = teklifSatisTutari.toLocaleString('tr-TR', {maximumFractionDigits:2}) + " TL";
+        
+        let sarfYuzde = Number(ayarlar.sarf || 15);
+        let sarfTutar = totalAylikMaliyet * (sarfYuzde / 100);
+        let iscilikTutar = totalAylikMaliyet - sarfTutar;
+        
+        document.getElementById('lblSarfOran').innerText = sarfYuzde;
+        document.getElementById('resSarf').innerText = sarfTutar.toLocaleString('tr-TR', {maximumFractionDigits:2}) + " TL";
+        document.getElementById('resIscilik').innerText = iscilikTutar.toLocaleString('tr-TR', {maximumFractionDigits:2}) + " TL";
+        document.getElementById('teklifAnalizTablosu').innerHTML = tableHTML;
+
+        // ... Modal Tetikleme Kodları (Mevcut haliyle bırakın / devam eder)
 
             // YENİ NESİL OPERASYON PLANLAMASI (M² VE KAPASİTE BAZLI)
             function getPersCount(m) {
@@ -1649,7 +1745,8 @@ document.getElementById('fiyatListesi').innerHTML = fiyatHTML;
 
         let modal = new bootstrap.Modal(document.getElementById('istihdamModal'));
         modal.show();
-    } // <--- İŞTE KAYIP OLAN VE SİSTEMİ KURTARACAK PARANTEZ
+        
+        // <--- İŞTE KAYIP OLAN VE SİSTEMİ KURTARACAK PARANTEZ
 
     function proceedWithAI() {
         let modalEl = document.getElementById('istihdamModal');
@@ -1997,7 +2094,7 @@ document.getElementById('fiyatListesi').innerHTML = fiyatHTML;
         // Kâr oranını hesaplanan tekliften geri getir
         if(t.maliyet > 0) {
             let hesaplananKarOrani = Math.round((t.kar / t.maliyet) * 100);
-            document.getElementById('teklifKarOrani').value = hesaplananKarOrani;
+            
         }
         
         // PROJEYE AİT MATRİSİ GERİ YÜKLE
