@@ -196,7 +196,12 @@
                                 </div>
 
                                 <hr>
-                                <h6 class="text-secondary mt-3">Kayıtlı Şubeler</h6>
+                                <div class="d-flex justify-content-between align-items-center mt-3 mb-2">
+                                    <h6 class="text-secondary mb-0">Kayıtlı Şubeler</h6>
+                                    <div class="w-50">
+                                        <input type="text" id="subeAra" class="form-control form-control-sm border-primary shadow-sm" placeholder="🔍 Şube, Müşteri veya İl Ara (Örn: Sakarya)..." onkeyup="filterSubeTable()">
+                                    </div>
+                                </div>
                                 <div class="table-responsive">
                                     <table class="table table-sm table-striped">
                                         <thead class="table-dark">
@@ -1072,12 +1077,16 @@
         let subeHTML = "";
         subeler.forEach(s => {
             subeHTML += `<tr>
-                <td>${s.musteri}</td>
-                <td>${s.adi}</td>
-                <td>${s.kodu}</td>
-                <td>${s.il}</td>
-                <td>${s.m2}</td>
+                <td class="align-middle">${s.musteri}</td>
+                <td class="align-middle">${s.adi}</td>
+                <td class="align-middle">${s.kodu}</td>
+                <td class="align-middle">${s.il}</td>
                 <td>
+                    <div class="input-group input-group-sm" style="width: 90px;">
+                        <input type="number" class="form-control text-center fw-bold border-primary" value="${s.m2}" onchange="updateSubeM2Inline(${s.id}, this.value)" title="m²'yi değiştirince otomatik kaydedilir">
+                    </div>
+                </td>
+                <td class="align-middle">
                     <button onclick="editBranch(${s.id})" class="btn btn-sm btn-warning py-0 me-1">Düzenle</button>
                     <button onclick="deleteBranch(${s.id})" class="btn btn-sm btn-danger py-0">Sil</button>
                 </td>
@@ -3325,6 +3334,29 @@ function updatePriceInline(id, yeniTutar) {
         printWindow.document.close();
         setTimeout(() => printWindow.print(), 800);
     }
+
+    // ================== YENİ: ŞUBE TABLOSU FİLTRELEME ==================
+    function filterSubeTable() {
+        const val = document.getElementById('subeAra').value.toLowerCase();
+        const rows = document.querySelectorAll('#subeListesi tr');
+        rows.forEach(row => {
+            const text = row.innerText.toLowerCase();
+            row.style.display = text.includes(val) ? '' : 'none';
+        });
+    }
+
+    // ================== YENİ: ŞUBE M2 HIZLI GÜNCELLEME ==================
+    function updateSubeM2Inline(id, yeniM2) {
+        let data = getData(KEYS.SUBELER);
+        let index = data.findIndex(s => s.id === id);
+        if (index !== -1) {
+            data[index].m2 = Number(yeniM2);
+            saveData(KEYS.SUBELER, data);
+            // saveData fonksiyonunuz zaten veriyi buluta kaydedip renderAll()'u tetiklediği için
+            // ekran anında güncel kalacaktır.
+        }
+    }
+
     window.onload = renderAll; 
 </script>
 <div id="cellMenu" class="card shadow-lg border-primary" style="display:none; position:absolute; z-index:9999; width:220px; font-size:11px;">
