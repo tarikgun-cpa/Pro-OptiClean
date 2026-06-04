@@ -1355,9 +1355,6 @@ document.getElementById('fiyatListesi').innerHTML = fiyatHTML;
         const allFiyatlar = getData(KEYS.FIYATLAR);
         const personelList = getData(KEYS.PERSONEL);
         
-        const baseDailyCost = personelList.length > 0 ? personelList[0].maliyet : 1500; 
-        const sarfOran = Number(ayarlar.sarf || 15) / 100;
-
         let ilGruplari = {};
         
         checkedSubeler.forEach(cb => {
@@ -1414,22 +1411,18 @@ document.getElementById('fiyatListesi').innerHTML = fiyatHTML;
                     if(srvLower.includes("genel")) aylikGenelM2 += aylikYuku;
                     else if(srvLower.includes("cam")) aylikCamM2 += aylikYuku;
 
-                    // Maliyet ve Satış (İşlem Başına Ayrı Ayrı Hesaplanır)
                     let islemMaliyet = carpimM2 * birimFiyat;
                     let islemSatis = islemMaliyet * (1 + karOrani / 100);
 
-                    // Uzak bölgeyse Lojistik %5 farkı ekle
                     if(!komsuHavuzaDahilMi) {
                         islemSatis *= 1.05;
                         islemMaliyet *= 1.05;
                     }
 
-                    // Minimum Tutar Kontrolü (Doğrudan Tek Seferlik Fatura Bedeli Üzerinden)
                     if(!isDynamic && islemSatis > 0 && islemSatis < tabanFiyat && srv.periyotCarpan > 0) {
                         islemSatis = tabanFiyat;
                     }
 
-                    // İşlemin Sıklık (Periyot) çarpanına göre aylık toplam havuza aktarılması
                     ilAylikMaliyet += (islemMaliyet * srv.periyotCarpan);
                     ilAylikSatis += (islemSatis * srv.periyotCarpan);
                 });
@@ -1500,7 +1493,6 @@ document.getElementById('fiyatListesi').innerHTML = fiyatHTML;
 
         let teklifSatisTutari = totalAylikSatis;
         let karTutari = teklifSatisTutari - totalAylikMaliyet;
-
         const guncelMusteri = document.getElementById('teklifMusteri').value;
 
         currentGeneratedQuote = {
@@ -1526,112 +1518,6 @@ document.getElementById('fiyatListesi').innerHTML = fiyatHTML;
         document.getElementById('resIscilik').innerText = iscilikTutar.toLocaleString('tr-TR', {maximumFractionDigits:2}) + " TL";
         document.getElementById('teklifAnalizTablosu').innerHTML = tableHTML;
 
-        // ... Modal Tetikleme Kodları (Mevcut haliyle bırakın / devam eder)
-
-            // YENİ NESİL OPERASYON PLANLAMASI (M² VE KAPASİTE BAZLI)
-            function getPersCount(m) {
-                if(m <= 250) return 1; if(m <= 500) return 2; if(m <= 750) return 3;
-                if(m <= 1000) return 4; if(m <= 1250) return 5; if(m <= 1500) return 6;
-                return Math.ceil(m / 250); // 1500 üzeri için dinamik ekleme
-            }
-
-            let requiredCamManDays = 0;
-            let requiredGenelManDays = 0;
-
-            veri.subeler.forEach(sube => {
-                let hasCam = serviceRequests.some(s => s.ad.toLowerCase().includes("cam"));
-                let hasGenel = serviceRequests.some(s => s.ad.toLowerCase().includes("genel"));
-
-                if (hasCam) {
-                    let cM2 = Number(sube.camM2);
-                    if(!cM2 || cM2 === 0) cM2 = (Number(sube.m2) / 2) || 50;
-                    requiredCamManDays += getPersCount(cM2);
-                }
-                if (hasGenel) {
-                    let gM2 = Number(sube.m2) || 200;
-                    requiredGenelManDays += getPersCount(gM2);
-                }
-            });
-
-            // Genel temizlik 3 ayda 1 olduğu için o ayki yük 1/3 oranındadır
-            let aylikGenelYuk = Math.ceil(requiredGenelManDays / 3);
-            let aylikCamYuk = requiredCamManDays;
-
-            let ekipAciklama = "";
-            if(aylikCamYuk > 0) ekipAciklama += `<span class="badge bg-info text-dark mb-1 border border-info">🧽 Cam: Toplam ${aylikCamYuk} Adam/Gün</span><br>`;
-            if(aylikGenelYuk > 0) ekipAciklama += `<span class="badge bg-secondary mb-1">🧹 Genel: Toplam ${aylikGenelYuk} Adam/Gün</span><br>`;
-
-            // İSTİHDAM ÖNERİSİ HESAPLAMA (Aylık 22 İş Günü / Yaklaşık 165 Saat üzerinden)
-            let camFT = Math.floor(aylikCamYuk / 22);
-            let camPT = aylikCamYuk % 22;
-            let genelFT = Math.floor(aylikGenelYuk / 22);
-            let genelPT = aylikGenelYuk % 22;
-
-            if(camFT > 0 || camPT > 0) ekipAciklama += `<small class="text-primary fw-bold d-block mt-1" style="font-size:10px;">👉 Öneri (Cam): ${camFT} Tam Zamanlı + ${camPT} Taşeron/PT</small>`;
-            if(genelFT > 0 || genelPT > 0) ekipAciklama += `<small class="text-secondary fw-bold d-block" style="font-size:10px;">👉 Öneri (Genel): ${genelFT} Tam Zamanlı + ${genelPT} Taşeron/PT</small>`;
-            
-            // Ekstra uzak iller için lojistik marjı (Türkçe Karakter Sorunu Çözüldü)
-            let normalizedIl = ilAdi.trim().toLocaleLowerCase('tr-TR');
-            let komsuHavuzaDahilMi = ['kocaeli', 'sakarya', 'istanbul', 'yalova', 'düzce'].includes(normalizedIl);
-            if(!komsuHavuzaDahilMi) {
-                ilAylikMaliyet = ilAylikMaliyet * 1.05; 
-                ekipAciklama += `<small class="text-danger">⚠️ Uzak Bölge: +%5 Lojistik Marjı</small>`;
-            } else {
-                ekipAciklama += `<small class="text-success">✅ Komşu İl Kaydırma Havuzunda</small>`;
-            }
-
-            totalAylikMaliyet += ilAylikMaliyet;
-            let subeIsimleri = veri.subeler.map(s => s.adi).join(', ');
-
-            tableHTML += `
-                <tr>
-                    <td class="fw-bold align-middle">${ilAdi} <br><span class="badge bg-primary mt-1">${subeSayisi} Şube</span></td>
-                    <td>
-                        <small class="text-secondary fw-bold">${subeIsimleri}</small><br>
-                        ${hizmetDetaylariHTML}
-                    </td>
-                    <td class="align-middle" style="font-size: 13px; line-height:1.5;">
-                        ${ekipAciklama}
-                    </td>
-                    <td class="align-middle text-end fw-bold text-danger">
-                        ${ilAylikMaliyet.toLocaleString('tr-TR', {maximumFractionDigits:2})} TL
-                    </td>
-                </tr>
-            `;
-        }
-
-        // 3. Finansal Matematik ve Kar Hesaplama
-        let karTutari = totalAylikMaliyet * (karOrani / 100);
-        let teklifSatisTutari = totalAylikMaliyet + karTutari;
-
-        // Müşteri adını da alalım
-        const guncelMusteri = document.getElementById('teklifMusteri').value;
-
-        // TEKLİFİ VERİTABANINA YAZMAK İÇİN GÜNCEL VERİYİ HAFIZAYA AL
-        currentGeneratedQuote = {
-            musteri: guncelMusteri,
-            maliyet: totalAylikMaliyet,
-            kar: karTutari,
-            satis: teklifSatisTutari,
-            subeler: checkedSubeler.map(cb => allSubeler.find(x => x.id == cb.value)),
-            hizmetler: serviceRequests,
-            fiyatlar: allFiyatlar 
-        };
-
-        // Sonuçları Ekrana Yazdır
-        document.getElementById('resMaliyet').innerText = totalAylikMaliyet.toLocaleString('tr-TR', {maximumFractionDigits:2}) + " TL";
-        document.getElementById('resKar').innerText = karTutari.toLocaleString('tr-TR', {maximumFractionDigits:2}) + " TL";
-        document.getElementById('resSatis').innerText = teklifSatisTutari.toLocaleString('tr-TR', {maximumFractionDigits:2}) + " TL";
-        // İŞÇİLİK VE SARF KIRILIMI
-        let sarfYuzde = Number(localStorage.getItem(KEYS.AYARLAR) ? JSON.parse(localStorage.getItem(KEYS.AYARLAR)).sarf : 15);
-        let sarfTutar = totalAylikMaliyet * (sarfYuzde / 100);
-        let iscilikTutar = totalAylikMaliyet - sarfTutar;
-        
-        document.getElementById('lblSarfOran').innerText = sarfYuzde;
-        document.getElementById('resSarf').innerText = sarfTutar.toLocaleString('tr-TR', {maximumFractionDigits:2}) + " TL";
-        document.getElementById('resIscilik').innerText = iscilikTutar.toLocaleString('tr-TR', {maximumFractionDigits:2}) + " TL";
-        document.getElementById('teklifAnalizTablosu').innerHTML = tableHTML;
-        // ================== UYARI MODALI VE AI TETİKLEME ==================
         function getPersCountMatrix(m) {
             if(m <= 250) return 1; if(m <= 500) return 2; if(m <= 750) return 3;
             if(m <= 1000) return 4; if(m <= 1250) return 5; if(m <= 1500) return 6;
@@ -1651,7 +1537,7 @@ document.getElementById('fiyatListesi').innerHTML = fiyatHTML;
 
             if (hasCamModal) {
                 if (cReq > maxCamIhtiyac) maxCamIhtiyac = cReq;
-                toplamCamIhtiyac += cReq; // O ayki toplam adam/gün ihtiyacı
+                toplamCamIhtiyac += cReq; 
             }
             if (hasGenelModal) {
                 if (gReq > maxGenelIhtiyac) maxGenelIhtiyac = gReq;
@@ -1659,24 +1545,20 @@ document.getElementById('fiyatListesi').innerHTML = fiyatHTML;
             }
         });
 
-        // Genel temizlik 3 aya yayılacağı için aylık ortalama yükü 1/3'tür.
         let aylikOrtGenelIhtiyac = Math.ceil(toplamGenelIhtiyac / 3);
 
-        const ayarlarModal = JSON.parse(localStorage.getItem(KEYS.AYARLAR)) || {};
-        let camFT = Number(ayarlarModal.camFT)||0; let camPT = Number(ayarlarModal.camPT)||0; let camPTGun = Number(ayarlarModal.camPTGun)||0;
-        let genelFT = Number(ayarlarModal.genelFT)||0; let genelPT = Number(ayarlarModal.genelPT)||0; let genelPTGun = Number(ayarlarModal.genelPTGun)||0;
+        let camFT = Number(ayarlar.camFT)||0; let camPT = Number(ayarlar.camPT)||0; let camPTGun = Number(ayarlar.camPTGun)||0;
+        let genelFT = Number(ayarlar.genelFT)||0; let genelPT = Number(ayarlar.genelPT)||0; let genelPTGun = Number(ayarlar.genelPTGun)||0;
 
         let totalCamCap = camFT + camPT;
         let totalGenelCap = genelFT + genelPT;
 
-        // Aylık toplam çalışılabilir gün (1 ayda ortalama 26 iş günü sayılır)
         let aylikCamGunKapasitesi = (camFT * 26) + (camPT * camPTGun);
         let aylikGenelGunKapasitesi = (genelFT * 26) + (genelPT * genelPTGun);
 
         let uyariHTML = "";
         let isKapasiteYetersiz = false;
 
-        // --- CAM KONTROLÜ ---
         if (hasCamModal) {
             if (maxCamIhtiyac > totalCamCap) {
                 uyariHTML += `<li class="text-danger border-bottom pb-2 mb-2">❌ <b>Cam Temizliği:</b> Tek günde ${maxCamIhtiyac} kişi lazım (Mevcut: ${totalCamCap}). <br><small class="text-muted fw-normal">Günlük kapasite yetersiz, Taşeron kullanılacak.</small></li>`;
@@ -1689,7 +1571,6 @@ document.getElementById('fiyatListesi').innerHTML = fiyatHTML;
             }
         }
 
-        // --- GENEL TEMİZLİK KONTROLÜ ---
         if (hasGenelModal) {
             if (maxGenelIhtiyac > totalGenelCap) {
                 uyariHTML += `<li class="text-danger mb-2">❌ <b>Genel Temizlik:</b> Tek günde ${maxGenelIhtiyac} kişi lazım (Mevcut: ${totalGenelCap}). <br><small class="text-muted fw-normal">Günlük kapasite yetersiz, Taşeron kullanılacak.</small></li>`;
@@ -1704,7 +1585,6 @@ document.getElementById('fiyatListesi').innerHTML = fiyatHTML;
 
        window.pendingMatrixArgs = { subeler: checkedSubeler, services: serviceRequests };
         
-        // HIZLI AYAR PANELİ (MODAL İÇİNE EKLENEN KISIM)
         let hizliAyarHTML = `
             <div class="bg-light p-3 rounded mt-3 border shadow-sm">
                 <h6 class="text-primary fw-bold mb-3" style="font-size:13px;"><i class="align-middle me-1">⚡</i> Hızlı İstihdam Güncellemesi</h6>
@@ -1745,8 +1625,7 @@ document.getElementById('fiyatListesi').innerHTML = fiyatHTML;
 
         let modal = new bootstrap.Modal(document.getElementById('istihdamModal'));
         modal.show();
-        
-        // <--- İŞTE KAYIP OLAN VE SİSTEMİ KURTARACAK PARANTEZ
+    }
 
     function proceedWithAI() {
         let modalEl = document.getElementById('istihdamModal');
