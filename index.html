@@ -2016,11 +2016,11 @@ document.getElementById('fiyatListesi').innerHTML = fiyatHTML;
         let firma = JSON.parse(localStorage.getItem(KEYS.FIRMA)) || {}; 
         if(!teklif) return;
 
-        // YENİ: Ayarlardan taban fiyatı çek
+        // Ayarlardan taban fiyatı çek
         const ayarlar = JSON.parse(localStorage.getItem(KEYS.AYARLAR)) || {};
         const tabanFiyat = Number(ayarlar.taban) || 5000;
         
-        // YENİ: İstek üzerine yapılacak hizmetleri tespit et
+        // İstek üzerine yapılacak hizmetleri tespit et
         let istekUzereHizmetler = [];
         teklif.hizmetler.forEach(h => {
             if (h.periyotCarpan == 0) istekUzereHizmetler.push(h.ad);
@@ -2047,21 +2047,41 @@ document.getElementById('fiyatListesi').innerHTML = fiyatHTML;
             let tdFiyatlar = "";
             
             teklif.hizmetler.forEach(srv => {
-                let dbFiyat = teklif.fiyatlar.find(f => f.hizmet.trim().toLowerCase() === srv.ad.trim().toLowerCase() && f.il.trim().toLowerCase() === sube.il.trim().toLowerCase());
-                let birimFiyat = dbFiyat ? dbFiyat.tutar.toLocaleString('tr-TR', {maximumFractionDigits:2}) + " ₺" : "-";
+                let srvLower = srv.ad.toLowerCase();
+                let dbFiyat = teklif.fiyatlar.find(f => f.hizmet.trim().toLowerCase() === srvLower && f.il.trim().toLowerCase() === sube.il.trim().toLowerCase());
+                let birimFiyatMetni = dbFiyat ? dbFiyat.tutar.toLocaleString('tr-TR', {maximumFractionDigits:2}) + " ₺" : "-";
                 
+                // 3. MADDE: Minimum Fatura Tutarı Kontrolü (Sadece belirteç için)
+                let isDynamic = (srvLower.includes("koltuk") || srvLower.includes("halı") || srvLower.includes("hali") || srvLower.includes("jaluzi") || srvLower.includes("iskele") || srvLower.includes("dağcı") || srvLower.includes("dagci") || srvLower.includes("saat"));
+                let carpimM2 = sube.m2;
+                if(srvLower.includes("cam")) carpimM2 = sube.camM2 || sube.m2;
+                if(srvLower.includes("tadilat")) carpimM2 = sube.tadilatM2 || sube.m2;
+                if(isDynamic) carpimM2 = 1;
+
+                let dbFiyatVal = dbFiyat ? dbFiyat.tutar : 0;
+                let aylikYuku = carpimM2 * srv.periyotCarpan;
+                let hesaplananMaliyet = aylikYuku * dbFiyatVal;
+
+                let marker = "";
+                // Dinamik değilse, değeri varsa ve taban fiyatın altında kalıyorsa uyar:
+                if(!isDynamic && hesaplananMaliyet > 0 && hesaplananMaliyet < tabanFiyat && srv.periyotCarpan > 0) {
+                    marker = `<br><span style="color:#d9534f; font-size:9px; font-weight:bold;">(⚠️ Min. Tutar)</span>`;
+                }
+
                 let bgRenk = srv.periyotCarpan == 0 ? "background-color: #fffcf2;" : "";
-                tdFiyatlar += `<td style="${bgRenk}">${birimFiyat}</td>`;
+                tdFiyatlar += `<td style="${bgRenk}">${birimFiyatMetni}${marker}</td>`;
 
-                // Sıklık Açıklaması (Tüm hizmetler için dinamik)
-                let freq = "";
-                if(srv.periyotCarpan == 30) freq = "Her Gün";
-                else if(srv.periyotCarpan == 4) freq = "Haftada 1";
-                else if(srv.periyotCarpan == 1) freq = "Ayda 1 Kez";
-                else if(srv.periyotCarpan == 0.33) freq = "3 Ayda 1";
-                else freq = "İstek Üzerine";
+                // 1. MADDE: Sıklık Açıklaması (Sadece periyodu 0'dan büyük rutin hizmetler için eklenecek)
+                if(srv.periyotCarpan > 0) {
+                    let freq = "";
+                    if(srv.periyotCarpan == 30) freq = "Her Gün";
+                    else if(srv.periyotCarpan == 4) freq = "Haftada 1";
+                    else if(srv.periyotCarpan == 1) freq = "Ayda 1 Kez";
+                    else if(srv.periyotCarpan == 0.33) freq = "3 Ayda 1";
+                    else freq = "Periyodik";
 
-                rutineTemizlikAciklamasi += `<b>${srv.ad}</b>: ${freq}<br>`;
+                    rutineTemizlikAciklamasi += `<b>${srv.ad}</b>: ${freq}<br>`;
+                }
             });
 
             trRows += `
@@ -2072,36 +2092,45 @@ document.getElementById('fiyatListesi').innerHTML = fiyatHTML;
                     <td>${sube.bolge || '-'}</td>
                     <td>${sube.m2 || '-'}</td>
                     ${tdFiyatlar}
-                    <td style="font-size:10px; text-align:left;">${rutineTemizlikAciklamasi}</td>
+                    <td style="font-size:10px; text-align:left;">${rutineTemizlikAciklamasi || '-'}</td>
                 </tr>
             `;
         });
 
-        const printWindow = window.open('', '_blank');
+        // 4. MADDE: Dönemsel periyotları dinamik yakalama (Örn: "3 Ayda 1 Kez")
+        let donemselListesi = [];
+        teklif.hizmetler.forEach(h => {
+            if(h.periyotCarpan > 0 && h.periyotCarpan < 1) {
+                if(h.periyotCarpan == 0.33) donemselListesi.push("3 Ayda 1 Kez");
+                else donemselListesi.push("Belirli Periyotlarda");
+            }
+        });
+        donemselListesi = [...new Set(donemselListesi)]; // Benzersizleri al
+        let donemselPeriyotMetni = donemselListesi.length > 0 ? donemselListesi.join(" / ") : "-";
 
-        // Seçilen hizmetlerin sıklıklarını PDF için dinamik olarak hazırla
-let dinamikEsaslar = "";
-teklif.hizmetler.forEach(h => {
-    let freq = "";
-    if(h.periyotCarpan == 30) freq = "Her Gün";
-    else if(h.periyotCarpan == 4) freq = "Haftada 1";
-    else if(h.periyotCarpan == 1) freq = "Ayda 1 Kez";
-    else if(h.periyotCarpan == 0.33) freq = "3 Ayda 1 (Yılda 4 Kez)";
-    else freq = "İstek Üzerine";
-    
-    if(h.periyotCarpan > 0) { // İstek üzerine olanlar zaten aşağıda listeleniyor
-        dinamikEsaslar += `<li style="margin-bottom: 4px;"><strong>${h.ad}:</strong> ${freq} gerçekleştirilecek olup, periyoduna göre fatura edilecektir.</li>`;
-    }
-});
-        // --- HİZMET TİPİ VE KAPSAMI ÖZET TABLOSU HESAPLAMALARI ---
+        // Esaslar listesi
+        let dinamikEsaslar = "";
+        teklif.hizmetler.forEach(h => {
+            let freq = "";
+            if(h.periyotCarpan == 30) freq = "Her Gün";
+            else if(h.periyotCarpan == 4) freq = "Haftada 1";
+            else if(h.periyotCarpan == 1) freq = "Ayda 1 Kez";
+            else if(h.periyotCarpan == 0.33) freq = "3 Ayda 1 (Yılda 4 Kez)";
+            
+            if(h.periyotCarpan > 0) { 
+                dinamikEsaslar += `<li style="margin-bottom: 4px;"><strong>${h.ad}:</strong> ${freq} gerçekleştirilecek olup, periyoduna göre fatura edilecektir.</li>`;
+            }
+        });
+
+        // HİZMET TİPİ VE KAPSAMI ÖZET TABLOSU HESAPLAMALARI
         let rutinAylikMaliyet = 0;
         let donemselUygulamaMaliyet = 0;
         
         teklif.subeler.forEach(sube => {
             teklif.hizmetler.forEach(srv => {
-                let dbFiyat = teklif.fiyatlar.find(f => f.hizmet.trim().toLowerCase() === srv.ad.trim().toLowerCase() && f.il.trim().toLowerCase() === sube.il.trim().toLowerCase());
-                let birimFiyat = dbFiyat ? dbFiyat.tutar : 0;
                 let srvLower = srv.ad.toLowerCase();
+                let dbFiyat = teklif.fiyatlar.find(f => f.hizmet.trim().toLowerCase() === srvLower && f.il.trim().toLowerCase() === sube.il.trim().toLowerCase());
+                let birimFiyat = dbFiyat ? dbFiyat.tutar : 0;
                 let isDynamic = (srvLower.includes("koltuk") || srvLower.includes("halı") || srvLower.includes("hali") || srvLower.includes("jaluzi") || srvLower.includes("iskele") || srvLower.includes("dağcı") || srvLower.includes("dagci") || srvLower.includes("saat"));
 
                 let carpimM2 = sube.m2;
@@ -2127,35 +2156,37 @@ teklif.hizmetler.forEach(h => {
         let rutinSatis = rutinAylikMaliyet * profitMultiplier;
         let donemselSatis = donemselUygulamaMaliyet * profitMultiplier;
         
+        // 2. MADDE: Daha Açıklayıcı Finansal Özet Tablosu
         let ozetTabloHtml = `
-            <table class="data-table" style="margin-top:20px; width:80%; margin-left:auto; margin-right:auto;">
+            <table class="data-table" style="margin-top:20px; width:100%; margin-left:auto; margin-right:auto;">
                 <thead>
                     <tr>
                         <th width="40%">Hizmet Tipi / Kapsamı</th>
                         <th width="30%">Uygulama Sıklığı</th>
-                        <th width="30%">Operasyon Bütçesi (TL + KDV)</th>
+                        <th width="30%">Hizmet Bütçesi (TL + KDV)</th>
                     </tr>
                 </thead>
                 <tbody>
                     <tr>
-                        <td style="text-align:left; font-weight:bold;">Rutin Aylık Operasyon Bütçesi</td>
+                        <td style="text-align:left; font-weight:bold;">SABİT AYLIK HİZMET BEDELİ<br><small style="font-weight:normal; color:#555;">(Her ay düzenli olarak fatura edilecek net tutar)</small></td>
                         <td>Her Ay Düzenli</td>
-                        <td style="color:#198754; font-weight:bold;">${rutinSatis > 0 ? rutinSatis.toLocaleString('tr-TR', {maximumFractionDigits:2}) + ' ₺' : '-'}</td>
+                        <td style="color:#198754; font-weight:bold; font-size:13px;">${rutinSatis > 0 ? rutinSatis.toLocaleString('tr-TR', {maximumFractionDigits:2}) + ' ₺' : '-'}</td>
                     </tr>
                     <tr>
-                        <td style="text-align:left; font-weight:bold;">Dönemsel Operasyon Bütçesi (Uygulama Başı)</td>
-                        <td>Periyoduna Göre</td>
-                        <td style="color:#0d6efd; font-weight:bold;">${donemselSatis > 0 ? donemselSatis.toLocaleString('tr-TR', {maximumFractionDigits:2}) + ' ₺' : '-'}</td>
+                        <td style="text-align:left; font-weight:bold;">DÖNEMSEL HİZMET BEDELİ (Uygulama Başına)<br><small style="font-weight:normal; color:#555;">(Sadece işlemin yapıldığı aylarda faturaya yansıtılır)</small></td>
+                        <td>${donemselPeriyotMetni}</td>
+                        <td style="color:#0d6efd; font-weight:bold; font-size:13px;">${donemselSatis > 0 ? donemselSatis.toLocaleString('tr-TR', {maximumFractionDigits:2}) + ' ₺' : '-'}</td>
                     </tr>
                     <tr>
-                        <td style="text-align:left; font-weight:bold;">İstek Üzerine Ekstra Hizmetler</td>
+                        <td style="text-align:left; font-weight:bold;">İSTEK ÜZERİNE (ON-DEMAND) HİZMETLER<br><small style="font-weight:normal; color:#555;">(Talebiniz halinde yapılır ve tablodaki birim fiyatlardan hesaplanır)</small></td>
                         <td>Talep Halinde</td>
-                        <td>Yukarıdaki Birim Fiyatlar Esas Alınır</td>
+                        <td>Birim Fiyatlar Esas Alınır</td>
                     </tr>
                 </tbody>
             </table>
         `;
 
+        const printWindow = window.open('', '_blank');
         let htmlContent = `
             <!DOCTYPE html>
             <html>
@@ -2170,10 +2201,9 @@ teklif.hizmetler.forEach(h => {
                     table.data-table { width: 100%; border-collapse: collapse; text-align: center; }
                     table.data-table th, table.data-table td { border: 1px solid #000; padding: 6px 4px; }
                     table.data-table th { background-color: #f2f2f2; font-weight: bold; font-size: 10px; }
-                    .total-box { margin-top: 20px; font-size: 14px; text-align: right; font-weight: bold; }
                     .footer { margin-top: 50px; font-size: 11px; text-align: justify; }
                     @media print {
-                        @page { margin: 10mm; size: landscape; } /* Tablo geniş olduğu için yatay yazdırır */
+                        @page { margin: 10mm; size: landscape; }
                     }
                 </style>
             </head>
@@ -2191,8 +2221,6 @@ teklif.hizmetler.forEach(h => {
                 </table>
 
                 <div class="title">${teklif.musteri} TEMİZLİK HİZMETLERİ TEKLİF FORMU<br><span style="font-size:14px; font-weight:normal; color:#555;">(${teklif.adi})</span></div>
-
-                // ... (Yukarıda şube tablosunu oluşturan tbody ve table kodları yer alıyor)
 
                 <table class="data-table">
                     <thead>
@@ -2222,11 +2250,12 @@ teklif.hizmetler.forEach(h => {
                     </ul>
                     
                     <div style="background: #fff3f3; color: #d9534f; padding: 10px; border-left: 4px solid #d9534f; font-size: 12px; margin-bottom: 15px;">
-                        <strong>⚠️ DİKKAT (Şube Hizmet Taban Fiyatı):</strong> Şube bazlı hizmetlerde uygulanacak minimum fatura tutarı <strong>${tabanFiyat.toLocaleString('tr-TR')} TL</strong>'dir. Hesaplanan işlem hacmi bu tutarın altında kalsa dahi bu taban fiyat faturaya esas alınır.
+                        <strong>⚠️ DİKKAT (Şube Hizmet Taban Fiyatı):</strong> Şube bazlı hizmetlerde uygulanacak minimum fatura tutarı <strong>${tabanFiyat.toLocaleString('tr-TR')} TL</strong>'dir. Hesaplanan işlem hacmi bu tutarın altında kalsa dahi, faturaya (⚠️ Min. Tutar) ibaresi ile belirtilen bu taban fiyat esas alınır.
                     </div>
                     
                     <div style="text-align: right; font-size: 14px; font-weight: bold; margin-top: 15px; border-top: 1px dashed #ccc; padding-top: 10px;">
-                    Aylık Toplam Teklif (Satış) Tutarı: ${teklif.satis.toLocaleString('tr-TR', {maximumFractionDigits:2})} TL + KDV
+                        <div style="font-size: 16px; color:#198754; margin-bottom: 5px;">Aylık Rutin (Sabit) Fatura Tutarı: ${rutinSatis.toLocaleString('tr-TR', {maximumFractionDigits:2})} TL + KDV</div>
+                        <div style="font-size: 11px; color:#777; font-weight:normal;">* Bilgi Amaçlı: Projenin dönemsel periyotları dahil aya vurulmuş genel ortalama maliyeti ${teklif.satis.toLocaleString('tr-TR', {maximumFractionDigits:2})} TL + KDV'dir.</div>
                     </div>
                 </div>
                 
@@ -2236,12 +2265,11 @@ teklif.hizmetler.forEach(h => {
                 </div>
 
                 <div class="footer" style="margin-top: 30px; border-top: 1px solid #eee; padding-top: 10px; display:flex; justify-content:space-between;">
-                    <p style="margin:0;"><strong>Açıklamalar:</strong> Fiyatlara %20 KDV dahil değildir.</p>
+                    <p style="margin:0;"><strong>Açıklamalar:</strong> Fiyatlara KDV dahil değildir.</p>
                     <p style="margin:0; color: #777; font-size: 10px; text-align: right;">Sistem Altyapısı: CPA-FTC ERP Çözümleri</p>
                 </div>
             `;
 
-        // YENİ: İŞ PLANI VE ŞARTNAMELERİ PDF'İN SONUNA YENİ SAYFA OLARAK EKLEME BÖLÜMÜ
         let planlar = JSON.parse(localStorage.getItem(KEYS.PLANLAR)) || [];
         let musteriPlanlari = planlar.filter(p => p.musteri === teklif.musteri);
         
@@ -2282,14 +2310,12 @@ teklif.hizmetler.forEach(h => {
         `;
 
         printWindow.document.write(htmlContent);
-        printWindow.document.close(); // YENİ EKLENDİ: Tarayıcıya "Yükleme bitti, sayfayı kapat ve yazdır" komutunu verir.
+        printWindow.document.close(); 
         
-        // Resmin (Logonun) tarayıcıya render edilmesi için küçük bir bekleme süresi veriyoruz
         setTimeout(() => {
             printWindow.print();
         }, 500);
     }
-
     // ================== TÜM PLANLARI YAZDIR ==================
     function printAllPlans() {
         const planlar = getData(KEYS.PLANLAR);
