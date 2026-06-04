@@ -1411,12 +1411,14 @@ document.getElementById('fiyatListesi').innerHTML = fiyatHTML;
                     if(srvLower.includes("genel")) aylikGenelM2 += aylikYuku;
                     else if(srvLower.includes("cam")) aylikCamM2 += aylikYuku;
 
-                    let islemMaliyet = carpimM2 * birimFiyat;
-                    let islemSatis = islemMaliyet * (1 + karOrani / 100);
+                    // DB'den gelen rakam zaten SATIŞ FİYATI olduğu için doğrudan alıyoruz.
+                    let islemSatis = carpimM2 * birimFiyat; 
+                    
+                    // İç raporlamalar için maliyeti, hedeflenen kâr oranından geriye giderek sanal hesaplıyoruz.
+                    let islemMaliyet = islemSatis / (1 + (karOrani / 100)); 
 
                     if(!komsuHavuzaDahilMi) {
-                        islemSatis *= 1.05;
-                        islemMaliyet *= 1.05;
+                        islemMaliyet *= 1.05; // Lojistik farkı müşteriye yansımaz, sadece bizim maliyetimizi artırır.
                     }
 
                     if(!isDynamic && islemSatis > 0 && islemSatis < tabanFiyat && srv.periyotCarpan > 0) {
@@ -1986,17 +1988,14 @@ document.getElementById('fiyatListesi').innerHTML = fiyatHTML;
         alert("Proje verileri ve İstihdam Matrisi forma yüklendi. 'İstihdam & Planlama' sekmesinden projeye ait matrisi inceleyebilirsiniz.");
     }
 
-    // ================== PDF / DİNAMİK YAZDIRMA MOTORU ==================
-    function printQuote(id) {
+       function printQuote(id) {
         const teklif = getData(KEYS.TEKLIFLER).find(t => t.id === id);
         let firma = JSON.parse(localStorage.getItem(KEYS.FIRMA)) || {}; 
         if(!teklif) return;
 
-        // Ayarlardan taban fiyatı çek
         const ayarlar = JSON.parse(localStorage.getItem(KEYS.AYARLAR)) || {};
         const tabanFiyat = Number(ayarlar.taban) || 5000;
         
-        // İstek üzerine yapılacak hizmetleri tespit et
         let istekUzereHizmetler = [];
         teklif.hizmetler.forEach(h => {
             if (h.periyotCarpan == 0) istekUzereHizmetler.push(h.ad);
@@ -2009,45 +2008,67 @@ document.getElementById('fiyatListesi').innerHTML = fiyatHTML;
             istekUzereHtml = `<li style="margin-top: 6px;"><strong>İstek Üzerine Hizmetler:</strong> Yalnızca kurumunuzun talebi doğrultusunda yapılacak ve yapıldığı tarihte ek olarak faturalandırılacaktır.</li>`;
         }
 
-        // Seçilen hizmetlere göre Dinamik Sütun Başlıkları
         let thHizmetler = "";
         teklif.hizmetler.forEach(h => {
             let bgRenk = h.periyotCarpan == 0 ? "background-color: #fff3cd; color: #856404;" : "";
-            thHizmetler += `<th style="${bgRenk}">${h.ad.toUpperCase()}<br>BİRİM TUTARI</th>`;
+            // Sütun başlığı değiştirildi
+            thHizmetler += `<th style="${bgRenk}">${h.ad.toUpperCase()}<br>BİRİM & TOPLAM</th>`;
         });
 
-        // Şube verileri ve fiyat hücreleri
         let trRows = "";
+        let rutinAylikSatis = 0;
+        let donemselUygulamaSatis = 0;
+
         teklif.subeler.forEach(sube => {
             let rutineTemizlikAciklamasi = "";
             let tdFiyatlar = "";
-            
+
             teklif.hizmetler.forEach(srv => {
                 let srvLower = srv.ad.toLowerCase();
                 let dbFiyat = teklif.fiyatlar.find(f => f.hizmet.trim().toLowerCase() === srvLower && f.il.trim().toLowerCase() === sube.il.trim().toLowerCase());
-                let birimFiyatMetni = dbFiyat ? dbFiyat.tutar.toLocaleString('tr-TR', {maximumFractionDigits:2}) + " ₺" : "-";
                 
-                // 3. MADDE: Minimum Fatura Tutarı Kontrolü (Sadece belirteç için)
+                // Müşteriye Gösterilecek Fiyat (Kar/Lojistik çarpanı olmadan doğrudan DB'den alınır)
+                let rawBirimFiyat = dbFiyat ? dbFiyat.tutar : 0;
+                
                 let isDynamic = (srvLower.includes("koltuk") || srvLower.includes("halı") || srvLower.includes("hali") || srvLower.includes("jaluzi") || srvLower.includes("iskele") || srvLower.includes("dağcı") || srvLower.includes("dagci") || srvLower.includes("saat"));
+                
                 let carpimM2 = sube.m2;
                 if(srvLower.includes("cam")) carpimM2 = sube.camM2 || sube.m2;
                 if(srvLower.includes("tadilat")) carpimM2 = sube.tadilatM2 || sube.m2;
                 if(isDynamic) carpimM2 = 1;
 
-                let dbFiyatVal = dbFiyat ? dbFiyat.tutar : 0;
-                let aylikYuku = carpimM2 * srv.periyotCarpan;
-                let hesaplananMaliyet = aylikYuku * dbFiyatVal;
-
+                // UYGULAMA BAŞINA NET SATIŞ TUTARI
+                let islemSatis = carpimM2 * rawBirimFiyat;
                 let marker = "";
-                // Dinamik değilse, değeri varsa ve taban fiyatın altında kalıyorsa uyar:
-                if(!isDynamic && hesaplananMaliyet > 0 && hesaplananMaliyet < tabanFiyat && srv.periyotCarpan > 0) {
+
+                // Tek seferlik işlem bedeli Taban Fiyatı aşamıyorsa minimum faturayı uygula (Periyot çarpanından bağımsız)
+                if(!isDynamic && islemSatis > 0 && islemSatis < tabanFiyat && srv.periyotCarpan > 0) {
+                    islemSatis = tabanFiyat;
                     marker = `<br><span style="color:#d9534f; font-size:9px; font-weight:bold;">(⚠️ Min. Tutar)</span>`;
                 }
 
-                let bgRenk = srv.periyotCarpan == 0 ? "background-color: #fffcf2;" : "";
-                tdFiyatlar += `<td style="${bgRenk}">${birimFiyatMetni}${marker}</td>`;
+                // Maliyetleri havuzlara ekleme
+                if (srv.periyotCarpan >= 1) {
+                    rutinAylikSatis += (islemSatis * srv.periyotCarpan);
+                } else if (srv.periyotCarpan > 0 && srv.periyotCarpan < 1) {
+                    donemselUygulamaSatis += islemSatis; 
+                }
 
-                // 1. MADDE: Sıklık Açıklaması (Sadece periyodu 0'dan büyük rutin hizmetler için eklenecek)
+                let bgRenk = srv.periyotCarpan == 0 ? "background-color: #fffcf2;" : "";
+                
+                // HÜCRE İÇERİĞİ OLUŞTURMA (Birim Fiyat ve Toplam Yan Yana)
+                let hucreIcerik = "-";
+                if(dbFiyat) {
+                    let birimBicimi = isDynamic ? "₺/Br" : "₺/m²";
+                    hucreIcerik = `
+                        <span style="font-size:10px; color:#666;">${rawBirimFiyat.toLocaleString('tr-TR', {maximumFractionDigits:2})} ${birimBicimi}</span><br>
+                        <span style="font-size:12px; font-weight:bold; color:#000;">${islemSatis.toLocaleString('tr-TR', {maximumFractionDigits:2})} ₺</span>
+                        ${marker}
+                    `;
+                }
+
+                tdFiyatlar += `<td style="${bgRenk}">${hucreIcerik}</td>`;
+
                 if(srv.periyotCarpan > 0) {
                     let freq = "";
                     if(srv.periyotCarpan == 30) freq = "Her Gün";
@@ -2055,7 +2076,6 @@ document.getElementById('fiyatListesi').innerHTML = fiyatHTML;
                     else if(srv.periyotCarpan == 1) freq = "Ayda 1 Kez";
                     else if(srv.periyotCarpan == 0.33) freq = "3 Ayda 1";
                     else freq = "Periyodik";
-
                     rutineTemizlikAciklamasi += `<b>${srv.ad}</b>: ${freq}<br>`;
                 }
             });
@@ -2073,7 +2093,6 @@ document.getElementById('fiyatListesi').innerHTML = fiyatHTML;
             `;
         });
 
-        // 4. MADDE: Dönemsel periyotları dinamik yakalama (Örn: "3 Ayda 1 Kez")
         let donemselListesi = [];
         teklif.hizmetler.forEach(h => {
             if(h.periyotCarpan > 0 && h.periyotCarpan < 1) {
@@ -2081,10 +2100,9 @@ document.getElementById('fiyatListesi').innerHTML = fiyatHTML;
                 else donemselListesi.push("Belirli Periyotlarda");
             }
         });
-        donemselListesi = [...new Set(donemselListesi)]; // Benzersizleri al
+        donemselListesi = [...new Set(donemselListesi)]; 
         let donemselPeriyotMetni = donemselListesi.length > 0 ? donemselListesi.join(" / ") : "-";
 
-        // Esaslar listesi
         let dinamikEsaslar = "";
         teklif.hizmetler.forEach(h => {
             let freq = "";
@@ -2098,41 +2116,6 @@ document.getElementById('fiyatListesi').innerHTML = fiyatHTML;
             }
         });
 
-        // HİZMET TİPİ VE KAPSAMI ÖZET TABLOSU HESAPLAMALARI
-        let rutinAylikMaliyet = 0;
-        let donemselUygulamaMaliyet = 0;
-        
-        teklif.subeler.forEach(sube => {
-            teklif.hizmetler.forEach(srv => {
-                let srvLower = srv.ad.toLowerCase();
-                let dbFiyat = teklif.fiyatlar.find(f => f.hizmet.trim().toLowerCase() === srvLower && f.il.trim().toLowerCase() === sube.il.trim().toLowerCase());
-                let birimFiyat = dbFiyat ? dbFiyat.tutar : 0;
-                let isDynamic = (srvLower.includes("koltuk") || srvLower.includes("halı") || srvLower.includes("hali") || srvLower.includes("jaluzi") || srvLower.includes("iskele") || srvLower.includes("dağcı") || srvLower.includes("dagci") || srvLower.includes("saat"));
-
-                let carpimM2 = sube.m2;
-                if(srvLower.includes("cam")) carpimM2 = sube.camM2 || sube.m2;
-                if(srvLower.includes("tadilat")) carpimM2 = sube.tadilatM2 || sube.m2;
-                if(isDynamic) carpimM2 = 1;
-
-                let aylikYuku = carpimM2 * srv.periyotCarpan;
-                let hesaplananMaliyet = aylikYuku * birimFiyat;
-
-                if(!isDynamic && hesaplananMaliyet > 0 && hesaplananMaliyet < tabanFiyat && srv.periyotCarpan > 0) hesaplananMaliyet = tabanFiyat;
-
-                let normalizedIl = sube.il.trim().toLocaleLowerCase('tr-TR');
-                let komsuHavuzaDahilMi = ['kocaeli', 'sakarya', 'istanbul', 'yalova', 'düzce'].includes(normalizedIl);
-                hesaplananMaliyet = hesaplananMaliyet * (komsuHavuzaDahilMi ? 1 : 1.05);
-
-                if (srv.periyotCarpan >= 1) rutinAylikMaliyet += hesaplananMaliyet;
-                else if (srv.periyotCarpan > 0 && srv.periyotCarpan < 1) donemselUygulamaMaliyet += (hesaplananMaliyet / srv.periyotCarpan);
-            });
-        });
-
-        let profitMultiplier = teklif.maliyet > 0 ? (teklif.satis / teklif.maliyet) : 1;
-        let rutinSatis = rutinAylikMaliyet * profitMultiplier;
-        let donemselSatis = donemselUygulamaMaliyet * profitMultiplier;
-        
-        // 2. MADDE: Daha Açıklayıcı Finansal Özet Tablosu
         let ozetTabloHtml = `
             <table class="data-table" style="margin-top:20px; width:100%; margin-left:auto; margin-right:auto;">
                 <thead>
@@ -2146,12 +2129,12 @@ document.getElementById('fiyatListesi').innerHTML = fiyatHTML;
                     <tr>
                         <td style="text-align:left; font-weight:bold;">SABİT AYLIK HİZMET BEDELİ<br><small style="font-weight:normal; color:#555;">(Her ay düzenli olarak fatura edilecek net tutar)</small></td>
                         <td>Her Ay Düzenli</td>
-                        <td style="color:#198754; font-weight:bold; font-size:13px;">${rutinSatis > 0 ? rutinSatis.toLocaleString('tr-TR', {maximumFractionDigits:2}) + ' ₺' : '-'}</td>
+                        <td style="color:#198754; font-weight:bold; font-size:13px;">${rutinAylikSatis > 0 ? rutinAylikSatis.toLocaleString('tr-TR', {maximumFractionDigits:2}) + ' ₺' : '-'}</td>
                     </tr>
                     <tr>
                         <td style="text-align:left; font-weight:bold;">DÖNEMSEL HİZMET BEDELİ (Uygulama Başına)<br><small style="font-weight:normal; color:#555;">(Sadece işlemin yapıldığı aylarda faturaya yansıtılır)</small></td>
                         <td>${donemselPeriyotMetni}</td>
-                        <td style="color:#0d6efd; font-weight:bold; font-size:13px;">${donemselSatis > 0 ? donemselSatis.toLocaleString('tr-TR', {maximumFractionDigits:2}) + ' ₺' : '-'}</td>
+                        <td style="color:#0d6efd; font-weight:bold; font-size:13px;">${donemselUygulamaSatis > 0 ? donemselUygulamaSatis.toLocaleString('tr-TR', {maximumFractionDigits:2}) + ' ₺' : '-'}</td>
                     </tr>
                     <tr>
                         <td style="text-align:left; font-weight:bold;">İSTEK ÜZERİNE (ON-DEMAND) HİZMETLER<br><small style="font-weight:normal; color:#555;">(Talebiniz halinde yapılır ve tablodaki birim fiyatlardan hesaplanır)</small></td>
@@ -2161,7 +2144,7 @@ document.getElementById('fiyatListesi').innerHTML = fiyatHTML;
                 </tbody>
             </table>
         `;
-
+        
         const printWindow = window.open('', '_blank');
         let htmlContent = `
             <!DOCTYPE html>
@@ -2230,8 +2213,7 @@ document.getElementById('fiyatListesi').innerHTML = fiyatHTML;
                     </div>
                     
                     <div style="text-align: right; font-size: 14px; font-weight: bold; margin-top: 15px; border-top: 1px dashed #ccc; padding-top: 10px;">
-                        <div style="font-size: 16px; color:#198754; margin-bottom: 5px;">Aylık Rutin (Sabit) Fatura Tutarı: ${rutinSatis.toLocaleString('tr-TR', {maximumFractionDigits:2})} TL + KDV</div>
-                        <div style="font-size: 11px; color:#777; font-weight:normal;">* Bilgi Amaçlı: Projenin dönemsel periyotları dahil aya vurulmuş genel ortalama maliyeti ${teklif.satis.toLocaleString('tr-TR', {maximumFractionDigits:2})} TL + KDV'dir.</div>
+                        <div style="font-size: 16px; color:#198754; margin-bottom: 5px;">Aylık Rutin (Sabit) Fatura Tutarı: ${rutinAylikSatis.toLocaleString('tr-TR', {maximumFractionDigits:2})} TL + KDV</div>
                     </div>
                 </div>
                 
