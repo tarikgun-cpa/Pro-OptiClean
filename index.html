@@ -11,11 +11,10 @@
         /* GENEL TEMA VE TİPOGRAFİ (Premium SaaS Tasarımı) */
         body { background-color: #f8fafc; font-family: 'Inter', sans-serif; font-size: 13px; color: #334155; display: flex; flex-direction: column; min-height: 100vh; margin: 0; }
         
-        /* Flexbox Sayfa Yapısı (Tam Çözüm) */
+        /* Flexbox Sayfa Yapısı */
         #mainApp { display: flex; flex-direction: column; flex-grow: 1; padding-top: 15px !important; }
-        .tab-content { padding-bottom: 20px; }
-        
-        /* Not: tab-content ve tab-pane flex özellikleri Bootstrap ile çakıştığı için silindi. */
+        .tab-content { flex-grow: 1; display: flex; flex-direction: column; }
+        .tab-pane { flex-grow: 1; }
         
         /* KARTLAR (Daha ince kenarlık, yumuşak gölgeler, daraltılmış iç boşluklar) */
         .card { border: 1px solid #e2e8f0; border-radius: 12px; box-shadow: 0 4px 6px -1px rgba(0,0,0,0.05); margin-bottom: 16px; background-color: #ffffff; }
@@ -68,16 +67,16 @@
         .bg-yalova { background-color: #fffbeb !important; }
         .sunday-col { background-color: #fef2f2 !important; }
         /* ================= PLANLAMA MATRİSİ ================= */
-        /* ================= PLANLAMA MATRİSİ (Düzeltildi) ================= */
-        #planlama-modulu { padding-bottom: 20px; }
-        .matrix-wrapper { background: #fff; border-radius: 12px; border: 1px solid #cbd5e1; box-shadow: 0 4px 12px rgba(0,0,0,0.04); overflow: hidden; margin-bottom: 20px;}
+        #planlama-modulu { display: flex; flex-direction: column; height: 100%; }
+        .matrix-wrapper { flex-grow: 1; display: flex; flex-direction: column; background: #fff; border-radius: 12px; border: 1px solid #cbd5e1; box-shadow: 0 4px 12px rgba(0,0,0,0.04); overflow: hidden; min-height: 500px;}
         .matrix-header { padding: 10px 20px; background: #f8fafc; border-bottom: 1px solid #e2e8f0; display: flex; justify-content: space-between; align-items: center; }
         .matrix-summary { background: #fff; padding: 10px 20px; border-bottom: 1px solid #e2e8f0; display: flex; justify-content: space-between; align-items: center; font-size: 12px; }
         
-        #planlama-modulu .table-responsive { max-height: 65vh !important; overflow-y: auto; border: 1px solid #e2e8f0; border-radius: 8px; }
-        .schedule-table thead { position: sticky; top: 0; z-index: 100; }
-        .schedule-table thead tr:first-child th { top: 0; z-index: 101; box-shadow: 0 2px 4px rgba(0,0,0,0.1); }
-        .schedule-table thead tr:nth-child(2) th { top: 35px; z-index: 100; box-shadow: 0 4px 4px -2px rgba(0,0,0,0.1); }
+        #planlama-modulu .table-responsive { max-height: none !important; height: 100%; border: none; border-radius: 0; margin: 0; box-shadow: none; }
+        
+        .schedule-table thead th { position: sticky; top: 0; z-index: 10; background-color: #1e293b !important; color: #f8fafc !important; border-color: #334155 !important; box-shadow: 0 2px 4px rgba(0,0,0,0.15); font-size: 10px; padding: 6px 4px !important; }
+        .schedule-table .sticky-col { position: sticky; left: 0; z-index: 11; background-color: #f8fafc; box-shadow: 2px 0 5px rgba(0,0,0,0.05); border-right: 2px solid #cbd5e1 !important; }
+        .schedule-table thead .sticky-col { z-index: 12; background-color: #0f172a !important; color: #fff !important; border-right: 2px solid #334155 !important; }
     </style>
 </head>
 <body>
@@ -408,15 +407,11 @@
         <div class="tab-pane fade" id="teklif-modulu" role="tabpanel">
             <div class="row">
                 
-                <div class="col-md-4" id="teklifSolPanel">
+                <div class="col-md-4">
                     <div class="card p-3 shadow-sm border-info">
-                        <div class="d-flex justify-content-between align-items-center mb-2">
-                            <h5 class="text-info fw-bold mb-0">1. Teklif Parametreleri</h5>
-                            <button class="btn btn-sm btn-outline-info fw-bold py-0 px-2" onclick="toggleTeklifParametreleri()">↔ Daralt</button>
-                        </div>
+                        <h5 class="text-info fw-bold">1. Teklif Parametreleri</h5>
                         
-                        <div id="teklifParametreIcerik">
-                            <label class="form-label mt-2 fw-bold text-dark">Müşteri Seçin</label>
+                        <label class="form-label mt-2 fw-bold text-dark">Müşteri Seçin</label>
                         <select id="teklifMusteri" class="form-select border-info" onchange="loadBranchesForQuote()"></select>
                         
                         <label class="form-label mt-3 fw-bold text-dark">Şubeler</label>
@@ -438,10 +433,10 @@
                         </div>
 
                         <button onclick="generateAIQuote()" class="btn btn-primary w-100 mt-2 fw-bold py-2 shadow">🤖 AI Teklifi Hesapla</button>
-                        </div> </div>
+                    </div>
                 </div>
 
-                <div class="col-md-8" id="teklifSagPanel">
+                <div class="col-md-8">
                     <div class="ai-box shadow-sm mb-3" id="aiResultBox" style="display:none;">
                         <h4 class="mb-4 text-center text-primary fw-bold">📊 AI Aylık Teklif ve Finansal Analiz</h4>
                         
@@ -476,21 +471,6 @@
                                 <div class="p-2 bg-light border rounded">
                                     <span class="text-muted small fw-bold">Sarf Malzeme (%<span id="lblSarfOran">15</span>)</span>
                                     <h5 class="text-info mb-0 fw-bold" id="resSarf">0 TL</h5>
-                                </div>
-                            </div>
-                        </div>
-                        
-                        <div class="row text-center mb-4" id="globalQuoteStaffingRow" style="display:none;">
-                            <div class="col-md-6">
-                                <div class="p-2 border border-info rounded text-start" style="background-color: #f0f9ff;">
-                                    <span class="fw-bold text-info small d-block mb-1">🧽 GLOBAL CAM KADROSU ÖZETİ</span>
-                                    <div id="globalResCamStats" style="font-size: 11px; line-height: 1.4;" class="text-dark fw-semibold"></div>
-                                </div>
-                            </div>
-                            <div class="col-md-6">
-                                <div class="p-2 border border-secondary rounded text-start" style="background-color: #f8fafc;">
-                                    <span class="fw-bold text-secondary small d-block mb-1">🧹 GLOBAL GENEL TEMİZLİK KADROSU ÖZETİ</span>
-                                    <div id="globalResGenelStats" style="font-size: 11px; line-height: 1.4;" class="text-dark fw-semibold"></div>
                                 </div>
                             </div>
                         </div>
@@ -540,77 +520,102 @@
                     </div>
                 </div> </div> </div> 
                 <div class="tab-pane fade" id="hakedis-modulu" role="tabpanel">
-    <div class="card p-3 shadow-sm border-danger mb-3">
-        <div class="d-flex justify-content-between align-items-center border-bottom pb-2 mb-3">
-            <h5 class="text-danger fw-bold mb-0">📄 Yeni Hakediş & Fatura Oluştur</h5>
-            <div>
-                <button onclick="updateContractPrices()" class="btn btn-outline-warning btn-sm fw-bold">💰 Güncel Fiyatları Çek</button>
-                <button onclick="deleteContract()" class="btn btn-outline-danger btn-sm fw-bold">🗑️ Sözleşmeyi Sil</button>
-            </div>
-        </div>
+            <div class="card p-2 shadow-sm border-danger mb-2">
+                <div class="d-flex justify-content-between align-items-center border-bottom pb-1 mb-2">
+                    <h5 class="text-danger fw-bold mb-0">Aylık Hakediş ve Operasyon Yönetimi</h5>
+                    <div>
+                        <button onclick="deleteContract()" class="btn btn-outline-danger btn-sm py-0">🗑️ Sil</button>
+                        <button onclick="updateContractPrices()" class="btn btn-outline-warning btn-sm py-0">💰 Fiyat Güncelle</button>
+                        <button onclick="openTaskModal()" class="btn btn-outline-info btn-sm py-0">👷 Görevlendir</button>
+                    </div>
+                </div>
 
-        <div class="row g-2 align-items-end">
-            <div class="col-md-3">
-                <label class="form-label fw-bold text-dark">Aktif Sözleşme</label>
-                <select id="hakedisSozlesmeSecim" class="form-select border-danger shadow-sm" onchange="hakedisSozlesmeDegisti()"></select>
+                <div class="row g-2 align-items-end bg-light p-2 rounded border">
+                    <div class="col-md-3">
+                        <label class="form-label mb-0" style="font-size:10px;">Aktif Sözleşme</label>
+                        <select id="hakedisSozlesmeSecim" class="form-select form-select-sm border-danger"></select>
+                    </div>
+                    <div class="col-md-2">
+                        <label class="form-label mb-0" style="font-size:10px;">Dönem/Ay</label>
+                        <input type="month" id="hakedisAy" class="form-control form-control-sm border-danger">
+                    </div>
+                    <div class="col-md-4">
+                        <label class="form-label mb-0" style="font-size:10px;">Açıklama (Fatura Notu)</label>
+                        <input type="text" id="hakedisAciklama" class="form-control form-control-sm border-danger" placeholder="Örn: 1. Bölge Kesimi">
+                    </div>
+                    <div class="col-md-3">
+                        <button onclick="loadHakedisTablosu()" class="btn btn-danger btn-sm w-100 fw-bold shadow-sm">Tabloyu Getir</button>
+                    </div>
+                </div>
             </div>
-            <div class="col-md-2">
-                <label class="form-label fw-bold text-dark">Dönem/Ay</label>
-                <input type="month" id="hakedisAy" class="form-control border-danger shadow-sm">
-            </div>
-            <div class="col-md-3">
-                <label class="form-label fw-bold text-primary">Faturalandırılacak Hizmet</label>
-                <select id="hakedisHizmetFiltre" class="form-select border-primary shadow-sm">
-                    <option value="TÜMÜ">-- Tüm Hizmetler --</option>
-                </select>
-            </div>
-            <div class="col-md-2">
-                <label class="form-label fw-bold text-dark">Açıklama / Fatura Notu</label>
-                <input type="text" id="hakedisAciklama" class="form-control shadow-sm" placeholder="Örn: Sadece Cam">
-            </div>
-            <div class="col-md-2">
-                <button onclick="loadHakedisTablosu()" class="btn btn-danger w-100 fw-bold shadow">Tabloyu Getir</button>
-            </div>
-        </div>
-    </div>
 
-    <div class="card p-3 shadow-sm border-dark mb-4" id="hakedisTabloAlani" style="display:none;">
-        <div class="d-flex justify-content-between align-items-center mb-2">
-            <h6 class="fw-bold text-secondary mb-0">Operasyon İşaretleme Tablosu</h6>
-            <div class="w-25">
-                <input type="text" id="hakedisAra" class="form-control form-control-sm border-secondary" placeholder="🔍 Şube Adı ile Filtrele..." onkeyup="filterHakedisTable()">
-            </div>
-        </div>
-        
-        <div class="table-responsive bg-white border rounded" style="max-height: 500px; overflow-y: auto;">
-            <table class="table table-bordered table-hover table-sm align-middle mb-0">
-                <thead class="table-dark sticky-top" id="hakedisThead" style="z-index: 10;"></thead>
-                <tbody id="hakedisTbody"></tbody>
-            </table>
-        </div>
-        
-        <div class="d-flex justify-content-between align-items-center mt-3 bg-light p-3 rounded border border-success">
-            <h4 class="text-success fw-bolder m-0" id="hakedisToplamTutar">Toplam: 0,00 TL + KDV</h4>
-            <div class="d-flex gap-2">
-                <button onclick="saveHakedis()" class="btn btn-success fw-bold px-4 shadow-sm">💾 Faturayı Kaydet ve Arşive Al</button>
-            </div>
-        </div>
-    </div>
-    
-    <div class="card p-3 shadow-sm border-secondary">
-        <h5 class="section-title text-secondary">📁 Kayıtlı Hakediş ve Fatura Dökümleri</h5>
-        <div class="table-responsive">
-            <table class="table table-hover align-middle">
-                <thead class="table-light"><tr><th>Ay / Dönem</th><th>Sözleşme Adı</th><th>Müşteri</th><th>Fatura Tutarı</th><th style="min-width:350px;">İşlemler (Yazdır / Düzenle)</th></tr></thead>
-                <tbody id="kayitliHakedislerListesi"></tbody>
-            </table>
-        </div>
-    </div>
-</div>
+                <div class="card p-3 shadow-sm mt-2 border-info mb-4" id="gorevCizelgesiAlani" style="display:none;">
+                    <h5 class="section-title text-info mb-3">📅 Personel Görev Çizelgesi</h5>
+                    <div class="row g-2 mb-3 align-items-center">
+                        <div class="col-md-2">
+                            <label class="form-label text-muted small mb-0">Tarih</label>
+                            <input type="date" id="gorevTarihi" class="form-control form-control-sm">
+                        </div>
+                        <div class="col-md-4">
+                            <label class="form-label text-muted small mb-0">Şubeler (CTRL ile Çoklu Seçim)</label>
+                            <select id="gorevSubeSecim" class="form-select form-select-sm border-info" multiple size="3"></select>
+                        </div>
+                        <div class="col-md-3">
+                            <label class="form-label text-muted small mb-0">Personel Adı Soyadı</label>
+                            <input type="text" id="gorevPersonelIsmi" class="form-control form-control-sm border-info" placeholder="Örn: Ahmet Yılmaz">
+                        </div>
+                        <div class="col-md-3 mt-4">
+                            <button onclick="addTask()" class="btn btn-info btn-sm text-white w-100 fw-bold py-2">Seçili Şubelere Ata</button>
+                        </div>
+                    </div>
+                    <div class="table-responsive bg-white">
+                        <table class="table table-sm table-bordered mb-0">
+                            <thead class="table-info"><tr><th width="20%">Tarih</th><th width="40%">Şube</th><th width="30%">Görevli Personel</th><th width="10%">İşlem</th></tr></thead>
+                            <tbody id="gorevListesiTbody"></tbody>
+                        </table>
+                    </div>
+                </div>
+
+                <div id="hakedisTabloAlani" style="display:none;">
+                    <div class="d-flex justify-content-between align-items-center mb-2">
+                        <div class="alert alert-info border-info mb-0 py-2 w-75" style="font-size:13px;">
+                            <strong>Yıllık Sözleşme İşleyişi:</strong> Sadece bu ay gerçekleşen hizmetleri işaretleyin.
+                        </div>
+                        <div class="w-25 ms-2">
+                            <input type="text" id="hakedisAra" class="form-control form-control-sm border-primary" placeholder="🔍 Şube Ara..." onkeyup="filterHakedisTable()">
+                        </div>
+                    </div>
+                    
+                    <div class="table-responsive bg-white border rounded">
+                        <table class="table table-bordered table-hover table-sm align-middle mb-0">
+                            <thead class="table-dark sticky-top" id="hakedisThead"></thead>
+                            <tbody id="hakedisTbody"></tbody>
+                        </table>
+                    </div>
+                    <div class="d-flex justify-content-between align-items-center mt-3 bg-light p-3 rounded border">
+                        <h4 class="text-success fw-bold m-0" id="hakedisToplamTutar">Toplam: 0,00 TL</h4>
+                        <div>
+                            <button onclick="saveHakedis()" class="btn btn-success fw-bold px-4 me-2">💾 Faturayı Kaydet</button>
+                            <button onclick="printHakedis()" class="btn btn-primary fw-bold px-3 me-2">🖨️ Finansal Fatura Al</button>
+                            <button onclick="printOperasyonRaporu()" class="btn btn-secondary fw-bold px-3">📄 Müşteri Raporu Al</button>
+                        </div>
+                    </div>
+                </div>
+                
+                <div class="card p-3 shadow-sm mt-5 border-secondary">
+                    <h5 class="section-title text-secondary">📁 Kayıtlı Hakediş ve Fatura Dökümleri</h5>
+                    <div class="table-responsive">
+                        <table class="table table-hover table-sm align-middle">
+                            <thead class="table-light"><tr><th>Ay / Dönem</th><th>Sözleşme Adı</th><th>Müşteri</th><th>Fatura Tutarı</th><th style="min-width:240px;">İşlemler</th></tr></thead>
+                            <tbody id="kayitliHakedislerListesi"></tbody>
+                        </table>
+                    </div>
+                </div>
             </div> 
         </div> 
         <div class="tab-pane fade" id="planlama-modulu" role="tabpanel">
             <div class="matrix-wrapper">
+                
                 <div class="matrix-header">
                     <div class="d-flex align-items-center gap-4">
                         <h5 class="text-primary fw-bolder mb-0"><i class="fs-4 align-middle me-2">📅</i> Görev Matrisi</h5>
@@ -627,7 +632,6 @@
                         </select>
                         <button onclick="saveCurrentMatrix()" class="btn btn-success fw-bold shadow-sm py-1 px-3">💾 Kaydet</button>
                         <button onclick="printSchedule()" class="btn btn-primary fw-bold shadow-sm py-1 px-3">🖨️ Yazdır</button>
-                        <button onclick="generateGlobalStaffingReport()" class="btn btn-warning text-dark fw-bold shadow-sm py-1 px-3 ms-2">🌍 Tüm Projeler Raporu</button>
                     </div>
                 </div>
 
@@ -639,58 +643,11 @@
                         <tbody id="scheduleTbody"></tbody>
                     </table>
                 </div>
-                
-                <div id="cellMenu" class="card shadow-lg border-primary" style="display:none; position:fixed; z-index:9999; width:220px; font-size:11px;">
-                    <div class="card-header bg-primary text-white p-2 text-center fw-bold" style="font-size:12px;">
-                        <span id="cMenuTitle"></span>
-                    </div>
-                    <div class="card-body p-2">
-                        <h6 class="border-bottom pb-1 text-muted" style="font-size:10px;">KADROLU EKİP</h6>
-                        <div class="d-flex justify-content-between align-items-center mb-1">
-                            <span class="fw-bold text-primary">🧽 Cam:</span>
-                            <div class="input-group input-group-sm w-50 shadow-sm">
-                                <button class="btn btn-outline-secondary py-0 px-2 fw-bold" onclick="updateCellVal('cam', -1)">-</button>
-                                <input type="text" id="cMenuCam" class="form-control text-center py-0 px-1 fw-bold" readonly>
-                                <button class="btn btn-outline-secondary py-0 px-2 fw-bold" onclick="updateCellVal('cam', 1)">+</button>
-                            </div>
-                        </div>
-                        <div class="d-flex justify-content-between align-items-center mb-2">
-                            <span class="fw-bold text-secondary">🧹 Genel:</span>
-                            <div class="input-group input-group-sm w-50 shadow-sm">
-                                <button class="btn btn-outline-secondary py-0 px-2 fw-bold" onclick="updateCellVal('genel', -1)">-</button>
-                                <input type="text" id="cMenuGenel" class="form-control text-center py-0 px-1 fw-bold" readonly>
-                                <button class="btn btn-outline-secondary py-0 px-2 fw-bold" onclick="updateCellVal('genel', 1)">+</button>
-                            </div>
-                        </div>
-
-                        <h6 class="border-bottom pb-1 mt-2 text-danger" style="font-size:10px;">DIŞ TAŞERON</h6>
-                        <div class="d-flex justify-content-between align-items-center mb-1">
-                            <span class="fw-bold text-danger">👷 Taşeron Cam:</span>
-                            <div class="input-group input-group-sm w-50 shadow-sm">
-                                <button class="btn btn-outline-danger py-0 px-2 fw-bold" onclick="updateCellVal('taseronCam', -1)">-</button>
-                                <input type="text" id="cMenuTasCam" class="form-control text-center py-0 px-1 fw-bold" readonly>
-                                <button class="btn btn-outline-danger py-0 px-2 fw-bold" onclick="updateCellVal('taseronCam', 1)">+</button>
-                            </div>
-                        </div>
-                        <div class="d-flex justify-content-between align-items-center mb-2">
-                            <span class="fw-bold text-danger">👷 Taşeron Genel:</span>
-                            <div class="input-group input-group-sm w-50 shadow-sm">
-                                <button class="btn btn-outline-danger py-0 px-2 fw-bold" onclick="updateCellVal('taseronGenel', -1)">-</button>
-                                <input type="text" id="cMenuTasGenel" class="form-control text-center py-0 px-1 fw-bold" readonly>
-                                <button class="btn btn-outline-danger py-0 px-2 fw-bold" onclick="updateCellVal('taseronGenel', 1)">+</button>
-                            </div>
-                        </div>
-
-                        <div class="d-flex gap-1 mt-3 border-top pt-2">
-                            <button class="btn btn-danger btn-sm w-50 py-1 fw-bold" onclick="updateCellVal('sil', 0)">🗑️ Sıfırla</button>
-                            <button class="btn btn-success btn-sm w-50 py-1 fw-bold" onclick="closeCellMenu()">✅ Tamam</button>
-                        </div>
-                    </div>
-                </div>
-                </div>
+            </div>
         </div>
-    </div>
-   
+        
+    </div> 
+    
     <div class="footer-area text-center mt-auto py-3 border-top w-100" style="font-size: 12px; font-weight: 600; color: #64748b; letter-spacing: 0.5px; background: #f8fafc;">
         Yazılım & Altyapı: <img src="Logo2.png" alt="CPA-FTC Logo" style="height: 16px; margin: 0 6px; vertical-align: text-bottom; opacity: 0.8;"> ERP © 2026
     </div>
@@ -1135,19 +1092,23 @@
         document.getElementById('subeListesi').innerHTML = subeHTML;
 
         // Fiyatlar Tablosu
-        let fiyatHTML = "";
-        fiyatlar.forEach(f => {
-            fiyatHTML += `<tr>
-                <td>${f.hizmet}</td>
-                <td>${f.il}</td>
-                <td>${f.tutar} TL</td>
-                <td>
-                    <button onclick="editPrice(${f.id})" class="btn btn-sm btn-warning py-0 me-1">Düzenle</button>
-                    <button onclick="deletePrice(${f.id})" class="btn btn-sm btn-danger py-0">Sil</button>
-                </td>
-            </tr>`;
-        });
-        document.getElementById('fiyatListesi').innerHTML = fiyatHTML;
+let fiyatHTML = "";
+fiyatlar.forEach(f => {
+    fiyatHTML += `<tr>
+        <td class="align-middle">${f.hizmet}</td>
+        <td class="align-middle">${f.il}</td>
+        <td>
+            <div class="input-group input-group-sm" style="width: 120px;">
+                <input type="number" class="form-control text-center fw-bold text-primary border-primary" value="${f.tutar}" onchange="updatePriceInline(${f.id}, this.value)" title="Fiyatı değiştirince otomatik kaydedilir">
+                <span class="input-group-text bg-light border-primary">₺</span>
+            </div>
+        </td>
+        <td class="align-middle">
+            <button onclick="deletePrice(${f.id})" class="btn btn-sm btn-outline-danger py-0">Sil</button>
+        </td>
+    </tr>`;
+});
+document.getElementById('fiyatListesi').innerHTML = fiyatHTML;
 
         // Planlar Tablosu
         let planHTML = "";
@@ -1202,9 +1163,10 @@
         // YENİ: Kayıtlı teklifleri listele
         renderQuotes();
         
-        // YENİ EKLENENLER: Sözleşmeleri, filtreleri ve geçmiş faturaları yükle
+        // YENİ: Sözleşmeleri Dropdown'a yükle
         renderContracts();
-        hakedisSozlesmeDegisti();
+        
+        // YENİ: Kayıtlı Hakediş (Fatura) geçmişini listele
         renderHakedisList();
     }
 
@@ -1228,34 +1190,23 @@
             }
 
             if (target === 'subeler') {
-                let existing = getData(KEYS.SUBELER);
+                const existing = getData(KEYS.SUBELER);
                 excelData.forEach(row => {
-                    let musteriAdi = (row["Müşteri"] || "Tanımsız").trim();
-                    let subeAdi = (row["Şube Adı"] || "").trim();
-                    
-                    // Şube daha önce eklenmiş mi kontrol et (Büyük/küçük harf duyarsız)
-                    let isDuplicate = existing.some(s => 
-                        s.musteri.toLowerCase() === musteriAdi.toLowerCase() && 
-                        s.adi.toLowerCase() === subeAdi.toLowerCase()
-                    );
-                    
-                    if(!isDuplicate) {
-                        existing.push({
-                            id: Date.now() + Math.random(),
-                            musteri: musteriAdi,
-                            adi: subeAdi,
-                            kodu: (row["Şube Kodu"] || "").toString().trim(),
-                            il: (row["İl"] || "").trim(),
-                            bolge: (row["Bölge"] || "").trim(),
-                            adres: (row["Açık Adres"] || "").trim(),
-                            m2: row["Şube Alanı (m2)"] || 0,
-                            tadilatM2: row["Tadilat Alanı (m2)"] || 0,
-                            camM2: row["Cam Alanı (m2)"] || 0
-                        });
-                    }
+                    existing.push({
+                        id: Date.now() + Math.random(),
+                        musteri: row["Müşteri"] || "Tanımsız",
+                        adi: row["Şube Adı"] || "",
+                        kodu: row["Şube Kodu"] || "",
+                        il: row["İl"] || "",
+                        bolge: row["Bölge"] || "",
+                        adres: row["Açık Adres"] || "",
+                        m2: row["Şube Alanı (m2)"] || 0,
+                        tadilatM2: row["Tadilat Alanı (m2)"] || 0,
+                        camM2: row["Cam Alanı (m2)"] || 0
+                    });
                 });
                 saveData(KEYS.SUBELER, existing);
-            }
+            } 
             else if (target === 'fiyatlar') {
                 const existing = getData(KEYS.FIYATLAR);
                 excelData.forEach(row => {
@@ -1321,21 +1272,6 @@
     }
 
     // ================== TEKLİF VE AI MODÜLÜ MANTIĞI ==================
-    function toggleTeklifParametreleri() {
-        let sol = document.getElementById('teklifSolPanel');
-        let sag = document.getElementById('teklifSagPanel');
-        let icerik = document.getElementById('teklifParametreIcerik');
-        
-        if (icerik.style.display === 'none') {
-            icerik.style.display = 'block';
-            sol.className = 'col-md-4';
-            sag.className = 'col-md-8';
-        } else {
-            icerik.style.display = 'none';
-            sol.className = 'col-md-12 mb-2'; // Yukarıda ince bir bar olarak kalır
-            sag.className = 'col-md-12';      // Sağ taraf ekranın %100'ünü kaplar
-        }
-    }
     function loadBranchesForQuote() {
         const selectedMusteri = document.getElementById('teklifMusteri').value;
         const subelerListesi = getData(KEYS.SUBELER).filter(s => s.musteri === selectedMusteri);
@@ -1445,10 +1381,6 @@
 
         let totalAylikMaliyet = 0;
         let tableHTML = "";
-        
-        // YENİ: Global kadro bütçe sayaçları
-        let globalCamManDays = 0;
-        let globalGenelManDays = 0;
 
         // Seçilen hizmetleri ve periyot (sıklık) çarpanlarını al
         let serviceRequests = [];
@@ -1535,14 +1467,9 @@
             let aylikCamYuk = requiredCamManDays;
 
             let ekipAciklama = "";
-            if(aylikCamYuk > 0) {
-                ekipAciklama += `<span class="badge bg-info text-dark mb-1 border border-info">🧽 Cam: Toplam ${aylikCamYuk} Adam/Gün</span><br>`;
-                globalCamManDays += aylikCamYuk; // Global sayaca ekle
-            }
-            if(aylikGenelYuk > 0) {
-                ekipAciklama += `<span class="badge bg-secondary mb-1">🧹 Genel: Toplam ${aylikGenelYuk} Adam/Gün</span><br>`;
-                globalGenelManDays += aylikGenelYuk; // Global sayaca ekle
-            }
+            if(aylikCamYuk > 0) ekipAciklama += `<span class="badge bg-info text-dark mb-1 border border-info">🧽 Cam: Toplam ${aylikCamYuk} Adam/Gün</span><br>`;
+            if(aylikGenelYuk > 0) ekipAciklama += `<span class="badge bg-secondary mb-1">🧹 Genel: Toplam ${aylikGenelYuk} Adam/Gün</span><br>`;
+
             // İSTİHDAM ÖNERİSİ HESAPLAMA (Aylık 22 İş Günü / Yaklaşık 165 Saat üzerinden)
             let camFT = Math.floor(aylikCamYuk / 22);
             let camPT = aylikCamYuk % 22;
@@ -1613,16 +1540,6 @@
         document.getElementById('resSarf').innerText = sarfTutar.toLocaleString('tr-TR', {maximumFractionDigits:2}) + " TL";
         document.getElementById('resIscilik').innerText = iscilikTutar.toLocaleString('tr-TR', {maximumFractionDigits:2}) + " TL";
         document.getElementById('teklifAnalizTablosu').innerHTML = tableHTML;
-        
-        // YENİ: Global kadro istatistiklerini hesapla ve ekrana yansıt
-        let gCamFT = Math.floor(globalCamManDays / 22);
-        let gCamPT = globalCamManDays % 22;
-        let gGenelFT = Math.floor(globalGenelManDays / 22);
-        let gGenelPT = globalGenelManDays % 22;
-
-        document.getElementById('globalQuoteStaffingRow').style.display = 'flex';
-        document.getElementById('globalResCamStats').innerHTML = `🔹 <b>Toplam Yük:</b> ${globalCamManDays} Adam/Gün<br>🔹 <b>Öneri:</b> ${gCamFT} Tam Zamanlı + ${gCamPT} Taşeron/PT Personel`;
-        document.getElementById('globalResGenelStats').innerHTML = `🔹 <b>Toplam Yük:</b> ${globalGenelManDays} Adam/Gün<br>🔹 <b>Öneri:</b> ${gGenelFT} Tam Zamanlı + ${gGenelPT} Taşeron/PT Personel`;
         // ================== UYARI MODALI VE AI TETİKLEME ==================
         function getPersCountMatrix(m) {
             if(m <= 250) return 1; if(m <= 500) return 2; if(m <= 750) return 3;
@@ -1701,31 +1618,23 @@
             <div class="bg-light p-3 rounded mt-3 border shadow-sm">
                 <h6 class="text-primary fw-bold mb-3" style="font-size:13px;"><i class="align-middle me-1">⚡</i> Hızlı İstihdam Güncellemesi</h6>
                 <div class="row g-2 mb-2">
-                    <div class="col-4">
+                    <div class="col-6">
                         <label style="font-size:10px;" class="text-info fw-bold text-uppercase">🧽 Cam FT</label>
                         <input type="number" id="hizliCamFT" class="form-control form-control-sm border-info" value="${camFT}">
                     </div>
-                    <div class="col-4">
+                    <div class="col-6">
                         <label style="font-size:10px;" class="text-info fw-bold text-uppercase">🧽 Cam PT</label>
                         <input type="number" id="hizliCamPT" class="form-control form-control-sm border-info" value="${camPT}">
                     </div>
-                    <div class="col-4">
-                        <label style="font-size:10px;" class="text-info fw-bold text-uppercase">🧽 PT Gün</label>
-                        <input type="number" id="hizliCamPTGun" class="form-control form-control-sm border-info" value="${camPTGun}">
-                    </div>
                 </div>
                 <div class="row g-2">
-                    <div class="col-4">
+                    <div class="col-6">
                         <label style="font-size:10px;" class="text-secondary fw-bold text-uppercase">🧹 Genel FT</label>
                         <input type="number" id="hizliGenelFT" class="form-control form-control-sm border-secondary" value="${genelFT}">
                     </div>
-                    <div class="col-4">
+                    <div class="col-6">
                         <label style="font-size:10px;" class="text-secondary fw-bold text-uppercase">🧹 Genel PT</label>
                         <input type="number" id="hizliGenelPT" class="form-control form-control-sm border-secondary" value="${genelPT}">
-                    </div>
-                    <div class="col-4">
-                        <label style="font-size:10px;" class="text-secondary fw-bold text-uppercase">🧹 PT Gün</label>
-                        <input type="number" id="hizliGenelPTGun" class="form-control form-control-sm border-secondary" value="${genelPTGun}">
                     </div>
                 </div>
                 <button onclick="hizliAyarKaydetVeYenidenHesapla()" class="btn btn-sm btn-success w-100 mt-3 fw-bold py-2 shadow-sm">💾 Kaydet ve Yeniden Analiz Et</button>
@@ -1762,10 +1671,8 @@
         let ayarlar = JSON.parse(localStorage.getItem(KEYS.AYARLAR)) || {};
         ayarlar.camFT = document.getElementById('hizliCamFT').value;
         ayarlar.camPT = document.getElementById('hizliCamPT').value;
-        ayarlar.camPTGun = document.getElementById('hizliCamPTGun').value;
         ayarlar.genelFT = document.getElementById('hizliGenelFT').value;
         ayarlar.genelPT = document.getElementById('hizliGenelPT').value;
-        ayarlar.genelPTGun = document.getElementById('hizliGenelPTGun').value;
         
         localStorage.setItem(KEYS.AYARLAR, JSON.stringify(ayarlar));
         
@@ -1807,81 +1714,11 @@
             return Math.ceil(m2 / 250); 
         }
 
-        // =========================================================================
-        // YENİ: GLOBAL (ORTAK) HAVUZ VE GEÇMİŞ PROJELERİ OKUMA BÖLÜMÜ
-        // =========================================================================
-        let globalUsage = {};
-        for(let d=1; d<=90; d++) globalUsage[d] = { cam: 0, genel: 0, il: null };
-        
-        const tumTeklifler = getData(KEYS.TEKLIFLER);
-        tumTeklifler.forEach(t => {
-            // Eğer şu an bu teklifi düzenliyorsak kendi eski matrisini hesaba katma (çift saymamak için)
-            if (editStates.quote && t.id === editStates.quote) return; 
-
-            if (t.matrix) {
-                Object.keys(t.matrix).forEach(subeId => {
-                    let subeGunler = t.matrix[subeId];
-                    // O şubenin ilini bul (aynı gün farklı illere dağılmayı engellemek için)
-                    let pSube = allSubeler.find(x => x.id == subeId);
-                    let pIl = pSube ? pSube.il : null;
-
-                    for(let d=1; d<=90; d++) {
-                        if(subeGunler[d]) {
-                            globalUsage[d].cam += (subeGunler[d].cam || 0);
-                            globalUsage[d].genel += (subeGunler[d].genel || 0);
-                            if(pIl && (subeGunler[d].cam > 0 || subeGunler[d].genel > 0)) {
-                                globalUsage[d].il = pIl; // O günkü ekibin bulunduğu İl kilitlenir
-                            }
-                        }
-                    }
-                });
-            }
-        });
-
-        let globalMonthPTCamUsed = [0, 0, 0];
-        let globalMonthPTGenelUsed = [0, 0, 0];
-
         let dailyUsage = {};
-        for(let d=1; d<=90; d++) {
-            let mIndex = Math.floor((d-1)/30);
-            
-            // Kayıtlı projelerin Cam Kullanımını Tam Zamanlı (FT) ve Part-Time (PT) havuzuna yazdır
-            let gCam = globalUsage[d].cam;
-            let uFTCam = Math.min(gCam, capCamFT);
-            let uPTCam = Math.max(0, gCam - capCamFT);
-            globalMonthPTCamUsed[mIndex] += uPTCam;
+        for(let d=1; d<=90; d++) dailyUsage[d] = { camFT: 0, camPT: 0, genelFT: 0, genelPT: 0, taseronCam: 0, taseronGenel: 0, camIl: null, genelIl: null };
 
-            // Kayıtlı projelerin Genel Temizlik Kullanımını FT ve PT havuzuna yazdır
-            let gGenel = globalUsage[d].genel;
-            let uFTGenel = Math.min(gGenel, capGenelFT);
-            let uPTGenel = Math.max(0, gGenel - capGenelFT);
-            globalMonthPTGenelUsed[mIndex] += uPTGenel;
-
-            // Boş takvim yerine artık diğer projelerin dolu olduğu takvimi başlatıyoruz!
-            dailyUsage[d] = { 
-                camFT: uFTCam, 
-                camPT: uPTCam, 
-                genelFT: uFTGenel, 
-                genelPT: uPTGenel, 
-                taseronCam: 0, 
-                taseronGenel: 0, 
-                camIl: globalUsage[d].il, 
-                genelIl: globalUsage[d].il 
-            };
-        }
-
-        // Aylık Part-Time kotalarını da diğer projelerin kullanımlarına göre düşür
-        let monthPTCamRemaining = [
-            Math.max(0, capCamPT * ptCamGun - globalMonthPTCamUsed[0]),
-            Math.max(0, capCamPT * ptCamGun - globalMonthPTCamUsed[1]),
-            Math.max(0, capCamPT * ptCamGun - globalMonthPTCamUsed[2])
-        ];
-        let monthPTGenelRemaining = [
-            Math.max(0, capGenelPT * ptGenelGun - globalMonthPTGenelUsed[0]),
-            Math.max(0, capGenelPT * ptGenelGun - globalMonthPTGenelUsed[1]),
-            Math.max(0, capGenelPT * ptGenelGun - globalMonthPTGenelUsed[2])
-        ];
-        // =========================================================================
+        let monthPTCamRemaining = [capCamPT * ptCamGun, capCamPT * ptCamGun, capCamPT * ptCamGun];
+        let monthPTGenelRemaining = [capGenelPT * ptGenelGun, capGenelPT * ptGenelGun, capGenelPT * ptGenelGun];
 
         const ensureCell = (sId, d) => {
             if(!window.aiScheduleData[sId]) window.aiScheduleData[sId] = {};
@@ -2052,8 +1889,7 @@
                 <body>
                     <h3 class="text-center border-bottom pb-2">PROJE İÇ MALİYET VE FİNANSAL ANALİZ (ÇALIŞMA KAĞIDI)</h3>
                     ${printContent}
-<div style="text-align:center; margin-top:40px; font-size:11px; color:#aaa; font-weight:bold; border-top:1px dashed #ccc; padding-top:10px; letter-spacing:1px;">Altyapı & Altyazılım Desteği: CPA-FTC Temizlik ERP © 2026</div>
-</body>
+                </body>
             </html>
         `);
         printWindow.document.close();
@@ -2205,9 +2041,7 @@
         // Seçilen hizmetlere göre Dinamik Sütun Başlıkları
         let thHizmetler = "";
         teklif.hizmetler.forEach(h => {
-            let isIstek = (h.periyotCarpan == 0);
-            let bgRenk = isIstek ? 'background-color: #ffc107; color: #000;' : '';
-            thHizmetler += `<th style="${bgRenk}">${h.ad.toUpperCase()}<br>BİRİM TUTARI</th>`;
+            thHizmetler += `<th>${h.ad.toUpperCase()}<br>BİRİM TUTARI</th>`;
         });
 
         // Şube verileri ve fiyat hücreleri
@@ -2220,10 +2054,7 @@
                 // Şube ili ve Hizmet adına göre birim fiyatı bul
                 let dbFiyat = teklif.fiyatlar.find(f => f.hizmet.trim().toLowerCase() === srv.ad.trim().toLowerCase() && f.il.trim().toLowerCase() === sube.il.trim().toLowerCase());
                 let birimFiyat = dbFiyat ? dbFiyat.tutar.toLocaleString('tr-TR', {maximumFractionDigits:2}) + " ₺" : "-";
-                
-                let isIstek = (srv.periyotCarpan == 0);
-                let bgRenk = isIstek ? 'background-color: #fff3cd;' : '';
-                tdFiyatlar += `<td style="${bgRenk}">${birimFiyat}</td>`;
+                tdFiyatlar += `<td>${birimFiyat}</td>`;
 
                 // Sıklık Açıklaması - SADECE "GENEL" VE "CAM" İÇERENLER
                 let srvAdLower = srv.ad.toLowerCase();
@@ -2253,6 +2084,22 @@
         });
 
         const printWindow = window.open('', '_blank');
+
+        // Seçilen hizmetlerin sıklıklarını PDF için dinamik olarak hazırla
+let dinamikEsaslar = "";
+teklif.hizmetler.forEach(h => {
+    let freq = "";
+    if(h.periyotCarpan == 30) freq = "Her Gün";
+    else if(h.periyotCarpan == 4) freq = "Haftada 1";
+    else if(h.periyotCarpan == 1) freq = "Ayda 1 Kez";
+    else if(h.periyotCarpan == 0.33) freq = "3 Ayda 1 (Yılda 4 Kez)";
+    else freq = "İstek Üzerine";
+    
+    if(h.periyotCarpan > 0) { // İstek üzerine olanlar zaten aşağıda listeleniyor
+        dinamikEsaslar += `<li style="margin-bottom: 4px;"><strong>${h.ad}:</strong> ${freq} gerçekleştirilecek olup, periyoduna göre fatura edilecektir.</li>`;
+    }
+});
+
         let htmlContent = `
             <!DOCTYPE html>
             <html>
@@ -2307,90 +2154,25 @@
                 </table>
 
                 <div style="background-color: #f9f9f9; border: 1px solid #ccc; padding: 15px; margin-top: 20px;">
-                    <h4 style="margin-top: 0; color: #333; border-bottom: 1px solid #ddd; padding-bottom: 5px;">FİYATLANDIRMA VE OPERASYON BÜTÇE ESASLARI</h4>
-                    
-                    <ul style="font-size: 11px; margin-bottom: 15px; line-height: 1.6; padding-left: 20px;">
-                        <li>Tabloda belirtilen hizmet birim fiyatları üzerinden, sadece <strong>işlem gerçekleştirildikçe ve işlemin yapıldığı ay itibariyle</strong> faturalandırma yapılacaktır.</li>
-                        <li><strong>🧽 Rutin Cam Silim Hizmeti:</strong> Belirtilen birim fiyatlar üzerinden her ay düzenli olarak gerçekleştirilecek ve aylık olarak faturalandırılacaktır.</li>
-                        <li><strong>🧹 Dönemsel Genel Temizlik Hizmeti:</strong> 3 Ayda 1 kez (Yılda 4 kez) gerçekleştirilecek olup, yalnızca hizmetin sunulduğu ayın sonunda faturaya yansıtılacaktır.</li>
+                    <h4 style="margin-top: 0; color: #333;">FİYATLANDIRMA VE FATURALANDIRMA ESASLARI</h4>
+                    <ul style="font-size: 11px; margin-bottom: 15px; line-height: 1.5;">
+                        <li>Tabloda belirtilen hizmet birim fiyatları üzerinden, sadece <strong>işlem yapıldıkça ve yapıldığı ay itibariyle</strong> faturalandırma yapılacaktır.</li>
+                        ${dinamikEsaslar}
                         ${istekUzereHtml}
                     </ul>
                     
-                    <div style="background: #fff3f3; color: #d9534f; padding: 10px; border-left: 4px solid #d9534f; font-size: 11px; margin-bottom: 15px; border-radius: 4px;">
-                        <strong>⚠️ ÖNEMLİ NOT (Şube Hizmet Taban Fiyatı):</strong> Şube bazlı operasyonlarda uygulanacak minimum fatura tutarı şube/hizmet başına <strong>${tabanFiyat.toLocaleString('tr-TR')} TL</strong>'dir. Hesaplanan işlem hacmi bu tutarın altında kalsa dahi bu taban fiyat faturaya esas alınır.
+                    <div style="background: #fff3f3; color: #d9534f; padding: 10px; border-left: 4px solid #d9534f; font-size: 12px; margin-bottom: 15px;">
+                        <strong>⚠️ DİKKAT (Şube Hizmet Taban Fiyatı):</strong> Şube bazlı hizmetlerde uygulanacak minimum fatura tutarı <strong>${tabanFiyat.toLocaleString('tr-TR')} TL</strong>'dir. Hesaplanan işlem hacmi bu tutarın altında kalsa dahi bu taban fiyat faturaya esas alınır.
                     </div>
                     
-                    <table style="width: 100%; border-collapse: collapse; margin-top: 15px; font-size: 12px;">
-                        <thead>
-                            <tr style="background-color: #e2e8f0; font-weight: bold;">
-                                <th style="border: 1px solid #cbd5e1; padding: 8px; text-align: left;">Hizmet Tipi / Kapsamı</th>
-                                <th style="border: 1px solid #cbd5e1; padding: 8px; text-align: center; width: 150px;">Uygulama Sıklığı</th>
-                                <th style="border: 1px solid #cbd5e1; padding: 8px; text-align: right; width: 220px;">Operasyon Bütçesi (TL + KDV)</th>
-                            </tr>
-                        </thead>
-                        <tbody>
-                            <tr>
-                                <td style="border: 1px solid #e2e8f0; padding: 8px; font-weight: bold; color: #1e3a8a;">🧽 Rutin Aylık Operasyon Bütçesi</td>
-                                <td style="border: 1px solid #e2e8f0; padding: 8px; text-align: center; color: #475569;">Her Ay (12 Kez/Yıl)</td>
-                                <td style="border: 1px solid #e2e8f0; padding: 8px; text-align: right; font-weight: bold; color: #1e3a8a;">
-                                    ${(() => {
-                                        let camSatis = 0;
-                                        teklif.subeler.forEach(sube => {
-                                            teklif.hizmetler.forEach(srv => {
-                                                if (srv.ad.toLowerCase().includes("cam") && srv.periyotCarpan != 0) {
-                                                    let dbFiyat = teklif.fiyatlar.find(f => f.hizmet.trim().toLowerCase() === srv.ad.trim().toLowerCase() && f.il.trim().toLowerCase() === sube.il.trim().toLowerCase());
-                                                    let birimFiyat = dbFiyat ? dbFiyat.tutar : 0;
-                                                    let fiyat = birimFiyat * (sube.camM2 || sube.m2 || 0);
-                                                    if (fiyat > 0 && fiyat < tabanFiyat) fiyat = tabanFiyat;
-                                                    camSatis += fiyat;
-                                                }
-                                            });
-                                        });
-                                        // Teklifteki kâr oranını üzerine ekleyelim
-                                        let karOrani = teklif.maliyet > 0 ? (teklif.kar / teklif.maliyet) : 0.2;
-                                        let totalCamBudget = camSatis * (1 + karOrani);
-                                        return totalCamBudget.toLocaleString('tr-TR', {maximumFractionDigits:2}) + " ₺";
-                                    })()}
-                                </td>
-                            </tr>
-                            <tr>
-                                <td style="border: 1px solid #e2e8f0; padding: 8px; font-weight: bold; color: #b45309;">🧹 Dönemsel Operasyon Bütçesi (Uygulama Başı)</td>
-                                <td style="border: 1px solid #e2e8f0; padding: 8px; text-align: center; color: #475569;">3 Ayda 1 Kez (4 Kez/Yıl)</td>
-                                <td style="border: 1px solid #e2e8f0; padding: 8px; text-align: right; font-weight: bold; color: #b45309;">
-                                    ${(() => {
-                                        let genelSatis = 0;
-                                        teklif.subeler.forEach(sube => {
-                                            teklif.hizmetler.forEach(srv => {
-                                                if (srv.ad.toLowerCase().includes("genel") && srv.periyotCarpan != 0) {
-                                                    let dbFiyat = teklif.fiyatlar.find(f => f.hizmet.trim().toLowerCase() === srv.ad.trim().toLowerCase() && f.il.trim().toLowerCase() === sube.il.trim().toLowerCase());
-                                                    let birimFiyat = dbFiyat ? dbFiyat.tutar : 0;
-                                                    let fiyat = birimFiyat * (sube.m2 || 0);
-                                                    if (fiyat > 0 && fiyat < tabanFiyat) fiyat = tabanFiyat;
-                                                    genelSatis += fiyat;
-                                                }
-                                            });
-                                        });
-                                        let karOrani = teklif.maliyet > 0 ? (teklif.kar / teklif.maliyet) : 0.2;
-                                        let totalGenelBudget = genelSatis * (1 + karOrani);
-                                        return totalGenelBudget.toLocaleString('tr-TR', {maximumFractionDigits:2}) + " ₺";
-                                    })()}
-                                </td>
-                            </tr>
-                            <tr style="background-color: #f8fafc;">
-                                <td style="border: 1px solid #e2e8f0; padding: 8px; font-weight: bold; color: #475569;">📋 İstek Üzerine Ekstra Hizmetler</td>
-                                <td style="border: 1px solid #e2e8f0; padding: 8px; text-align: center; color: #475569;">Talep Halinde</td>
-                                <td style="border: 1px solid #e2e8f0; padding: 8px; text-align: right; font-weight: bold; color: #475569; font-style: italic;">
-                                    Yukarıdaki Birim Fiyatlar Esas Alınır
-                                </td>
-                            </tr>
-                        </tbody>
-                    </table>
+                    <div style="text-align: right; font-size: 14px; font-weight: bold; margin-top: 15px; border-top: 1px dashed #ccc; padding-top: 10px;">
+                    Aylık Toplam Teklif (Satış) Tutarı: ${teklif.satis.toLocaleString('tr-TR', {maximumFractionDigits:2})} TL + KDV
+                    </div>
                 </div>
 
                 <div class="footer">
-    <p><strong>Açıklamalar:</strong> Fiyatlara %20 KDV dahil değildir. Form sistem tarafından otomatik üretilmiştir.</p>
-    <div style="text-align:center; margin-top:30px; font-size:10px; color:#bbb; border-top:1px dashed #ddd; padding-top:8px;">Sistem Altyapısı: CPA-FTC ERP Çözümleri</div>
-</div>
+                    <p><strong>Açıklamalar:</strong> Fiyatlara %20 KDV dahil değildir. Form sistem tarafından otomatik üretilmiştir.</p>
+                </div>
             `;
 
         // YENİ: İŞ PLANI VE ŞARTNAMELERİ PDF'İN SONUNA YENİ SAYFA OLARAK EKLEME BÖLÜMÜ
@@ -2455,7 +2237,7 @@
             html += `<tr><td><b>${p.musteri}</b></td><td>${p.grup || '-'}</td><td>${p.madde}</td></tr>`;
         });
         
-        html += `</table><div style="text-align:center; margin-top:40px; font-size:11px; color:#aaa; border-top:1px dashed #ccc; padding-top:10px;">Yazılım Güvencesi: CPA-FTC Sistem Yönetimi</div></body></html>`;
+        html += `</table></body></html>`;
         
         const printWindow = window.open('', '_blank');
         printWindow.document.write(html);
@@ -2636,9 +2418,98 @@
         hesaplaHakedisToplam();
     }
 
-   
+    function loadHakedisTablosu() {
+        const sozlesmeId = document.getElementById('hakedisSozlesmeSecim').value;
+        const ay = document.getElementById('hakedisAy').value;
+        const aciklama = document.getElementById('hakedisAciklama').value.trim() || "Genel Hakediş";
+        
+        if(!sozlesmeId || !ay) return alert("Sözleşme ve Ay seçimi zorunludur!");
 
+        const sozlesme = getData(KEYS.SOZLESMELER).find(s => s.id == sozlesmeId);
+        const teklif = sozlesme.data;
+        
+        // Eğer "İncele/Düzenle" butonundan gelinmediyse, TEPYENİ boş bir tablo aç
+        let mevcutHakedis = { isaretliler: [], miktarlar: {} };
+        if(windowEditingHakedisId) {
+            mevcutHakedis = getData(KEYS.HAKEDISLER).find(h => h.id === windowEditingHakedisId) || mevcutHakedis;
+        }
 
+        activeHakedisData = { 
+            id: windowEditingHakedisId, // Varsa eski ID, yoksa null
+            sozlesme: sozlesme, 
+            ay: ay, 
+            aciklama: aciklama 
+        };
+        
+        // Düzenleme ID'sini sıfırla ki sonraki "Tabloyu Getir" tıklamaları YENİ kayıt açsın
+        windowEditingHakedisId = null; 
+
+        // Tablo Başlıkları (Checkboxlı Sütunlar)
+        let th = `<tr><th class="align-middle">Şube Kodu</th><th class="align-middle">Şube Adı</th>`;
+        teklif.hizmetler.forEach(h => { 
+            let srvLower = h.ad.toLowerCase();
+            let isFixed = !(srvLower.includes("koltuk") || srvLower.includes("halı") || srvLower.includes("hali") || srvLower.includes("jaluzi") || srvLower.includes("iskele") || srvLower.includes("dağcı") || srvLower.includes("dagci") || srvLower.includes("saat"));
+            
+            if(isFixed) {
+                // Tümünü Seç eklendi
+                th += `<th class="text-center align-middle">${h.ad}<br><input type="checkbox" onchange="toggleCol('${h.ad}', this.checked)" title="Sütunu Tümünü Seç" style="cursor:pointer; width:16px; height:16px; margin-top:5px;"></th>`;
+            } else {
+                th += `<th class="text-center align-middle">${h.ad}</th>`;
+            }
+        });
+        th += `</tr>`;
+        document.getElementById('hakedisThead').innerHTML = th;
+
+        let tr = "";
+        teklif.subeler.forEach(sube => {
+            tr += `<tr><td>${sube.kodu || '-'}</td><td>${sube.adi}</td>`;
+            
+            teklif.hizmetler.forEach(srv => {
+                let dbFiyat = teklif.fiyatlar.find(f => f.hizmet.trim().toLowerCase() === srv.ad.trim().toLowerCase() && f.il.trim().toLowerCase() === sube.il.trim().toLowerCase());
+                let birimFiyat = dbFiyat ? dbFiyat.tutar : 0;
+                let srvLower = srv.ad.toLowerCase();
+                let chkId = `${sube.id}_${srv.ad}`;
+                
+                let isFixedCell = !(srvLower.includes("koltuk") || srvLower.includes("halı") || srvLower.includes("hali") || srvLower.includes("jaluzi") || srvLower.includes("iskele") || srvLower.includes("dağcı") || srvLower.includes("dagci") || srvLower.includes("saat"));
+
+                // Dinamik Hizmetler (Koltuk, İskele vb.)
+                if(!isFixedCell) {
+                    let val = mevcutHakedis.miktarlar[chkId] || "";
+                    tr += `<td class="text-center">
+                        <input type="number" class="form-control form-control-sm mx-auto hakedis-input" data-birim="${birimFiyat}" data-id="${chkId}" value="${val}" onchange="hesaplaHakedisToplam()" placeholder="Miktar" style="width:70px;">
+                        <small class="text-muted">(${birimFiyat} ₺/Br)</small>
+                    </td>`;
+                } 
+                // Sabit Çarpanlı Hizmetler
+                else {
+                    let carpimM2 = sube.m2;
+                    if(srvLower.includes("cam")) carpimM2 = sube.camM2 || sube.m2;
+                    if(srvLower.includes("tadilat")) carpimM2 = sube.tadilatM2 || sube.m2;
+                    let finalFiyat = birimFiyat * carpimM2;
+
+                    // Taban Fiyat Kontrolü Eklendi
+                    const ayarlar = JSON.parse(localStorage.getItem(KEYS.AYARLAR)) || {};
+                    const tabanFiyat = Number(ayarlar.taban) || 5000;
+                    if (finalFiyat > 0 && finalFiyat < tabanFiyat) {
+                        finalFiyat = tabanFiyat;
+                    }
+                    let isChecked = mevcutHakedis.isaretliler.includes(chkId) ? "checked" : "";
+                    
+                    tr += `<td class="text-center">
+                        <div class="form-check d-flex flex-column align-items-center justify-content-center">
+                            <input class="form-check-input hakedis-chk" type="checkbox" data-srv="${srv.ad}" data-fiyat="${finalFiyat}" data-id="${chkId}" onchange="hesaplaHakedisToplam()" ${isChecked} style="width:20px; height:20px; cursor:pointer;">
+                            <small class="text-muted mt-1">(${finalFiyat.toLocaleString('tr-TR')} ₺)</small>
+                        </div>
+                    </td>`;
+                }
+            });
+            tr += `</tr>`;
+        });
+        
+        document.getElementById('hakedisTbody').innerHTML = tr;
+        document.getElementById('hakedisTabloAlani').style.display = 'block';
+        hesaplaHakedisToplam();
+    }
 
     function hesaplaHakedisToplam() {
         let toplam = 0;
@@ -2691,168 +2562,40 @@
         renderHakedisList();
     }
 
-    // =========================================================================
-// RENEWED OPERASYON VE HAKEDİŞ SİSTEMİ - KESİNTİSİZ TAM KOD
-// =========================================================================
-
-// 1. Sözleşme Seçildiğinde Hizmetleri Filtre Dropdown'ına Dolduran Dinleyici (Yeni)
-function hakedisSozlesmeDegisti() {
-    const sId = document.getElementById('hakedisSozlesmeSecim').value;
-    const filtre = document.getElementById('hakedisHizmetFiltre');
-    if (!sId) {
-        filtre.innerHTML = '<option value="TÜMÜ">-- Tüm Hizmetler --</option>';
-        return;
-    }
-    const sozlesme = getData(KEYS.SOZLESMELER).find(s => s.id == sId);
-    if (!sozlesme || !sozlesme.data || !sozlesme.data.hizmetler) return;
-
-    let optHtml = '<option value="TÜMÜ">-- Tüm Hizmetler --</option>';
-    sozlesme.data.hizmetler.forEach(h => {
-        optHtml += `<option value="${h.ad}">${h.ad} Faturası Kes</option>`;
-    });
-    filtre.innerHTML = optHtml;
-}
-
-// 2. Yenilenmiş ve Hizmet Filtresiyle Uyumlu Hakediş Tablosunu Getirme Fonksiyonu
-function loadHakedisTablosu() {
-    const sozlesmeId = document.getElementById('hakedisSozlesmeSecim').value;
-    const ay = document.getElementById('hakedisAy').value;
-    const aciklama = document.getElementById('hakedisAciklama').value.trim() || "Genel Hakediş";
-    const filtreHizmet = document.getElementById('hakedisHizmetFiltre').value;
-    
-    if (!sozlesmeId || !ay) return alert("Sözleşme ve Ay seçimi zorunludur!");
-
-    const sozlesme = getData(KEYS.SOZLESMELER).find(s => s.id == sozlesmeId);
-    if (!sozlesme) return alert("Sözleşme bulunamadı!");
-    const teklif = sozlesme.data;
-    
-    let mevcutHakedis = { isaretliler: [], miktarlar: {} };
-    if (windowEditingHakedisId) {
-        mevcutHakedis = getData(KEYS.HAKEDISLER).find(h => h.id === windowEditingHakedisId) || mevcutHakedis;
-    }
-
-    activeHakedisData = { 
-        id: windowEditingHakedisId, 
-        sozlesme: sozlesme, 
-        ay: ay, 
-        aciklama: aciklama 
-    };
-    
-    windowEditingHakedisId = null; 
-
-    // Tablo Başlıkları Oluşturma (Filtre Uyumlu)
-    let th = `<tr><th class="align-middle">Şube Kodu</th><th class="align-middle">Şube Adı</th>`;
-    teklif.hizmetler.forEach(h => { 
-        if (filtreHizmet !== "TÜMÜ" && h.ad !== filtreHizmet) return; // Seçili hizmet değilse başlığı atla
-
-        // YENİ MANTIK: Sıklığı "0" (İstek Üzere) olanları ayırıyoruz
-        let isFixed = (h.periyotCarpan !== 0);
+    function renderHakedisList() {
+        const hakedisler = getData(KEYS.HAKEDISLER);
+        const sozlesmeler = getData(KEYS.SOZLESMELER);
+        let html = "";
         
-        if (isFixed) {
-            th += `<th class="text-center align-middle bg-primary text-white">${h.ad}<br><input type="checkbox" onchange="toggleCol('${h.ad}', this.checked)" title="Sütunu Tümünü Seç" style="cursor:pointer; width:16px; height:16px; margin-top:5px;"></th>`;
-        } else {
-            th += `<th class="text-center align-middle" style="background-color: #ffc107; color: #000;">${h.ad}<br>(İstek Üzere)</th>`;
-        }
-    });
-    th += `</tr>`;
-    document.getElementById('hakedisThead').innerHTML = th;
-
-    // Tablo Satırları ve Hücreleri Oluşturma
-    let tr = "";
-    teklif.subeler.forEach(sube => {
-        tr += `<tr><td>${sube.kodu || '-'}</td><td class="fw-bold">${sube.adi}</td>`;
-        
-        teklif.hizmetler.forEach(srv => {
-            if (filtreHizmet !== "TÜMÜ" && srv.ad !== filtreHizmet) return; // Seçili hizmet değilse hücreyi atla
-
-            let dbFiyat = teklif.fiyatlar.find(f => f.hizmet.trim().toLowerCase() === srv.ad.trim().toLowerCase() && f.il.trim().toLowerCase() === sube.il.trim().toLowerCase());
-            let birimFiyat = dbFiyat ? dbFiyat.tutar : 0;
-            let chkId = `${sube.id}_${srv.ad}`;
-            let srvLower = srv.ad.toLowerCase();
-            
-            // YENİ MANTIK: Sıklığı 0 ise İstek Üzerine hücredir
-            let isFixedCell = (srv.periyotCarpan !== 0);
-
-            if (!isFixedCell) {
-                // Dinamik Hizmet Girişleri (Saatlik/Miktarlı)
-                let val = mevcutHakedis.miktarlar[chkId] || "";
-                tr += `<td class="text-center" style="background-color: #fff3cd;">
-                    <input type="number" class="form-control form-control-sm mx-auto hakedis-input" data-birim="${birimFiyat}" data-id="${chkId}" value="${val}" onchange="hesaplaHakedisToplam()" placeholder="Miktar" style="width:70px;">
-                    <small class="text-muted fw-bold">(${birimFiyat} ₺/Br)</small>
-                </td>`;
-            } else {
-                // Sabit ve m² Çarpanlı Alan Girişleri
-                let carpimM2 = sube.m2;
-                if (srvLower.includes("cam")) carpimM2 = sube.camM2 || sube.m2;
-                if (srvLower.includes("tadilat")) carpimM2 = sube.tadilatM2 || sube.m2;
-                let finalFiyat = birimFiyat * carpimM2;
-
-                const ayarlar = JSON.parse(localStorage.getItem(KEYS.AYARLAR)) || {};
-                const tabanFiyat = Number(ayarlar.taban) || 5000;
-                if (finalFiyat > 0 && finalFiyat < tabanFiyat) {
-                    finalFiyat = tabanFiyat;
-                }
-                let isChecked = mevcutHakedis.isaretliler.includes(chkId) ? "checked" : "";
-                
-                tr += `<td class="text-center">
-                    <div class="form-check d-flex flex-column align-items-center justify-content-center">
-                        <input class="form-check-input hakedis-chk" type="checkbox" data-srv="${srv.ad}" data-fiyat="${finalFiyat}" data-id="${chkId}" onchange="hesaplaHakedisToplam()" ${isChecked} style="width:20px; height:20px; cursor:pointer;">
-                        <small class="text-muted mt-1">(${finalFiyat.toLocaleString('tr-TR')} ₺)</small>
-                    </div>
-                </td>`;
-            }
+        hakedisler.slice().reverse().forEach(h => {
+            let s = sozlesmeler.find(x => x.id === h.sozlesmeId);
+            if(!s) return;
+            let title = h.aciklama ? `<span class="badge bg-secondary">${h.aciklama}</span>` : "";
+            html += `<tr>
+                <td class="fw-bold">${h.ay} ${title}</td>
+                <td>${s.adi}</td>
+                <td>${s.musteri}</td>
+                <td class="text-danger fw-bold">${h.tutar.toLocaleString('tr-TR')} ₺</td>
+                <td>
+                    <button onclick="loadSavedHakedis(${h.id})" class="btn btn-sm btn-warning py-0 me-1">✏️ İncele/Düzenle</button>
+                    <button onclick="deleteHakedis(${h.id})" class="btn btn-sm btn-danger py-0">Sil</button>
+                </td>
+            </tr>`;
         });
-        tr += `</tr>`;
-    });
-    
-    document.getElementById('hakedisTbody').innerHTML = tr;
-    document.getElementById('hakedisTabloAlani').style.display = 'block';
-    hesaplaHakedisToplam();
-}
+        document.getElementById('kayitliHakedislerListesi').innerHTML = html;
+    }
 
-// 3. Arşiv Geçmişini Listeleme ve Doğrudan Yazdırma Tetikleyicileri
-function renderHakedisList() {
-    const hakedisler = getData(KEYS.HAKEDISLER);
-    const sozlesmeler = getData(KEYS.SOZLESMELER);
-    let html = "";
-    
-    hakedisler.slice().reverse().forEach(h => {
-        let s = sozlesmeler.find(x => x.id === h.sozlesmeId);
-        if (!s) return;
-        let title = h.aciklama ? `<span class="badge bg-secondary ms-2">${h.aciklama}</span>` : "";
-        html += `<tr>
-            <td class="fw-bold">${h.ay} ${title}</td>
-            <td class="text-muted fw-bold">${s.adi}</td>
-            <td>${s.musteri}</td>
-            <td class="text-danger fw-bold">${h.tutar.toLocaleString('tr-TR')} ₺</td>
-            <td>
-                <button onclick="printSavedHakedis(${h.id})" class="btn btn-sm btn-primary fw-bold py-1 me-1 shadow-sm">🖨️ Fatura Yazdır</button>
-                <button onclick="printSavedOpRapor(${h.id})" class="btn btn-sm btn-info text-white fw-bold py-1 me-1 shadow-sm">📄 Operasyon Raporu</button>
-                <button onclick="loadSavedHakedis(${h.id})" class="btn btn-sm btn-warning py-1 me-1 fw-bold">✏️ Düzenle</button>
-                <button onclick="deleteHakedis(${h.id})" class="btn btn-sm btn-outline-danger py-1 fw-bold">Sil</button>
-            </td>
-        </tr>`;
-    });
-    document.getElementById('kayitliHakedislerListesi').innerHTML = html;
-}
-
-// 4. Kayıtlı Hakedişi Düzenleme Moduna Alan Fonksiyon (Dropdown Senkronizasyonlu)
-function loadSavedHakedis(hakedisId) {
-    const h = getData(KEYS.HAKEDISLER).find(x => x.id === hakedisId);
-    if (!h) return;
-    
-    windowEditingHakedisId = hakedisId; 
-    document.getElementById('hakedisSozlesmeSecim').value = h.sozlesmeId;
-    hakedisSozlesmeDegisti(); 
-    document.getElementById('hakedisAy').value = h.ay;
-    document.getElementById('hakedisAciklama').value = h.aciklama || "";
-    loadHakedisTablosu();
-    
-    // Kullanıcıya ekranı göster
-    document.getElementById('tab-hakedis').click();
-    window.scrollTo({ top: 0, behavior: 'smooth' });
-    alert("Fatura kayıtları forma getirildi, üstteki tablodan düzenleyebilirsiniz.");
-}
+    function loadSavedHakedis(hakedisId) {
+        const h = getData(KEYS.HAKEDISLER).find(x => x.id === hakedisId);
+        if(!h) return;
+        
+        windowEditingHakedisId = hakedisId; // Tablo motoruna eski faturayı açmasını söyler
+        document.getElementById('hakedisSozlesmeSecim').value = h.sozlesmeId;
+        document.getElementById('hakedisAy').value = h.ay;
+        document.getElementById('hakedisAciklama').value = h.aciklama || "";
+        loadHakedisTablosu();
+        window.scrollTo(0, 0);
+    }
 
     function deleteHakedis(id) {
         if(!confirm("Bu faturayı/hakedişi silmek istediğinize emin misiniz?")) return;
@@ -2981,10 +2724,9 @@ function loadSavedHakedis(hakedisId) {
                     <span style="font-size:12px; color:#555;">ÖDENECEK KDV HARİÇ TUTAR:</span><br>
                     <span style="color:#dc3545; font-size:22px; font-weight:bold;">${toplamTutar.toLocaleString('tr-TR', {maximumFractionDigits:2})} TL</span>
                 </div>
-<div class="clearfix"></div>
-<div style="text-align:center; margin-top:20px; font-size:10px; color:#ccc;">Bu fatura dökümü CPA-FTC ERP Akıllı Hakediş Modülü tarafından mühürlenmiştir.</div>
-
-<div style="margin-top: 40px; display:flex; justify-content:space-between; width:80%;">
+                <div class="clearfix"></div>
+                
+                <div style="margin-top: 60px; display:flex; justify-content:space-between; width:80%;">
                     <div style="text-align:center;"><b>Hizmeti Veren</b><br><br>Kaşe / İmza</div>
                     <div style="text-align:center;"><b>Kurum Yetkilisi / Onay</b><br><br>İmza</div>
                 </div>
@@ -3108,10 +2850,9 @@ function loadSavedHakedis(hakedisId) {
                     <tbody>
                         ${trRows}
                     </tbody>
-</table>
-<div style="text-align:center; margin-top:15px; font-size:10px; color:#ccc;">Operasyon Güvence Raporlama Sistemi: CPA-FTC</div>
-
-<div style="margin-top: 40px; display:flex; justify-content:space-between; width:80%;">
+                </table>
+                
+                <div style="margin-top: 60px; display:flex; justify-content:space-between; width:80%;">
                     <div style="text-align:center;"><b>Hizmeti Teslim Eden</b><br><br>Kaşe / İmza</div>
                     <div style="text-align:center;"><b>Hizmeti Teslim Alan / Onay</b><br><br>İmza</div>
                 </div>
@@ -3398,7 +3139,6 @@ function loadSavedHakedis(hakedisId) {
     let activeCell = { subeId: null, day: null };
 
     function openCellMenu(event, subeId, day) {
-        event.preventDefault();
         event.stopPropagation();
         if(!window.aiScheduleData[subeId]) window.aiScheduleData[subeId] = {};
         if(!window.aiScheduleData[subeId][day]) window.aiScheduleData[subeId][day] = {cam:0, genel:0, ekstra:0, taseronCam:0, taseronGenel:0};
@@ -3410,21 +3150,23 @@ function loadSavedHakedis(hakedisId) {
         document.getElementById('cMenuGenel').value = cell.genel || 0;
         document.getElementById('cMenuTasCam').value = cell.taseronCam || 0;
         document.getElementById('cMenuTasGenel').value = cell.taseronGenel || 0;
-        document.getElementById('cMenuTitle').innerHTML = `${sube.adi}<br><small>${day}. Gün Dağılımı</small>`;
+        document.getElementById('cMenuTitle').innerHTML = `${sube.adi}<br><small>${day}. Gün Görev Dağılımı</small>`;
         
         activeCell = { subeId, day };
         
         let menu = document.getElementById('cellMenu');
+        
+        // CSS DÜZELTMESİ: Absolute yerine Fixed kullanıyoruz.
         menu.style.position = 'fixed'; 
         menu.style.display = 'block';
         
-        // Farenin konumuna göre güvenli koordinat hesaplama
-        let x = event.clientX + 15; 
-        let y = event.clientY + 15;
+        // KOORDİNAT DÜZELTMESİ: pageX yerine clientX kullanıyoruz (Ekranda görünen fare konumu)
+        let x = event.clientX + 10; 
+        let y = event.clientY + 10;
         
-        // Ekran taşmalarını engellemek için sınırları daha dar tutuyoruz
-        if (x + 240 > window.innerWidth) x = window.innerWidth - 240;
-        if (y + 280 > window.innerHeight) y = window.innerHeight - 280; 
+        // Ekranın sağına veya altına taşmasını engelleme
+        if (x + 220 > window.innerWidth) x = window.innerWidth - 230;
+        if (y + 250 > window.innerHeight) y = window.innerHeight - 260; 
         
         menu.style.left = x + 'px'; 
         menu.style.top = y + 'px';
@@ -3458,17 +3200,26 @@ function loadSavedHakedis(hakedisId) {
         activeCell = { subeId: null, day: null };
     }
     
-    // SEKMELER DEĞİŞTİĞİNDE HAYALET MENÜYÜ KAPATAN DİNLEYİCİ (GÜNCELLENDİ)
+    // SEKMELER DEĞİŞTİĞİNDE HAYALET MENÜYÜ KAPATAN DİNLEYİCİ
     document.addEventListener("DOMContentLoaded", function() {
-        // Bootstrap'in yerleşik sekme tetikleyicilerini (show.bs.tab) dinleyerek kesin çözüm sağlıyoruz.
-        const triggerTabList = [].slice.call(document.querySelectorAll('button[data-bs-toggle="tab"], button[data-bs-toggle="pill"]'));
-        triggerTabList.forEach(function (tabEl) {
-            tabEl.addEventListener('show.bs.tab', function (event) {
-                closeCellMenu(); 
+        const tabs = document.querySelectorAll('button[data-bs-toggle="tab"]');
+        tabs.forEach(tab => {
+            tab.addEventListener('show.bs.tab', function (event) {
+                closeCellMenu(); // Sekme değiştiği an menüyü yok et
             });
         });
     });
     
+    // Tablo üzerinden hızlı fiyat güncelleme motoru
+function updatePriceInline(id, yeniTutar) {
+    let data = getData(KEYS.FIYATLAR);
+    let index = data.findIndex(p => p.id === id);
+    if (index !== -1) {
+        data[index].tutar = Number(yeniTutar);
+        saveData(KEYS.FIYATLAR, data);
+        // Arka planda sessizce kaydedildi, renderAll tetiklendiği için ekran güncel kalır.
+    }
+}
     function printSchedule() {
         const tableHtml = document.querySelector('.schedule-table').outerHTML;
         let monthLabel = window.currentScheduleMonth === 'all' ? "3 Aylık Tüm Plan" : window.currentScheduleMonth + ". Ay Planı";
@@ -3505,269 +3256,61 @@ function loadSavedHakedis(hakedisId) {
                 <h2>${firma.unvan || 'Temizlik Operasyon'} - ${monthLabel} Görev Matrisi</h2>
                 <div class="summary-box">Aylık Tahmini Toplam Personel Bütçesi: ${totalBudget}</div>
                 ${tableHtml}
-<div style="text-align:center; margin-top:30px; font-size:10px; color:#999; border-top:1px solid #000; padding-top:5px;">Ortak Kaynak Planlama Optimizasyonu: CPA-FTC ERP Dağıtım Motoru</div>
-</body>
+            </body>
             </html>
         `);
         printWindow.document.close();
-
         setTimeout(() => printWindow.print(), 800);
     }
-
-    // GLOBAL TIKLAMA DİNLEYİCİSİ - Hayalet menüyü kapatır
-document.addEventListener('click', function(event) {
-    const menu = document.getElementById('cellMenu');
-    if (menu && menu.style.display === 'block') {
-        // Tıklanan yer menünün içi değilse VE tıklanan yer menüyü açan hücre (td) değilse kapat
-        if (!menu.contains(event.target) && !event.target.closest('td[onclick*="openCellMenu"]')) {
-            closeCellMenu();
-        }
-    }
-});
-
-// ================== KONSOLİDE (TÜM PROJELER) İSTİHDAM RAPORU ==================
-    function generateGlobalStaffingReport() {
-        const teklifler = getData(KEYS.TEKLIFLER);
-        const ayarlar = JSON.parse(localStorage.getItem(KEYS.AYARLAR)) || {};
-        const personelList = getData(KEYS.PERSONEL);
-        const baseDailyCost = personelList.length > 0 ? personelList[0].maliyet : 1500;
-
-        if(teklifler.length === 0) return alert("Sistemde raporlanacak kayıtlı proje bulunmuyor.");
-
-        // Şirket kapasite sınırları (Veri Merkezi Ayarlarından)
-        let capCamFT = Number(ayarlar.camFT) || 0;
-        let capCamPT = Number(ayarlar.camPT) || 0;
-        let ptCamGun = Number(ayarlar.camPTGun) || 0;
-        let capGenelFT = Number(ayarlar.genelFT) || 0;
-        let capGenelPT = Number(ayarlar.genelPT) || 0;
-        let ptGenelGun = Number(ayarlar.genelPTGun) || 0;
-
-        // 90 Günlük global takvim matrisi oluştur (Tüm projelerin toplam günlük yükü için)
-        let globalCamDemand = {}, globalGenelDemand = {};
-        let globalTasCamDemand = {}, globalTasGenelDemand = {};
-        for(let d=1; d<=90; d++) {
-            globalCamDemand[d] = 0; globalGenelDemand[d] = 0;
-            globalTasCamDemand[d] = 0; globalTasGenelDemand[d] = 0;
-        }
-
-        teklifler.forEach(t => {
-            if(t.matrix) {
-                Object.keys(t.matrix).forEach(subeId => {
-                    let subeDays = t.matrix[subeId];
-                    for(let d=1; d<=90; d++) {
-                        if(subeDays[d]) {
-                            globalCamDemand[d] += (subeDays[d].cam || 0);
-                            globalGenelDemand[d] += (subeDays[d].genel || 0);
-                            globalTasCamDemand[d] += (subeDays[d].taseronCam || 0);
-                            globalTasGenelDemand[d] += (subeDays[d].taseronGenel || 0);
-                        }
-                    }
-                });
-            }
-        });
-
-        // 90 Günü gün gün analiz edip şirket kadro kullanımı ve taşeron taşmalarını hesapla
-        let totalUtilCamFT = 0, totalUtilCamPT = 0, totalUtilTasCam = 0;
-        let totalUtilGenelFT = 0, totalUtilGenelPT = 0, totalUtilTasGenel = 0;
-
-        for(let d=1; d<=90; d++) {
-            if(d % 7 === 0) continue; // Pazar günlerini hesaplama dışı bırak
-
-            // Camcı analizi
-            let uCamFT = Math.min(globalCamDemand[d], capCamFT);
-            let remCam = globalCamDemand[d] - uCamFT;
-            let uCamPT = Math.min(remCam, capCamPT);
-            let overflowCam = remCam - uCamPT;
-            totalUtilCamFT += uCamFT; totalUtilCamPT += uCamPT;
-            totalUtilTasCam += (globalTasCamDemand[d] + overflowCam);
-
-            // Genel temizlik analizi
-            let uGenelFT = Math.min(globalGenelDemand[d], capGenelFT);
-            let remGenel = globalGenelDemand[d] - uGenelFT;
-            let uGenelPT = Math.min(remGenel, capGenelPT);
-            let overflowGenel = remGenel - uGenelPT;
-            totalUtilGenelFT += uGenelFT; totalUtilGenelPT += uGenelPT;
-            totalUtilTasGenel += (globalTasGenelDemand[d] + overflowGenel);
-        }
-
-        // 3 Aylık toplamları Aylık Ortalama Değerlere Çevir
-        let avgCamFT = Math.ceil(totalUtilCamFT / 3);
-        let avgCamPT = Math.ceil(totalUtilCamPT / 3);
-        let avgTasCam = Math.ceil(totalUtilTasCam / 3);
-        let avgGenelFT = Math.ceil(totalUtilGenelFT / 3);
-        let avgGenelPT = Math.ceil(totalUtilGenelPT / 3);
-        let avgTasGenel = Math.ceil(totalUtilTasGenel / 3);
-
-        // Aylık Kullanılabilir Şirket Havuz Kapasiteleri (FT: 26 Gün, PT: Ayarlar Kotası)
-        let availCamFT = capCamFT * 26;
-        let availCamPT = capCamPT * ptCamGun;
-        let availGenelFT = capGenelFT * 26;
-        let availGenelPT = capGenelPT * ptGenelGun;
-
-        // Atıl (Boşta Kalan) Kadro Hesaplaması
-        let idleCamFT = Math.max(0, availCamFT - avgCamFT);
-        let idleCamPT = Math.max(0, availCamPT - avgCamPT);
-        let idleGenelFT = Math.max(0, availGenelFT - avgGenelFT);
-        let idleGenelPT = Math.max(0, availGenelPT - avgGenelPT);
-
-        // Şirket İçi Personel Verimlilik Oranı Hesaplama
-        let totalCompanyCapacity = availCamFT + availCamPT + availGenelFT + availGenelPT;
-        let totalCompanyUsage = avgCamFT + avgCamPT + avgGenelFT + avgGenelPT;
-        let efficiency = totalCompanyCapacity > 0 ? Math.round((totalCompanyUsage / totalCompanyCapacity) * 100) : 0;
-
-        let effBadgeColor = efficiency > 75 ? "bg-success" : (efficiency > 45 ? "bg-warning text-dark" : "bg-danger");
-
-        // Gelişmiş Dashboard Üst Paneli Oluşturma
-        let html = `
-        <div class="card p-3 border-dark mb-4 bg-white shadow-sm">
-            <h6 class="text-uppercase fw-bold text-dark border-bottom pb-2 mb-3"><i class="align-middle me-2 fs-5">📊</i> KONSOLİDE İNSAN KAYNAKLARI VE VERİMLİLİK DASHBOARDU (AYLIK ORTALAMA)</h6>
-            <div class="row g-3">
-                <div class="col-md-3 text-center border-end">
-                    <div class="p-3 rounded d-flex flex-column align-items-center justify-content-center h-100 ${effBadgeColor} text-white shadow-sm">
-                        <span class="small fw-bold text-uppercase opacity-75">Genel Havuz Verimliliği</span>
-                        <h2 class="fw-black m-0 mt-1">%${efficiency}</h2>
-                        <small class="mt-1 opacity-75">${totalCompanyUsage} / ${totalCompanyCapacity} Gün Aktif</small>
-                    </div>
-                </div>
-                <div class="col-md-4 border-end">
-                    <span class="fw-bold text-info small d-block mb-2">🧽 CAM SILICI KADRO ANALİZİ:</span>
-                    <ul class="list-unstyled mb-0 small" style="line-height:1.6;">
-                        <li>• Tam Zamanlı (FT) Kullanım: <b>${avgCamFT} Gün</b> / ${availCamFT} Gün</li>
-                        <li>• Part-Time (PT) Kullanım: <b>${avgCamPT} Gün</b> / ${availCamPT} Gün</li>
-                        <li class="text-muted">• Atıl Boşa Düşen Süre: <span class="badge bg-light text-dark border border-secondary">${idleCamFT + idleCamPT} Gün Boşta</span></li>
-                        <li class="text-danger fw-bold">• Bağımlı Olunan Ek Taşeron: <span>${avgTasCam} Gün Vardiya</span></li>
-                    </ul>
-                </div>
-                <div class="col-md-5">
-                    <span class="fw-bold text-secondary small d-block mb-2">🧹 GENEL TEMİZLİK KADRO ANALİZİ:</span>
-                    <ul class="list-unstyled mb-0 small" style="line-height:1.6;">
-                        <li>• Tam Zamanlı (FT) Kullanım: <b>${avgGenelFT} Gün</b> / ${availGenelFT} Gün</li>
-                        <li>• Part-Time (PT) Kullanım: <b>${avgGenelPT} Gün</b> / ${availGenelPT} Gün</li>
-                        <li class="text-muted">• Atıl Boşa Düşen Süre: <span class="badge bg-light text-dark border border-secondary">${idleGenelFT + idleGenelPT} Gün Boşta</span></li>
-                        <li class="text-danger fw-bold">• Bağımlı Olunan Ek Taşeron: <span>${avgTasGenel} Gün Vardiya</span></li>
-                    </ul>
-                </div>
+    window.onload = renderAll; 
+</script>
+<div id="cellMenu" class="card shadow-lg border-primary" style="display:none; position:absolute; z-index:9999; width:220px; font-size:11px;">
+    <div class="card-header bg-primary text-white p-2 text-center fw-bold" style="font-size:12px;">
+        <span id="cMenuTitle"></span>
+    </div>
+    <div class="card-body p-2">
+        <h6 class="border-bottom pb-1 text-muted" style="font-size:10px;">KADROLU EKİP</h6>
+        <div class="d-flex justify-content-between align-items-center mb-1">
+            <span class="fw-bold text-primary">🧽 Cam:</span>
+            <div class="input-group input-group-sm w-50 shadow-sm">
+                <button class="btn btn-outline-secondary py-0 px-2 fw-bold" onclick="updateCellVal('cam', -1)">-</button>
+                <input type="text" id="cMenuCam" class="form-control text-center py-0 px-1 fw-bold" readonly>
+                <button class="btn btn-outline-secondary py-0 px-2 fw-bold" onclick="updateCellVal('cam', 1)">+</button>
+            </div>
+        </div>
+        <div class="d-flex justify-content-between align-items-center mb-2">
+            <span class="fw-bold text-secondary">🧹 Genel:</span>
+            <div class="input-group input-group-sm w-50 shadow-sm">
+                <button class="btn btn-outline-secondary py-0 px-2 fw-bold" onclick="updateCellVal('genel', -1)">-</button>
+                <input type="text" id="cMenuGenel" class="form-control text-center py-0 px-1 fw-bold" readonly>
+                <button class="btn btn-outline-secondary py-0 px-2 fw-bold" onclick="updateCellVal('genel', 1)">+</button>
             </div>
         </div>
 
-        <div class="table-responsive bg-white rounded border shadow-sm">
-            <table class="table table-bordered table-sm table-hover align-middle mb-0" style="font-size:12px;">
-                <thead class="table-dark text-center">
-                    <tr>
-                        <th class="text-start">Müşteri / Proje Adı</th>
-                        <th>Ortalama Aylık Yük<br><small>(Toplam Süre)</small></th>
-                        <th>Kadro / Taşeron Dağılımı<br><small>(İç Kadro vs Dış Taşeron)</small></th>
-                        <th>Aylık Pers. Maliyeti<br><small>(Gider)</small></th>
-                        <th>Aylık Fatura Tutarı<br><small>(Ciro)</small></th>
-                        <th class="text-end">Aylık Brüt Kâr<br><small>(Ciro - Maliyet)</small></th>
-                    </tr>
-                </thead>
-                <tbody>`;
+        <h6 class="border-bottom pb-1 mt-2 text-danger" style="font-size:10px;">DIŞ TAŞERON</h6>
+        <div class="d-flex justify-content-between align-items-center mb-1">
+            <span class="fw-bold text-danger">👷 Taşeron Cam:</span>
+            <div class="input-group input-group-sm w-50 shadow-sm">
+                <button class="btn btn-outline-danger py-0 px-2 fw-bold" onclick="updateCellVal('taseronCam', -1)">-</button>
+                <input type="text" id="cMenuTasCam" class="form-control text-center py-0 px-1 fw-bold" readonly>
+                <button class="btn btn-outline-danger py-0 px-2 fw-bold" onclick="updateCellVal('taseronCam', 1)">+</button>
+            </div>
+        </div>
+        <div class="d-flex justify-content-between align-items-center mb-2">
+            <span class="fw-bold text-danger">👷 Taşeron Genel:</span>
+            <div class="input-group input-group-sm w-50 shadow-sm">
+                <button class="btn btn-outline-danger py-0 px-2 fw-bold" onclick="updateCellVal('taseronGenel', -1)">-</button>
+                <input type="text" id="cMenuTasGenel" class="form-control text-center py-0 px-1 fw-bold" readonly>
+                <button class="btn btn-outline-danger py-0 px-2 fw-bold" onclick="updateCellVal('taseronGenel', 1)">+</button>
+            </div>
+        </div>
 
-        let globalAdamGun = 0, globalCost = 0, globalCiro = 0, globalKar = 0;
-        let aktifProjeSayisi = 0;
-
-        teklifler.forEach(t => {
-            if(t.matrix && Object.keys(t.matrix).length > 0) {
-                aktifProjeSayisi++;
-                let pCamInternal = 0, pCamTas = 0;
-                let pGenelInternal = 0, pGenelTas = 0;
-                let pEkstra = 0;
-                
-                Object.values(t.matrix).forEach(subeDays => {
-                    for(let d=1; d<=90; d++) {
-                        if(subeDays[d]) {
-                            pCamInternal += (subeDays[d].cam || 0);
-                            pCamTas += (subeDays[d].taseronCam || 0);
-                            pGenelInternal += (subeDays[d].genel || 0);
-                            pGenelTas += (subeDays[d].taseronGenel || 0);
-                            pEkstra += (subeDays[d].ekstra || 0);
-                        }
-                    }
-                });
-
-                // Proje bazlı aylık ortalama iç kadro ve dış taşeron süre kırılımları
-                let avgProjInternal = Math.ceil((pCamInternal + pGenelInternal + pEkstra) / 3);
-                let avgProjTas = Math.ceil((pCamTas + pGenelTas) / 3);
-                let aylikAdamGun = avgProjInternal + avgProjTas;
-
-                let aylikMaliyet = aylikAdamGun * baseDailyCost;
-                let aylikCiro = t.satis || 0; 
-                let aylikBrutKar = aylikCiro - aylikMaliyet;
-
-                globalAdamGun += aylikAdamGun; 
-                globalCost += aylikMaliyet; 
-                globalCiro += aylikCiro; 
-                globalKar += aylikBrutKar;
-
-                let karRenk = aylikBrutKar < 0 ? "text-danger" : "text-success";
-
-                html += `<tr>
-                    <td class="fw-bold text-primary">
-                        ${t.musteri} <br><small class="text-muted fw-normal">${t.adi}</small>
-                    </td>
-                    <td class="text-center fw-bold text-dark">${aylikAdamGun} Gün / Ay</td>
-                    <td class="text-center">
-                        <span class="badge bg-success shadow-sm" style="font-size:10px; padding:4px 6px;">🏠 Kendi Kadromuz: ${avgProjInternal} Gün</span>
-                        <span class="badge bg-danger shadow-sm ms-1" style="font-size:10px; padding:4px 6px;">👷 Taşeron: ${avgProjTas} Gün</span>
-                    </td>
-                    <td class="text-center fw-bold text-danger">${aylikMaliyet.toLocaleString('tr-TR')} ₺</td>
-                    <td class="text-center fw-bold text-primary">${aylikCiro.toLocaleString('tr-TR', {maximumFractionDigits:0})} ₺</td>
-                    <td class="text-end fw-bolder ${karRenk}">${aylikBrutKar.toLocaleString('tr-TR', {maximumFractionDigits:0})} ₺</td>
-                </tr>`;
-            }
-        });
-
-        if(aktifProjeSayisi === 0) {
-            html += `<tr><td colspan="6" class="text-center py-4 text-muted">Hiçbir projede kaydedilmiş görev matrisi bulunamadı.</td></tr>`;
-        }
-
-        let genelKarRenk = globalKar < 0 ? "text-danger" : "text-success";
-
-        html += `</tbody>
-            <tfoot class="table-light fs-6">
-                <tr>
-                    <td class="text-end fw-bolder" colspan="1">GENEL TOPLAM (AYLIK):</td>
-                    <td class="text-center fw-bolder text-dark">${globalAdamGun} Gün</td>
-                    <td class="text-center text-muted small fw-bold">Kadro ve Taşeron Kırılımları Yukarıdadır</td>
-                    <td class="text-center fw-bolder text-danger">${globalCost.toLocaleString('tr-TR')} ₺</td>
-                    <td class="text-center fw-bolder text-primary">${globalCiro.toLocaleString('tr-TR', {maximumFractionDigits:0})} ₺</td>
-                    <td class="text-end fw-bolder ${genelKarRenk} fs-5">${globalKar.toLocaleString('tr-TR', {maximumFractionDigits:0})} ₺</td>
-                </tr>
-            </tfoot>
-        </table></div>`;
-
-        document.getElementById('globalStaffingBody').innerHTML = html;
-        new bootstrap.Modal(document.getElementById('globalStaffingModal')).show();
-    }
-    function printGlobalStaffingReport() {
-        const reportContent = document.getElementById('globalStaffingBody').innerHTML;
-        const printWindow = window.open('', '_blank');
-        printWindow.document.write(`
-            <html>
-            <head>
-                <title>Tüm Projeler Konsolide İstihdam Raporu</title>
-                <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
-                <style>
-                    body { padding: 20px; font-family: Arial, sans-serif; } 
-                    h3 { text-align: center; margin-bottom: 20px; border-bottom: 2px solid #000; padding-bottom: 10px; font-weight: bold;}
-                    .table-responsive { overflow: visible !important; }
-                </style>
-            </head>
-            <body>
-                <h3>TÜM PROJELER - KONSOLİDE İSTİHDAM VE MALİYET RAPORU (90 GÜNLÜK)</h3>
-                ${reportContent}
-<div style="text-align:center; margin-top:30px; font-size:11px; color:#777; font-weight:bold; border-top:1px solid #333; padding-top:10px;">Konsolide Analiz Denetim Masası Altyapısı: CPA-FTC Gelişmiş ERP Analitiği © 2026</div>
-</body>
-            </html>
-        `);
-        printWindow.document.close();
-        setTimeout(() => printWindow.print(), 500);
-    }
-
-    window.onload = renderAll; 
-</script>
-
+        <div class="d-flex gap-1 mt-3 border-top pt-2">
+            <button class="btn btn-danger btn-sm w-50 py-1 fw-bold" onclick="updateCellVal('sil', 0)">🗑️ Sıfırla</button>
+            <button class="btn btn-success btn-sm w-50 py-1 fw-bold" onclick="closeCellMenu()">✅ Tamam</button>
+        </div>
+    </div>
+</div>
 <div class="modal fade" id="istihdamModal" tabindex="-1" data-bs-backdrop="static">
   <div class="modal-dialog modal-dialog-centered">
     <div class="modal-content border-0 shadow-lg">
@@ -3788,22 +3331,5 @@ document.addEventListener('click', function(event) {
 </div>
 
 <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
-
-<div class="modal fade" id="globalStaffingModal" tabindex="-1">
-  <div class="modal-dialog modal-xl modal-dialog-centered">
-    <div class="modal-content border-0 shadow-lg">
-      <div class="modal-header bg-warning">
-        <h5 class="modal-title fw-bold text-dark">🌍 Tüm Projeler - Konsolide İstihdam ve Maliyet Raporu</h5>
-        <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
-      </div>
-      <div class="modal-body bg-light" id="globalStaffingBody">
-      </div>
-      <div class="modal-footer bg-white border-top">
-        <button type="button" class="btn btn-outline-secondary fw-bold" data-bs-dismiss="modal">Kapat</button>
-        <button type="button" class="btn btn-primary fw-bold shadow-sm" onclick="printGlobalStaffingReport()">🖨️ Raporu Yazdır</button>
-      </div>
-    </div>
-  </div>
-</div>
 </body>
 </html>
