@@ -221,22 +221,32 @@
                         <div class="row g-3 align-items-end mb-4">
                             <div class="col-md-3">
                                 <label class="form-label">Hizmet Seçimi</label>
-                                <input type="text" id="fiyatHizmet" class="form-control" placeholder="Örn: Cam Silme (m²)">
+                                <input type="text" id="fiyatHizmet" class="form-control" placeholder="Örn: Tadilat Temizliği">
                             </div>
-                            <div class="col-md-3">
+                            <div class="col-md-2">
                                 <label class="form-label">İl</label>
                                 <input type="text" id="fiyatIl" class="form-control" placeholder="Örn: Kocaeli">
                             </div>
                             <div class="col-md-2">
-                                <label class="form-label">Birim Fiyatı (TL)</label>
-                                <input type="number" id="fiyatTutar" class="form-control" placeholder="10">
+                                <label class="form-label text-success fw-bold">Birim Tipi</label>
+                                <select id="fiyatBirim" class="form-select border-success">
+                                    <option value="m²">m² (Alan)</option>
+                                    <option value="Personel/Gün">Personel / Gün</option>
+                                    <option value="Saat">Saat</option>
+                                    <option value="Adet">Adet</option>
+                                    <option value="İşlem">İşlem / Sefer</option>
+                                </select>
                             </div>
-                            <div class="col-md-4 d-flex justify-content-between">
-                                <button id="btnPriceSubmit" onclick="addPrice()" class="btn btn-primary me-2 w-50">Manuel Ekle</button>
+                            <div class="col-md-2">
+                                <label class="form-label">Birim Fiyatı (TL)</label>
+                                <input type="number" id="fiyatTutar" class="form-control" placeholder="1500">
+                            </div>
+                            <div class="col-md-3 d-flex justify-content-between">
+                                <button id="btnPriceSubmit" onclick="addPrice()" class="btn btn-primary me-2 w-50">Ekle</button>
                                 <div class="input-group">
-                                    <input type="file" id="fiyatExcel" class="form-control form-control-sm" accept=".xlsx, .xls">
-                                    <button onclick="importExcel('fiyatExcel', 'fiyatlar')" class="btn btn-outline-success btn-sm">Yükle</button>
-                                    <button onclick="downloadTemplate('fiyatlar')" class="btn btn-info btn-sm text-white">Şablon</button>
+                                    <input type="file" id="fiyatExcel" class="form-control form-control-sm" accept=".xlsx, .xls" style="display:none;" onchange="importExcel('fiyatExcel', 'fiyatlar')">
+                                    <button onclick="document.getElementById('fiyatExcel').click()" class="btn btn-outline-success btn-sm w-50">Yükle</button>
+                                    <button onclick="downloadTemplate('fiyatlar')" class="btn btn-info btn-sm text-white w-50">Şablon</button>
                                 </div>
                             </div>
                         </div>
@@ -244,13 +254,11 @@
                         <div class="table-responsive">
                             <table class="table table-bordered table-striped">
                                 <thead class="table-dark">
-                                    <tr><th>Hizmet Adı</th><th>İl</th><th>Birim Fiyatı</th><th style="width: 150px;">İşlem</th></tr>
+                                    <tr><th>Hizmet Adı</th><th>İl</th><th>Birim Tipi</th><th>Birim Fiyatı</th><th style="width: 150px;">İşlem</th></tr>
                                 </thead>
                                 <tbody id="fiyatListesi"></tbody>
                             </table>
                         </div>
-                    </div>
-                </div>
 
                 <div class="tab-pane fade" id="pills-plan" role="tabpanel">
                     <div class="card p-4">
@@ -896,6 +904,7 @@
     function addPrice() {
         const hizmet = document.getElementById('fiyatHizmet').value.trim();
         const il = document.getElementById('fiyatIl').value.trim();
+        const birim = document.getElementById('fiyatBirim').value;
         const tutar = document.getElementById('fiyatTutar').value;
 
         if (!hizmet || !il || !tutar) {
@@ -907,27 +916,16 @@
         if (editStates.price) {
             const index = data.findIndex(p => p.id === editStates.price);
             if (index !== -1) {
-                data[index] = {
-                    id: editStates.price,
-                    hizmet: hizmet,
-                    il: il,
-                    tutar: Number(tutar)
-                };
+                data[index] = { id: editStates.price, hizmet: hizmet, il: il, birimTipi: birim, tutar: Number(tutar) };
             }
             editStates.price = null;
-            document.getElementById('btnPriceSubmit').innerText = "Manuel Ekle";
+            document.getElementById('btnPriceSubmit').innerText = "Ekle";
             document.getElementById('btnPriceSubmit').classList.replace('btn-warning', 'btn-primary');
         } else {
-            data.push({
-                id: Date.now(),
-                hizmet: hizmet,
-                il: il,
-                tutar: Number(tutar)
-            });
+            data.push({ id: Date.now(), hizmet: hizmet, il: il, birimTipi: birim, tutar: Number(tutar) });
         }
 
         saveData(KEYS.FIYATLAR, data);
-        
         document.getElementById('fiyatHizmet').value = '';
         document.getElementById('fiyatIl').value = '';
         document.getElementById('fiyatTutar').value = '';
@@ -940,6 +938,7 @@
         document.getElementById('fiyatHizmet').value = item.hizmet;
         document.getElementById('fiyatIl').value = item.il;
         document.getElementById('fiyatTutar').value = item.tutar;
+        document.getElementById('fiyatBirim').value = item.birimTipi || "m²";
         
         editStates.price = id;
         document.getElementById('btnPriceSubmit').innerText = "Fiyatı Güncelle";
@@ -1107,23 +1106,25 @@
         document.getElementById('subeListesi').innerHTML = subeHTML;
 
         // Fiyatlar Tablosu
-let fiyatHTML = "";
-fiyatlar.forEach(f => {
-    fiyatHTML += `<tr>
-        <td class="align-middle">${f.hizmet}</td>
-        <td class="align-middle">${f.il}</td>
-        <td>
-            <div class="input-group input-group-sm" style="width: 120px;">
-                <input type="number" class="form-control text-center fw-bold text-primary border-primary" value="${f.tutar}" onchange="updatePriceInline(${f.id}, this.value)" title="Fiyatı değiştirince otomatik kaydedilir">
-                <span class="input-group-text bg-light border-primary">₺</span>
-            </div>
-        </td>
-        <td class="align-middle">
-            <button onclick="deletePrice(${f.id})" class="btn btn-sm btn-outline-danger py-0">Sil</button>
-        </td>
-    </tr>`;
-});
-document.getElementById('fiyatListesi').innerHTML = fiyatHTML;
+        let fiyatHTML = "";
+        fiyatlar.forEach(f => {
+            fiyatHTML += `<tr>
+                <td class="align-middle">${f.hizmet}</td>
+                <td class="align-middle">${f.il}</td>
+                <td class="align-middle"><span class="badge bg-secondary">${f.birimTipi || 'm²'}</span></td>
+                <td>
+                    <div class="input-group input-group-sm" style="width: 120px;">
+                        <input type="number" class="form-control text-center fw-bold text-primary border-primary" value="${f.tutar}" onchange="updatePriceInline(${f.id}, this.value)" title="Fiyatı değiştirince otomatik kaydedilir">
+                        <span class="input-group-text bg-light border-primary">₺</span>
+                    </div>
+                </td>
+                <td class="align-middle">
+                    <button onclick="editPrice(${f.id})" class="btn btn-sm btn-warning py-0 me-1">Düzenle</button>
+                    <button onclick="deletePrice(${f.id})" class="btn btn-sm btn-outline-danger py-0">Sil</button>
+                </td>
+            </tr>`;
+        });
+        document.getElementById('fiyatListesi').innerHTML = fiyatHTML;
 
         // Planlar Tablosu
         let planHTML = "";
@@ -1229,6 +1230,7 @@ document.getElementById('fiyatListesi').innerHTML = fiyatHTML;
                         id: Date.now() + Math.random(),
                         hizmet: row["Hizmet Adı"] || "",
                         il: row["İl"] || "",
+                        birimTipi: row["Birim Tipi"] || "m²",
                         tutar: Number(row["Birim Fiyatı"]) || 0
                     });
                 });
@@ -1267,11 +1269,12 @@ document.getElementById('fiyatListesi').innerHTML = fiyatHTML;
         } 
         else if (target === 'fiyatlar') {
             ws_data = [
-                ["Hizmet Adı", "İl", "Birim Fiyatı"],
-                ["Cam Silme (m2)", "Kocaeli", 15]
+                ["Hizmet Adı", "İl", "Birim Tipi", "Birim Fiyatı"],
+                ["Cam Silme", "Kocaeli", "m²", 15],
+                ["Tadilat Temizliği - Uzman", "Kocaeli", "Personel/Gün", 1500]
             ];
             filename = "Hizmet_Fiyat_Sablonu.xlsx";
-        } 
+        }
         else if (target === 'planlar') {
             ws_data = [
                 ["Müşteri", "Grup", "Madde"], // SÜTUN EKLENDİ
@@ -1421,7 +1424,8 @@ document.getElementById('fiyatListesi').innerHTML = fiyatHTML;
                     
                     if(!dbFiyat) hizmetDetaylariHTML += `<span class="badge bg-danger mt-1">! ${srv.ad} fiyatı eksik!</span><br>`;
 
-                    let isDynamic = (srvLower.includes("koltuk") || srvLower.includes("halı") || srvLower.includes("hali") || srvLower.includes("jaluzi") || srvLower.includes("iskele") || srvLower.includes("dağcı") || srvLower.includes("dagci") || srvLower.includes("saat"));
+                    let birimTipi = dbFiyat && dbFiyat.birimTipi ? dbFiyat.birimTipi : "m²";
+                    let isDynamic = (birimTipi !== "m²") || (srvLower.includes("koltuk") || srvLower.includes("halı") || srvLower.includes("hali") || srvLower.includes("jaluzi") || srvLower.includes("iskele") || srvLower.includes("dağcı") || srvLower.includes("dagci") || srvLower.includes("saat"));
 
                     let carpimM2 = sube.m2;
                     if(srvLower.includes("cam")) carpimM2 = sube.camM2 || sube.m2;
@@ -2049,7 +2053,8 @@ document.getElementById('fiyatListesi').innerHTML = fiyatHTML;
                 let srvLower = srv.ad.toLowerCase();
                 let dbFiyat = teklif.fiyatlar.find(f => f.hizmet.trim().toLowerCase() === srvLower && f.il.trim().toLowerCase() === sube.il.trim().toLowerCase());
                 let rawBirimFiyat = dbFiyat ? dbFiyat.tutar : 0;
-                let isDynamic = (srvLower.includes("koltuk") || srvLower.includes("halı") || srvLower.includes("hali") || srvLower.includes("jaluzi") || srvLower.includes("iskele") || srvLower.includes("dağcı") || srvLower.includes("dagci") || srvLower.includes("saat"));
+                let birimTipi = dbFiyat && dbFiyat.birimTipi ? dbFiyat.birimTipi : "m²";
+                let isDynamic = (birimTipi !== "m²") || (srvLower.includes("koltuk") || srvLower.includes("halı") || srvLower.includes("hali") || srvLower.includes("jaluzi") || srvLower.includes("iskele") || srvLower.includes("dağcı") || srvLower.includes("dagci") || srvLower.includes("saat"));
                 
                 let carpimM2 = sube.m2;
                 if(srvLower.includes("cam")) carpimM2 = sube.camM2 || sube.m2;
@@ -2082,7 +2087,8 @@ document.getElementById('fiyatListesi').innerHTML = fiyatHTML;
                 // Müşteriye Gösterilecek Fiyat (Kar/Lojistik çarpanı olmadan doğrudan DB'den alınır)
                 let rawBirimFiyat = dbFiyat ? dbFiyat.tutar : 0;
                 
-                let isDynamic = (srvLower.includes("koltuk") || srvLower.includes("halı") || srvLower.includes("hali") || srvLower.includes("jaluzi") || srvLower.includes("iskele") || srvLower.includes("dağcı") || srvLower.includes("dagci") || srvLower.includes("saat"));
+                let birimTipi = dbFiyat && dbFiyat.birimTipi ? dbFiyat.birimTipi : "m²";
+                let isDynamic = (birimTipi !== "m²") || (srvLower.includes("koltuk") || srvLower.includes("halı") || srvLower.includes("hali") || srvLower.includes("jaluzi") || srvLower.includes("iskele") || srvLower.includes("dağcı") || srvLower.includes("dagci") || srvLower.includes("saat"));
                 
                 let carpimM2 = sube.m2;
                 if(srvLower.includes("cam")) carpimM2 = sube.camM2 || sube.m2;
@@ -2100,7 +2106,7 @@ document.getElementById('fiyatListesi').innerHTML = fiyatHTML;
                 }
 
                 // YENİ EŞİT DAĞITIM KONTROLÜ
-                let birimBicimi = isDynamic ? "₺/Br" : "₺/m²";
+                let birimBicimi = birimTipi === "m²" ? "₺/m²" : "₺/" + birimTipi;
                 let gosterilenBirimTutar = rawBirimFiyat.toLocaleString('tr-TR', {maximumFractionDigits:2}) + " " + birimBicimi;
                 
                 if (teklif.esitDagitCam && srvLower.includes("cam")) {
@@ -2587,7 +2593,8 @@ document.getElementById('fiyatListesi').innerHTML = fiyatHTML;
                 let dbFiyat = teklif.fiyatlar.find(f => f.hizmet.trim().toLowerCase() === srv.ad.trim().toLowerCase() && f.il.trim().toLowerCase() === sube.il.trim().toLowerCase());
                 let birimFiyat = dbFiyat ? dbFiyat.tutar : 0;
                 let srvLower = srv.ad.toLowerCase();
-                let isFixedCell = !(srvLower.includes("koltuk") || srvLower.includes("halı") || srvLower.includes("hali") || srvLower.includes("jaluzi") || srvLower.includes("iskele") || srvLower.includes("dağcı") || srvLower.includes("dagci") || srvLower.includes("saat"));
+                let birimTipi = dbFiyat && dbFiyat.birimTipi ? dbFiyat.birimTipi : "m²";
+                let isFixedCell = (birimTipi === "m²") && !(srvLower.includes("koltuk") || srvLower.includes("halı") || srvLower.includes("hali") || srvLower.includes("jaluzi") || srvLower.includes("iskele") || srvLower.includes("dağcı") || srvLower.includes("dagci") || srvLower.includes("saat"));
                 
                 if (isFixedCell) {
                     let carpimM2 = sube.m2;
@@ -2615,14 +2622,15 @@ document.getElementById('fiyatListesi').innerHTML = fiyatHTML;
                 let srvLower = srv.ad.toLowerCase();
                 let chkId = `${sube.id}_${srv.ad}`;
                 
-                let isFixedCell = !(srvLower.includes("koltuk") || srvLower.includes("halı") || srvLower.includes("hali") || srvLower.includes("jaluzi") || srvLower.includes("iskele") || srvLower.includes("dağcı") || srvLower.includes("dagci") || srvLower.includes("saat"));
+                let birimTipi = dbFiyat && dbFiyat.birimTipi ? dbFiyat.birimTipi : "m²";
+                let isFixedCell = (birimTipi === "m²") && !(srvLower.includes("koltuk") || srvLower.includes("halı") || srvLower.includes("hali") || srvLower.includes("jaluzi") || srvLower.includes("iskele") || srvLower.includes("dağcı") || srvLower.includes("dagci") || srvLower.includes("saat"));
 
                 // Dinamik Hizmetler (Koltuk, İskele vb.)
                 if(!isFixedCell) {
                     let val = mevcutHakedis.miktarlar[chkId] || "";
                     tr += `<td class="text-center">
                         <input type="number" class="form-control form-control-sm mx-auto hakedis-input" data-birim="${birimFiyat}" data-id="${chkId}" value="${val}" onchange="hesaplaHakedisToplam()" placeholder="Miktar" style="width:70px;">
-                        <small class="text-muted">(${birimFiyat} ₺/Br)</small>
+                        <small class="text-muted">(${birimFiyat} ₺/${birimTipi})</small>
                     </td>`;
                 } 
                 // Sabit Çarpanlı Hizmetler
@@ -2777,7 +2785,8 @@ document.getElementById('fiyatListesi').innerHTML = fiyatHTML;
                 let dbFiyat = teklif.fiyatlar.find(f => f.hizmet.trim().toLowerCase() === srv.ad.trim().toLowerCase() && f.il.trim().toLowerCase() === sube.il.trim().toLowerCase());
                 let birimFiyat = dbFiyat ? dbFiyat.tutar : 0;
                 let srvLower = srv.ad.toLowerCase();
-                let isFixedCell = !(srvLower.includes("koltuk") || srvLower.includes("halı") || srvLower.includes("hali") || srvLower.includes("jaluzi") || srvLower.includes("iskele") || srvLower.includes("dağcı") || srvLower.includes("dagci") || srvLower.includes("saat"));
+                let birimTipi = dbFiyat && dbFiyat.birimTipi ? dbFiyat.birimTipi : "m²";
+                let isFixedCell = (birimTipi === "m²") && !(srvLower.includes("koltuk") || srvLower.includes("halı") || srvLower.includes("hali") || srvLower.includes("jaluzi") || srvLower.includes("iskele") || srvLower.includes("dağcı") || srvLower.includes("dagci") || srvLower.includes("saat"));
                 
                 if (isFixedCell) {
                     let carpimM2 = sube.m2;
@@ -2806,7 +2815,8 @@ document.getElementById('fiyatListesi').innerHTML = fiyatHTML;
                 let dbFiyat = teklif.fiyatlar.find(f => f.hizmet.trim().toLowerCase() === srv.ad.trim().toLowerCase() && f.il.trim().toLowerCase() === sube.il.trim().toLowerCase());
                 let birimFiyat = dbFiyat ? dbFiyat.tutar : 0;
                 
-                let isFixed = !(srvLower.includes("koltuk") || srvLower.includes("halı") || srvLower.includes("hali") || srvLower.includes("jaluzi") || srvLower.includes("iskele") || srvLower.includes("dağcı") || srvLower.includes("dagci") || srvLower.includes("saat"));
+                let birimTipi = dbFiyat && dbFiyat.birimTipi ? dbFiyat.birimTipi : "m²";
+                let isFixed = (birimTipi === "m²") && !(srvLower.includes("koltuk") || srvLower.includes("halı") || srvLower.includes("hali") || srvLower.includes("jaluzi") || srvLower.includes("iskele") || srvLower.includes("dağcı") || srvLower.includes("dagci") || srvLower.includes("saat"));
                 
                 const ayarlar = JSON.parse(localStorage.getItem(KEYS.AYARLAR)) || {};
                 const tabanFiyat = Number(ayarlar.taban) || 5000;
@@ -2834,7 +2844,7 @@ document.getElementById('fiyatListesi').innerHTML = fiyatHTML;
                         aciklamaYazisi = `<i>Şube Sayısına Eşit Dağılım</i>`;
                     }
 
-                    yapilanHizmetler.push(`<b>${srv.ad}</b>: ${aciklamaYazisi} = <span style="color:#0d6efd">${fiyat.toLocaleString('tr-TR', {maximumFractionDigits:2})} ₺</span>`);
+                    yapilanHizmetler.push(`<b>${srv.ad}</b>: ${miktar} ${birimTipi} x ${birimFiyat.toLocaleString('tr-TR')} ₺ = <span style="color:#0d6efd">${fiyat.toLocaleString('tr-TR')} ₺</span>`);
                     subeFaturaTutar += fiyat;
                 }
                 
