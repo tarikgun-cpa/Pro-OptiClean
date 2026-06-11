@@ -1390,6 +1390,50 @@
         const allFiyatlar = getData(KEYS.FIYATLAR);
         const personelList = getData(KEYS.PERSONEL);
         
+        // EŞİT DAĞITIM ÖN HESAPLAMASI (AI MODÜLÜ İÇİN EKLENDİ)
+        let esitCamSecili = document.getElementById('chkEsitCam').checked;
+        let esitGenelSecili = document.getElementById('chkEsitGenel').checked;
+        let camTotal = 0; let genelTotal = 0;
+        let camSubeCount = 0; let genelSubeCount = 0;
+        
+        let serviceRequests = [];
+        checkedHizmetler.forEach(chk => {
+            let selectBox = document.querySelector(`.hizmet-periyot[data-hizmet="${chk.value}"]`);
+            serviceRequests.push({ ad: chk.value, periyotCarpan: Number(selectBox.value) });
+        });
+
+        checkedSubeler.forEach(cb => {
+            let sube = allSubeler.find(x => x.id == cb.value);
+            serviceRequests.forEach(srv => {
+                let srvLower = srv.ad.toLowerCase();
+                let dbFiyat = allFiyatlar.find(f => f.hizmet.trim().toLowerCase() === srvLower && f.il.trim().toLowerCase() === sube.il.trim().toLowerCase());
+                let birimFiyat = dbFiyat ? dbFiyat.tutar : 0;
+                let birimTipi = dbFiyat && dbFiyat.birimTipi ? dbFiyat.birimTipi : "m²";
+                let isDynamic = (birimTipi !== "m²") || (srvLower.includes("koltuk") || srvLower.includes("halı") || srvLower.includes("hali") || srvLower.includes("jaluzi") || srvLower.includes("iskele") || srvLower.includes("dağcı") || srvLower.includes("dagci") || srvLower.includes("saat"));
+                
+                let carpimM2 = sube.m2;
+                if(srvLower.includes("cam")) carpimM2 = sube.camM2 || sube.m2;
+                if(srvLower.includes("tadilat")) carpimM2 = sube.tadilatM2 || sube.m2;
+                if(isDynamic) carpimM2 = 1;
+
+                let islemSatis = carpimM2 * birimFiyat;
+                let gecerliTaban = srvLower.includes("cam") ? tabanCam : tabanGenel;
+                if(!isDynamic && islemSatis > 0 && islemSatis < gecerliTaban && srv.periyotCarpan > 0) islemSatis = gecerliTaban;
+                
+                if(teklifYuvarla) islemSatis = Math.ceil(islemSatis / 100) * 100; // Her zaman YUKARI yuvarla
+
+                if (esitCamSecili && srvLower.includes("cam")) { camTotal += islemSatis; camSubeCount++; }
+                if (esitGenelSecili && srvLower.includes("genel")) { genelTotal += islemSatis; genelSubeCount++; }
+            });
+        });
+
+        let camOrtalama = camSubeCount > 0 ? (camTotal / camSubeCount) : 0;
+        let genelOrtalama = genelSubeCount > 0 ? (genelTotal / genelSubeCount) : 0;
+        if(teklifYuvarla) {
+            camOrtalama = Math.ceil(camOrtalama / 100) * 100;
+            genelOrtalama = Math.ceil(genelOrtalama / 100) * 100;
+        }
+        
         let ilGruplari = {};
         
         checkedSubeler.forEach(cb => {
@@ -1404,15 +1448,6 @@
         let totalAylikMaliyet = 0;
         let totalAylikSatis = 0;
         let tableHTML = "";
-
-        let serviceRequests = [];
-        checkedHizmetler.forEach(chk => {
-            let selectBox = document.querySelector(`.hizmet-periyot[data-hizmet="${chk.value}"]`);
-            serviceRequests.push({ 
-                ad: chk.value, 
-                periyotCarpan: Number(selectBox.value) 
-            });
-        });
 
         for (const ilAdi in ilGruplari) {
             let veri = ilGruplari[ilAdi];
@@ -1462,8 +1497,11 @@
                         islemSatis = gecerliTaban;
                     }
                     if(teklifYuvarla) {
-                        islemSatis = Math.round(islemSatis / 100) * 100;
+                        islemSatis = Math.ceil(islemSatis / 100) * 100; // Yukarı yuvarla
                     }
+
+                    if (esitCamSecili && srvLower.includes("cam")) islemSatis = camOrtalama;
+                    if (esitGenelSecili && srvLower.includes("genel")) islemSatis = genelOrtalama;
 
                     ilAylikMaliyet += (islemMaliyet * srv.periyotCarpan);
                     ilAylikSatis += (islemSatis * srv.periyotCarpan);
@@ -2082,7 +2120,7 @@
                 let islemSatis = carpimM2 * rawBirimFiyat;
                 let gecerliTaban = srvLower.includes("cam") ? tabanCam : tabanGenel;
                 if(!isDynamic && islemSatis > 0 && islemSatis < gecerliTaban && srv.periyotCarpan > 0) islemSatis = gecerliTaban;
-                if(teklif.yuvarla) islemSatis = Math.round(islemSatis / 100) * 100;
+                if(teklif.yuvarla) islemSatis = Math.ceil(islemSatis / 100) * 100;
 
                 if (teklif.esitDagitCam && srvLower.includes("cam")) { camTotal += islemSatis; camSubeCount++; }
                 if (teklif.esitDagitGenel && srvLower.includes("genel")) { genelTotal += islemSatis; genelSubeCount++; }
@@ -2092,8 +2130,8 @@
         let camOrtalama = camSubeCount > 0 ? (camTotal / camSubeCount) : 0;
         let genelOrtalama = genelSubeCount > 0 ? (genelTotal / genelSubeCount) : 0;
         if(teklif.yuvarla) {
-            camOrtalama = Math.round(camOrtalama / 100) * 100;
-            genelOrtalama = Math.round(genelOrtalama / 100) * 100;
+            camOrtalama = Math.ceil(camOrtalama / 100) * 100;
+            genelOrtalama = Math.ceil(genelOrtalama / 100) * 100;
         }
 
         let trRows = "";
@@ -2131,7 +2169,7 @@
                 }
                 
                 if(teklif.yuvarla) {
-                    islemSatis = Math.round(islemSatis / 100) * 100;
+                    islemSatis = Math.ceil(islemSatis / 100) * 100;
                 }
 
                 // YENİ EŞİT DAĞITIM KONTROLÜ
@@ -2633,7 +2671,7 @@
                     let finalFiyat = birimFiyat * carpimM2;
                     let gecerliTaban = srvLower.includes("cam") ? tabanCam : tabanGenel;
                     if (finalFiyat > 0 && finalFiyat < gecerliTaban) finalFiyat = gecerliTaban;
-                    if (teklif.yuvarla) finalFiyat = Math.round(finalFiyat / 100) * 100;
+                    if (teklif.yuvarla) finalFiyat = Math.ceil(finalFiyat / 100) * 100;
 
                     if (teklif.esitDagitCam && srvLower.includes("cam")) { camTotal += finalFiyat; camSubeCount++; }
                     if (teklif.esitDagitGenel && srvLower.includes("genel")) { genelTotal += finalFiyat; genelSubeCount++; }
@@ -2645,8 +2683,8 @@
         let genelOrtalama = genelSubeCount > 0 ? (genelTotal / genelSubeCount) : 0;
 
         if(teklif.yuvarla) {
-            camOrtalama = Math.round(camOrtalama / 100) * 100;
-            genelOrtalama = Math.round(genelOrtalama / 100) * 100;
+            camOrtalama = Math.ceil(camOrtalama / 100) * 100;
+            genelOrtalama = Math.ceil(genelOrtalama / 100) * 100;
         }
 
         let tr = "";
@@ -2686,7 +2724,7 @@
                     if (finalFiyat > 0 && finalFiyat < gecerliTaban) {
                         finalFiyat = gecerliTaban;
                     }
-                    if (teklif.yuvarla) finalFiyat = Math.round(finalFiyat / 100) * 100;
+                    if (teklif.yuvarla) finalFiyat = Math.ceil(finalFiyat / 100) * 100;
                     
                     // Eşit Dağıtım Ezmesi (Dışarıda olmalı)
                     if (teklif.esitDagitCam && srvLower.includes("cam")) finalFiyat = camOrtalama;
@@ -2837,8 +2875,7 @@
                     let finalFiyat = birimFiyat * carpimM2;
                     let gecerliTaban = srvLower.includes("cam") ? tabanCam : tabanGenel;
                     if (finalFiyat > 0 && finalFiyat < gecerliTaban) finalFiyat = gecerliTaban;
-                    if (teklif.yuvarla) finalFiyat = Math.round(finalFiyat / 100) * 100;
-
+                    if (teklif.yuvarla) finalFiyat = Math.ceil(finalFiyat / 100) * 100;
                     if (teklif.esitDagitCam && srvLower.includes("cam")) { camTotal += finalFiyat; camSubeCount++; }
                     if (teklif.esitDagitGenel && srvLower.includes("genel")) { genelTotal += finalFiyat; genelSubeCount++; }
                 }
@@ -2849,8 +2886,8 @@
         let genelOrtalama = genelSubeCount > 0 ? (genelTotal / genelSubeCount) : 0;
 
         if(teklif.yuvarla) {
-            camOrtalama = Math.round(camOrtalama / 100) * 100;
-            genelOrtalama = Math.round(genelOrtalama / 100) * 100;
+            camOrtalama = Math.ceil(camOrtalama / 100) * 100;
+            genelOrtalama = Math.ceil(genelOrtalama / 100) * 100;
         }
 
         let trRows = "";
@@ -2887,7 +2924,7 @@
                     }
                     
                     if (teklif.yuvarla) {
-                        fiyat = Math.round(fiyat / 100) * 100;
+                        fiyat = Math.ceil(fiyat / 100) * 100;
                     }
                     
                     // Eşit Dağıtım Ezmesi
