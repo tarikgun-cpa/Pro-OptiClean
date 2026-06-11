@@ -359,7 +359,7 @@
                                 
                                 <label class="form-label text-warning fw-bold mt-2">İskele/Dağcı İlk Saat Taban Fiyatı (TL)</label>
                                 <div class="input-group mb-3">
-                                    <input type="number" id="ayarTabanIskele" class="form-control border-warning" placeholder="Örn: 5000" value="5000">
+                                    <input type="number" id="ayarTabanIskele" class="form-control border-warning" placeholder="Örn: 5000" value="5000" onchange="saveSettings()">
                                     <span class="input-group-text bg-warning text-dark">₺</span>
                                 </div>
                                 
@@ -1414,8 +1414,8 @@
         checkedSubeler.forEach(cb => {
             let sube = allSubeler.find(x => x.id == cb.value);
             serviceRequests.forEach(srv => {
-                let srvLower = srv.ad.toLowerCase();
-                let dbFiyat = allFiyatlar.find(f => f.hizmet.trim().toLowerCase() === srvLower && f.il.trim().toLowerCase() === sube.il.trim().toLowerCase());
+                let srvLower = srv.ad.toLocaleLowerCase('tr-TR');
+                let dbFiyat = allFiyatlar.find(f => f.hizmet.trim().toLocaleLowerCase('tr-TR') === srvLower && f.il.trim().toLocaleLowerCase('tr-TR') === sube.il.trim().toLocaleLowerCase('tr-TR'));
                 let birimFiyat = dbFiyat ? dbFiyat.tutar : 0;
                 let birimTipi = dbFiyat && dbFiyat.birimTipi ? dbFiyat.birimTipi : "m²";
                 let isDynamic = (birimTipi !== "m²") || (srvLower.includes("koltuk") || srvLower.includes("halı") || srvLower.includes("hali") || srvLower.includes("jaluzi") || srvLower.includes("iskele") || srvLower.includes("dağcı") || srvLower.includes("dagci") || srvLower.includes("saat"));
@@ -1480,8 +1480,8 @@
             
             veri.subeler.forEach(sube => {
                 serviceRequests.forEach(srv => {
-                    let srvLower = srv.ad.toLowerCase();
-                    let dbFiyat = allFiyatlar.find(f => f.hizmet.trim().toLowerCase() === srvLower && f.il.trim().toLowerCase() === ilAdi.trim().toLowerCase());
+                    let srvLower = srv.ad.toLocaleLowerCase('tr-TR');
+                    let dbFiyat = allFiyatlar.find(f => f.hizmet.trim().toLocaleLowerCase('tr-TR') === srvLower && f.il.trim().toLocaleLowerCase('tr-TR') === ilAdi.trim().toLocaleLowerCase('tr-TR'));
                     let birimFiyat = dbFiyat ? dbFiyat.tutar : 0; 
                     
                     if(!dbFiyat) hizmetDetaylariHTML += `<span class="badge bg-danger mt-1">! ${srv.ad} fiyatı eksik!</span><br>`;
@@ -2128,8 +2128,8 @@
 
         teklif.subeler.forEach(sube => {
             teklif.hizmetler.forEach(srv => {
-                let srvLower = srv.ad.toLowerCase();
-                let dbFiyat = teklif.fiyatlar.find(f => f.hizmet.trim().toLowerCase() === srvLower && f.il.trim().toLowerCase() === sube.il.trim().toLowerCase());
+                let srvLower = srv.ad.toLocaleLowerCase('tr-TR');
+                let dbFiyat = teklif.fiyatlar.find(f => f.hizmet.trim().toLocaleLowerCase('tr-TR') === srvLower && f.il.trim().toLocaleLowerCase('tr-TR') === sube.il.trim().toLocaleLowerCase('tr-TR'));
                 let rawBirimFiyat = dbFiyat ? dbFiyat.tutar : 0;
                 let birimTipi = dbFiyat && dbFiyat.birimTipi ? dbFiyat.birimTipi : "m²";
                 let isDynamic = (birimTipi !== "m²") || (srvLower.includes("koltuk") || srvLower.includes("halı") || srvLower.includes("hali") || srvLower.includes("jaluzi") || srvLower.includes("iskele") || srvLower.includes("dağcı") || srvLower.includes("dagci") || srvLower.includes("saat"));
@@ -2165,8 +2165,8 @@
             let tdFiyatlar = "";
 
             teklif.hizmetler.forEach(srv => {
-                let srvLower = srv.ad.toLowerCase();
-                let dbFiyat = teklif.fiyatlar.find(f => f.hizmet.trim().toLowerCase() === srvLower && f.il.trim().toLowerCase() === sube.il.trim().toLowerCase());
+                let srvLower = srv.ad.toLocaleLowerCase('tr-TR');
+                let dbFiyat = teklif.fiyatlar.find(f => f.hizmet.trim().toLocaleLowerCase('tr-TR') === srvLower && f.il.trim().toLocaleLowerCase('tr-TR') === sube.il.trim().toLocaleLowerCase('tr-TR'));
                 
                 // Müşteriye Gösterilecek Fiyat (Kar/Lojistik çarpanı olmadan doğrudan DB'den alınır)
                 let rawBirimFiyat = dbFiyat ? dbFiyat.tutar : 0;
