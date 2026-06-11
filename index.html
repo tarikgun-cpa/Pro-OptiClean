@@ -1437,8 +1437,9 @@
                 
                 if(teklifYuvarla) islemSatis = Math.ceil(islemSatis / 100) * 100; // Her zaman YUKARI yuvarla
 
-                if (esitCamSecili && srvLower.includes("cam")) { camTotal += islemSatis; camSubeCount++; }
-                if (esitGenelSecili && srvLower.includes("genel")) { genelTotal += islemSatis; genelSubeCount++; }
+                // YENİ KOD
+                if (esitCamSecili && srvLower.includes("cam") && !isDynamic) { camTotal += islemSatis; camSubeCount++; }
+                if (esitGenelSecili && srvLower.includes("genel") && !isDynamic) { genelTotal += islemSatis; genelSubeCount++; }
             });
         });
 
@@ -1520,8 +1521,8 @@
                         islemSatis = Math.ceil(islemSatis / 100) * 100; // Yukarı yuvarla
                     }
 
-                    if (esitCamSecili && srvLower.includes("cam")) islemSatis = camOrtalama;
-                    if (esitGenelSecili && srvLower.includes("genel")) islemSatis = genelOrtalama;
+                    if (esitCamSecili && srvLower.includes("cam") && !isDynamic) islemSatis = camOrtalama;
+                    if (esitGenelSecili && srvLower.includes("genel") && !isDynamic) islemSatis = genelOrtalama;
 
                     ilAylikMaliyet += (islemMaliyet * srv.periyotCarpan);
                     ilAylikSatis += (islemSatis * srv.periyotCarpan);
@@ -2143,8 +2144,8 @@
                 if(!isDynamic && islemSatis > 0 && islemSatis < gecerliTaban && srv.periyotCarpan > 0) islemSatis = gecerliTaban;
                 if(teklif.yuvarla) islemSatis = Math.ceil(islemSatis / 100) * 100;
 
-                if (teklif.esitDagitCam && srvLower.includes("cam")) { camTotal += islemSatis; camSubeCount++; }
-                if (teklif.esitDagitGenel && srvLower.includes("genel")) { genelTotal += islemSatis; genelSubeCount++; }
+                if (teklif.esitDagitCam && srvLower.includes("cam") && !isDynamic) { camTotal += islemSatis; camSubeCount++; }
+                if (teklif.esitDagitGenel && srvLower.includes("genel") && !isDynamic) { genelTotal += islemSatis; genelSubeCount++; }
             });
         });
 
@@ -2203,11 +2204,11 @@
                 let birimBicimi = birimTipi === "m²" ? "₺/m²" : "₺/" + birimTipi;
                 let gosterilenBirimTutar = rawBirimFiyat.toLocaleString('tr-TR', {maximumFractionDigits:2}) + " " + birimBicimi;
                 
-                if (teklif.esitDagitCam && srvLower.includes("cam")) {
+                if (teklif.esitDagitCam && srvLower.includes("cam") && !isDynamic) {
                     islemSatis = camOrtalama;
                     gosterilenBirimTutar = "Ortalama/Eşit Dağılım";
                     marker = "";
-                } else if (teklif.esitDagitGenel && srvLower.includes("genel")) {
+                } else if (teklif.esitDagitGenel && srvLower.includes("genel") && !isDynamic) {
                     islemSatis = genelOrtalama;
                     gosterilenBirimTutar = "Ortalama/Eşit Dağılım";
                     marker = "";
