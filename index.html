@@ -2222,16 +2222,20 @@
                 // HÜCRE İÇERİĞİ OLUŞTURMA
                 let hucreIcerik = "-";
                 if(dbFiyat) {
-                    if (srv.periyotCarpan == 0) {
-                        hucreIcerik = `<span style="font-size:12px; font-weight:bold; color:#000;">${gosterilenBirimTutar}</span>`;
-                    } else {
-                        hucreIcerik = `
-                            <span style="font-size:10px; color:#666;">${gosterilenBirimTutar}</span><br>
-                            <span style="font-size:12px; font-weight:bold; color:#000;">${islemSatis.toLocaleString('tr-TR', {maximumFractionDigits:2})} ₺</span>
-                            ${marker}
-                        `;
-                    }
-                }
+                if (srv.periyotCarpan == 0) {
+                // İstek üzerine olan hizmetlerde de eğer bir marker (İlk Saat uyarısı vb.) varsa ekle
+                hucreIcerik = `<span style="font-size:12px; font-weight:bold; color:#000;">${gosterilenBirimTutar}</span>`;
+                if (marker) {
+                    hucreIcerik += marker; 
+            }
+        } else {
+        hucreIcerik = `
+            <span style="font-size:10px; color:#666;">${gosterilenBirimTutar}</span><br>
+            <span style="font-size:12px; font-weight:bold; color:#000;">${islemSatis.toLocaleString('tr-TR', {maximumFractionDigits:2})} ₺</span>
+            ${marker}
+        `;
+    }
+}
 
                 tdFiyatlar += `<td style="${bgRenk}">${hucreIcerik}</td>`;
 
