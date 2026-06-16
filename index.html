@@ -2282,9 +2282,10 @@
                         ${istekUzereHtml}
                     </ul>
                     
+                    ${teklif.hizmetler.some(h => h.ad.toLowerCase().includes('cam') || h.ad.toLowerCase().includes('genel')) ? `
                     <div style="background: #fff3f3; color: #d9534f; padding: 10px; border-left: 4px solid #d9534f; font-size: 12px; margin-bottom: 15px;">
                         <strong>⚠️ DİKKAT (Şube Hizmet Taban Fiyatı):</strong> Şube bazlı hizmetlerde uygulanacak minimum fatura tutarı <strong>${tabanFiyat.toLocaleString('tr-TR')} TL</strong>'dir. Hesaplanan işlem hacmi bu tutarın altında kalsa dahi, faturaya (⚠️ Min. Tutar) ibaresi ile belirtilen bu taban fiyat esas alınır.
-                    </div>
+                    </div>` : ""}
                     
                     <div style="text-align: right; font-size: 14px; font-weight: bold; margin-top: 15px; border-top: 1px dashed #ccc; padding-top: 10px;">
                         <div style="font-size: 16px; color:#198754; margin-bottom: 5px;">Aylık Rutin (Sabit) Fatura Tutarı: ${rutinAylikSatis.toLocaleString('tr-TR', {maximumFractionDigits:2})} TL + KDV</div>
