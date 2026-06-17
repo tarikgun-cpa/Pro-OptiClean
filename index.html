@@ -1064,8 +1064,7 @@
         const data = getData(KEYS.PERSONEL).filter(item => item.id !== id);
         saveData(KEYS.PERSONEL, data);
     }
-
-   function saveSettings() {
+function saveSettings() {
         const ayarlar = {
             sarf: document.getElementById('ayarSarfOran').value,
             kar: document.getElementById('ayarKarOran').value,
@@ -1079,9 +1078,11 @@
             genelPT: document.getElementById('ayarGenelPT').value,
             genelPTGun: document.getElementById('ayarGenelPTGun').value
         };
-        localStorage.setItem(KEYS.AYARLAR, JSON.stringify(ayarlar));
         
-        alert("Ayarlar başarıyla kaydedildi!");
+        // DÜZELTME: Doğrudan localStorage yerine, veriyi hem locale hem buluta yollayan ana fonksiyonumuzu kullanıyoruz.
+        saveData(KEYS.AYARLAR, ayarlar);
+        
+        alert("Ayarlar başarıyla buluta ve sisteme kaydedildi!");
     }
 
     // ================== RENDER (TÜM LİSTELERİ EKRANA ÇİZDİRME) ==================
@@ -1544,19 +1545,22 @@
                     if(srvLower.includes("genel")) aylikGenelM2 += aylikYuku;
                     else if(srvLower.includes("cam")) aylikCamM2 += aylikYuku;
 
-                    let islemSatis = carpimM2 * birimFiyat; 
-                    let islemMaliyet = islemSatis / (1 + (karOrani / 100)); 
-
-                    if(!komsuHavuzaDahilMi) islemMaliyet *= 1.05;
-
                     let aktifTaban = taban_genel;
                     if(srvLower.includes("cam")) aktifTaban = taban_cam;
                     else if(srvLower.includes("iskele") || srvLower.includes("dağcı") || srvLower.includes("dagci") || srvLower.includes("saat")) aktifTaban = taban_iskele;
 
-                    // isDynamic olanlar (iskele, dağcı vs.) veya normal hizmetler için taban uygula
-                    if(islemSatis > 0 && islemSatis < aktifTaban && pCarpan > 0) {
-                        islemSatis = aktifTaban;
+                    let islemSatis = 0;
+                    if (srvLower.includes("saat") || srvLower.includes("iskele") || srvLower.includes("dağcı") || srvLower.includes("dagci")) {
+                        if (carpimM2 > 0) islemSatis = aktifTaban + ((carpimM2 - 1) * birimFiyat);
+                    } else {
+                        islemSatis = carpimM2 * birimFiyat; 
+                        if(islemSatis > 0 && islemSatis < aktifTaban && pCarpan > 0) {
+                            islemSatis = aktifTaban;
+                        }
                     }
+                    
+                    let islemMaliyet = islemSatis / (1 + (karOrani / 100)); 
+                    if(!komsuHavuzaDahilMi) islemMaliyet *= 1.05;
 
                     ilAylikMaliyet += (islemMaliyet * pCarpan);
                     ilAylikSatis += (islemSatis * pCarpan);
@@ -2189,9 +2193,16 @@
                 let selectVal = teklif.periyotlar ? teklif.periyotlar[sube.id][srv.ad] : "1";
                 let pCarpan = (selectVal === "none" || selectVal === "0") ? 0 : Number(selectVal);
                 
-                let islemSatis = carpimM2 * rawBirimFiyat;
                 let aktifTaban = srvLower.includes("cam") ? taban_cam : (srvLower.includes("iskele") || srvLower.includes("dağcı") || srvLower.includes("saat") ? taban_iskele : taban_genel);
-                if(islemSatis > 0 && islemSatis < aktifTaban && pCarpan > 0) islemSatis = aktifTaban;
+                let islemSatis = 0;
+
+                if (srvLower.includes("saat") || srvLower.includes("iskele") || srvLower.includes("dağcı")) {
+                    // İskele için İlk Saat Taban Fiyat + Kalan Saatler
+                    if (carpimM2 > 0) islemSatis = aktifTaban + ((carpimM2 - 1) * rawBirimFiyat);
+                } else {
+                    islemSatis = carpimM2 * rawBirimFiyat;
+                    if(islemSatis > 0 && islemSatis < aktifTaban && pCarpan > 0) islemSatis = aktifTaban;
+                }
 
                 if (teklif.esitDagitCam && srvLower.includes("cam")) { camTotal += islemSatis; camSubeCount++; }
                 if (teklif.esitDagitGenel && srvLower.includes("genel")) { genelTotal += islemSatis; genelSubeCount++; }
@@ -2224,17 +2235,32 @@
                 if(srvLower.includes("tadilat")) carpimM2 = sube.tadilatM2 || sube.m2;
                 if(isDynamic) carpimM2 = 1;
 
-                let islemSatis = carpimM2 * rawBirimFiyat;
-                let marker = "";
-
                 let aktifTaban = srvLower.includes("cam") ? taban_cam : (srvLower.includes("iskele") || srvLower.includes("dağcı") || srvLower.includes("saat") ? taban_iskele : taban_genel);
-                if(islemSatis > 0 && islemSatis < aktifTaban && pCarpan > 0) {
-                    islemSatis = aktifTaban;
-                    marker = `<br><span style="color:#d9534f; font-size:9px; font-weight:bold;">(⚠️ Min. Tutar)</span>`;
-                }
-
+                let islemSatis = 0;
+                let marker = "";
                 let birimBicimi = birimTipi === "m²" ? "₺/m²" : "₺/" + birimTipi;
-                let gosterilenBirimTutar = rawBirimFiyat.toLocaleString('tr-TR', {maximumFractionDigits:2}) + " " + birimBicimi;
+                let gosterilenBirimTutar = "";
+
+                if (srvLower.includes("saat") || srvLower.includes("iskele") || srvLower.includes("dağcı")) {
+                    if (carpimM2 > 0) {
+                        islemSatis = aktifTaban + ((carpimM2 - 1) * rawBirimFiyat);
+                        if (carpimM2 === 1) {
+                            gosterilenBirimTutar = `İlk Saat Taban: ${aktifTaban.toLocaleString('tr-TR')} ₺`;
+                        } else {
+                            gosterilenBirimTutar = `İlk Saat: ${aktifTaban.toLocaleString('tr-TR')} ₺ + ${carpimM2 - 1} ${birimTipi} x ${rawBirimFiyat.toLocaleString('tr-TR')} ₺`;
+                        }
+                    } else {
+                        gosterilenBirimTutar = "0 Saat";
+                    }
+                } else {
+                    islemSatis = carpimM2 * rawBirimFiyat;
+                    gosterilenBirimTutar = rawBirimFiyat.toLocaleString('tr-TR', {maximumFractionDigits:2}) + " " + birimBicimi;
+                    
+                    if(islemSatis > 0 && islemSatis < aktifTaban && pCarpan > 0) {
+                        islemSatis = aktifTaban;
+                        marker = `<br><span style="color:#d9534f; font-size:9px; font-weight:bold;">(⚠️ Min. Tutar)</span>`;
+                    }
+                }
                 
                 if (teklif.esitDagitCam && srvLower.includes("cam")) {
                     islemSatis = camOrtalama;
@@ -2748,9 +2774,15 @@
                     let carpimM2 = sube.m2;
                     if(srvLower.includes("cam")) carpimM2 = sube.camM2 || sube.m2;
                     if(srvLower.includes("tadilat")) carpimM2 = sube.tadilatM2 || sube.m2;
-                    let finalFiyat = birimFiyat * carpimM2;
                     let aktifTaban = srvLower.includes("cam") ? taban_cam : (srvLower.includes("iskele") || srvLower.includes("dağcı") || srvLower.includes("saat") ? taban_iskele : taban_genel);
-                    if (finalFiyat > 0 && finalFiyat < aktifTaban) finalFiyat = aktifTaban;
+                    let finalFiyat = 0;
+
+                    if (srvLower.includes("saat") || srvLower.includes("iskele") || srvLower.includes("dağcı")) {
+                        if (carpimM2 > 0) finalFiyat = aktifTaban + ((carpimM2 - 1) * birimFiyat);
+                    } else {
+                        finalFiyat = birimFiyat * carpimM2;
+                        if (finalFiyat > 0 && finalFiyat < aktifTaban) finalFiyat = aktifTaban;
+                    }
 
                     if (teklif.esitDagitCam && srvLower.includes("cam")) { camTotal += finalFiyat; camSubeCount++; }
                     if (teklif.esitDagitGenel && srvLower.includes("genel")) { genelTotal += finalFiyat; genelSubeCount++; }
@@ -2787,12 +2819,15 @@
                     let carpimM2 = sube.m2;
                     if(srvLower.includes("cam")) carpimM2 = sube.camM2 || sube.m2;
                     if(srvLower.includes("tadilat")) carpimM2 = sube.tadilatM2 || sube.m2;
-                    let finalFiyat = birimFiyat * carpimM2;
-
-                    // Taban Fiyat Kontrolü (Hizmet Bazlı)
+                    
                     let aktifTaban = srvLower.includes("cam") ? taban_cam : (srvLower.includes("iskele") || srvLower.includes("dağcı") || srvLower.includes("saat") ? taban_iskele : taban_genel);
-                    if (finalFiyat > 0 && finalFiyat < aktifTaban) {
-                        finalFiyat = aktifTaban;
+                    let finalFiyat = 0;
+
+                    if (srvLower.includes("saat") || srvLower.includes("iskele") || srvLower.includes("dağcı")) {
+                        if (carpimM2 > 0) finalFiyat = aktifTaban + ((carpimM2 - 1) * birimFiyat);
+                    } else {
+                        finalFiyat = birimFiyat * carpimM2;
+                        if (finalFiyat > 0 && finalFiyat < aktifTaban) finalFiyat = aktifTaban;
                     }
                     
                     // Eşit Dağıtım Ezmesi (Dışarıda olmalı)
@@ -2976,13 +3011,25 @@
                     let carpimM2 = sube.m2;
                     if(srvLower.includes("cam")) carpimM2 = sube.camM2 || sube.m2;
                     if(srvLower.includes("tadilat")) carpimM2 = sube.tadilatM2 || sube.m2;
-                    let fiyat = birimFiyat * carpimM2;
-                    let aciklamaYazisi = `${carpimM2} m² x ${birimFiyat.toLocaleString('tr-TR')} ₺`;
+                    let fiyat = 0;
+                    let aciklamaYazisi = "";
 
-                    // Taban Fiyat Kontrolü
-                    if (fiyat > 0 && fiyat < aktifTaban) {
-                        fiyat = aktifTaban;
-                        aciklamaYazisi = `<i>Minimum Hizmet Taban Fiyatı Uygulandı</i>`;
+                    if (srvLower.includes("saat") || srvLower.includes("iskele") || srvLower.includes("dağcı")) {
+                        if (carpimM2 > 0) {
+                            fiyat = aktifTaban + ((carpimM2 - 1) * birimFiyat);
+                            if (carpimM2 === 1) {
+                                aciklamaYazisi = `İlk Saat (Taban): ${aktifTaban.toLocaleString('tr-TR')} ₺`;
+                            } else {
+                                aciklamaYazisi = `İlk Saat: ${aktifTaban.toLocaleString('tr-TR')} ₺ + ${carpimM2 - 1} Saat x ${birimFiyat.toLocaleString('tr-TR')} ₺`;
+                            }
+                        }
+                    } else {
+                        fiyat = birimFiyat * carpimM2;
+                        aciklamaYazisi = `${carpimM2} m² x ${birimFiyat.toLocaleString('tr-TR')} ₺`;
+                        if (fiyat > 0 && fiyat < aktifTaban) {
+                            fiyat = aktifTaban;
+                            aciklamaYazisi = `<i>Minimum Hizmet Taban Fiyatı Uygulandı</i>`;
+                        }
                     }
                     
                     // Eşit Dağıtım Ezmesi
