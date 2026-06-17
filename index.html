@@ -1349,8 +1349,8 @@
                 </div>
                 <select class="form-select form-select-sm hizmet-periyot w-auto bg-light border-secondary" data-hizmet="${hizmet}" style="font-size:11px; padding:4px 24px 4px 8px;">
                     <option value="30">Her Gün</option>
-                    <option value="4">Haftada 1</option>
-                    <option value="1" selected>Ayda 1 Kez</option>
+                    <option value="8">Haftada 2</option> <option value="4">Haftada 1</option>
+                    <option value="2">15 Günde Bir</option> <option value="1" selected>Ayda 1 Kez</option>
                     <option value="0.33">3 Ayda 1 Kez</option>
                     <option value="0">İstek Üzerine</option>
                 </select>
@@ -2146,7 +2146,9 @@
                 if(srv.periyotCarpan > 0) {
                     let freq = "";
                     if(srv.periyotCarpan == 30) freq = "Her Gün";
+                    else if(srv.periyotCarpan == 8) freq = "Haftada 2"; // YENİ
                     else if(srv.periyotCarpan == 4) freq = "Haftada 1";
+                    else if(srv.periyotCarpan == 2) freq = "15 Günde Bir"; // YENİ
                     else if(srv.periyotCarpan == 1) freq = "Ayda 1 Kez";
                     else if(srv.periyotCarpan == 0.33) freq = "3 Ayda 1";
                     else freq = "Periyodik";
@@ -2181,7 +2183,9 @@
         teklif.hizmetler.forEach(h => {
             let freq = "";
             if(h.periyotCarpan == 30) freq = "Her Gün";
+            else if(h.periyotCarpan == 8) freq = "Haftada 2"; // YENİ
             else if(h.periyotCarpan == 4) freq = "Haftada 1";
+            else if(h.periyotCarpan == 2) freq = "15 Günde Bir"; // YENİ
             else if(h.periyotCarpan == 1) freq = "Ayda 1 Kez";
             else if(h.periyotCarpan == 0.33) freq = "3 Ayda 1 (Yılda 4 Kez)";
             
