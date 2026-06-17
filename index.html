@@ -438,7 +438,15 @@
                         <hr>
                         <label class="form-label fw-bold text-dark">Hizmetler ve Periyotlar</label>
                         <small class="d-block text-muted mb-2">İl fiyatları tablosundaki hizmetlere göre fiyatlandırılacaktır.</small>
-                        <div id="teklifHizmetListesi" class="border p-2 rounded bg-white mb-2" style="max-height: 350px; overflow-y: auto;">
+                        <div id="teklifHizmetListesi" class="border p-2 rounded bg-white mb-2" style="max-height: 200px; overflow-y: auto;">
+                        </div>
+                        
+                        <div id="periyotMatrisiAlani" class="mb-3" style="display:none;">
+                            <label class="form-label fw-bold text-primary mb-1" style="font-size:11px;">Şube & Periyot Eşleştirme Matrisi</label>
+                            <div class="table-responsive border border-primary rounded bg-white" style="max-height: 250px;">
+                                <table class="table table-sm table-bordered table-hover mb-0" id="periyotMatrisiTablosu">
+                                    </table>
+                            </div>
                         </div>
 
                         <div class="bg-light p-2 border rounded mb-3">
@@ -1306,7 +1314,7 @@
         subelerListesi.forEach(s => {
             html += `
             <div class="form-check border-bottom py-1">
-                <input class="form-check-input sube-chk" type="checkbox" value="${s.id}">
+                <input class="form-check-input sube-chk" type="checkbox" value="${s.id}" onchange="buildPeriyotMatrix()">
                 <label class="form-check-label">${s.adi} (${s.il}) - ${s.m2}m²</label>
             </div>`;
         });
@@ -1316,9 +1324,8 @@
 
     function selectAllBranches() {
         const checkboxes = document.querySelectorAll('.sube-chk');
-        checkboxes.forEach(cb => {
-            cb.checked = !cb.checked;
-        });
+        checkboxes.forEach(cb => { cb.checked = !cb.checked; });
+        buildPeriyotMatrix(); // Tabloyu güncelle
     }
 
     function loadServicesForQuoteList() {
@@ -1342,23 +1349,62 @@
         let html = "<ul class='list-group list-group-flush'>";
         uniqueServices.forEach((hizmet, index) => {
             html += `
-            <li class="list-group-item d-flex justify-content-between align-items-center py-2 px-1 border-bottom">
+            <li class="list-group-item py-1 px-1 border-bottom">
                 <div class="form-check mb-0">
-                    <input class="form-check-input hizmet-chk" type="checkbox" value="${hizmet}" id="srv_${index}">
+                    <input class="form-check-input hizmet-chk" type="checkbox" value="${hizmet}" id="srv_${index}" onchange="buildPeriyotMatrix()">
                     <label class="form-check-label fw-bold text-dark" for="srv_${index}" style="font-size:12px;">${hizmet}</label>
                 </div>
-                <select class="form-select form-select-sm hizmet-periyot w-auto bg-light border-secondary" data-hizmet="${hizmet}" style="font-size:11px; padding:4px 24px 4px 8px;">
-                    <option value="30">Her Gün</option>
-                    <option value="8">Haftada 2</option> <option value="4">Haftada 1</option>
-                    <option value="2">15 Günde Bir</option> <option value="1" selected>Ayda 1 Kez</option>
-                    <option value="0.33">3 Ayda 1 Kez</option>
-                    <option value="0">İstek Üzerine</option>
-                </select>
             </li>`;
         });
         html += "</ul>";
         
         container.innerHTML = html;
+    }
+
+    function buildPeriyotMatrix() {
+        const checkedSubeler = Array.from(document.querySelectorAll('.sube-chk:checked'));
+        const checkedHizmetler = Array.from(document.querySelectorAll('.hizmet-chk:checked'));
+        const container = document.getElementById('periyotMatrisiAlani');
+        const table = document.getElementById('periyotMatrisiTablosu');
+        const allSubeler = getData(KEYS.SUBELER);
+
+        if (checkedSubeler.length === 0 || checkedHizmetler.length === 0) {
+            container.style.display = 'none';
+            table.innerHTML = "";
+            return;
+        }
+
+        let thead = `<thead class="table-dark sticky-top"><tr><th style="font-size:11px;">Şube Adı</th>`;
+        checkedHizmetler.forEach(chk => {
+            thead += `<th class="text-center" style="font-size:10px;">${chk.value}</th>`;
+        });
+        thead += `</tr></thead>`;
+
+        let tbody = `<tbody>`;
+        checkedSubeler.forEach(cb => {
+            let sube = allSubeler.find(s => s.id == cb.value);
+            tbody += `<tr><td class="align-middle fw-bold" style="font-size:11px;">${sube.adi} <br><small class="text-muted fw-normal">${sube.il}</small></td>`;
+            
+            checkedHizmetler.forEach(chk => {
+                let selectId = `periyot_${sube.id}_${chk.value.replace(/\s+/g, '_')}`;
+                tbody += `<td>
+                    <select class="form-select form-select-sm" id="${selectId}" style="font-size:10px; padding:2px 15px 2px 5px; min-width: 90px;">
+                        <option value="30">Her Gün</option>
+                        <option value="8">Haftada 2</option>
+                        <option value="4">Haftada 1</option>
+                        <option value="2">15 Günde Bir</option>
+                        <option value="1" selected>Ayda 1</option>
+                        <option value="0.33">3 Ayda 1</option>
+                        <option value="0" class="text-danger fw-bold">İstemiyor (0)</option>
+                    </select>
+                </td>`;
+            });
+            tbody += `</tr>`;
+        });
+        tbody += `</tbody>`;
+
+        table.innerHTML = thead + tbody;
+        container.style.display = 'block';
     }
 
     function generateAIQuote() {
@@ -1396,12 +1442,15 @@
         let totalAylikSatis = 0;
         let tableHTML = "";
 
-        let serviceRequests = [];
-        checkedHizmetler.forEach(chk => {
-            let selectBox = document.querySelector(`.hizmet-periyot[data-hizmet="${chk.value}"]`);
-            serviceRequests.push({ 
-                ad: chk.value, 
-                periyotCarpan: Number(selectBox.value) 
+        let serviceRequests = checkedHizmetler.map(chk => ({ ad: chk.value }));
+        let periyotMatrisi = {}; // YENİ ŞUBE BAZLI MATRİS HAFIZASI
+        
+        checkedSubeler.forEach(cb => {
+            periyotMatrisi[cb.value] = {};
+            checkedHizmetler.forEach(chk => {
+                let selectId = `periyot_${cb.value}_${chk.value.replace(/\s+/g, '_')}`;
+                let selectBox = document.getElementById(selectId);
+                periyotMatrisi[cb.value][chk.value] = selectBox ? Number(selectBox.value) : 0;
             });
         });
 
@@ -1421,6 +1470,8 @@
             veri.subeler.forEach(sube => {
                 serviceRequests.forEach(srv => {
                     let srvLower = srv.ad.toLowerCase();
+                    let pCarpan = periyotMatrisi[sube.id][srv.ad]; // Şubeye özel periyodu al
+                    
                     let dbFiyat = allFiyatlar.find(f => f.hizmet.trim().toLowerCase() === srvLower && f.il.trim().toLowerCase() === ilAdi.trim().toLowerCase());
                     let birimFiyat = dbFiyat ? dbFiyat.tutar : 0; 
                     
@@ -1434,26 +1485,21 @@
                     if(srvLower.includes("tadilat")) carpimM2 = sube.tadilatM2 || sube.m2;
                     if(isDynamic) carpimM2 = 1; 
                     
-                    let aylikYuku = carpimM2 * srv.periyotCarpan;
+                    let aylikYuku = carpimM2 * pCarpan;
                     if(srvLower.includes("genel")) aylikGenelM2 += aylikYuku;
                     else if(srvLower.includes("cam")) aylikCamM2 += aylikYuku;
 
-                    // DB'den gelen rakam zaten SATIŞ FİYATI olduğu için doğrudan alıyoruz.
                     let islemSatis = carpimM2 * birimFiyat; 
-                    
-                    // İç raporlamalar için maliyeti, hedeflenen kâr oranından geriye giderek sanal hesaplıyoruz.
                     let islemMaliyet = islemSatis / (1 + (karOrani / 100)); 
 
-                    if(!komsuHavuzaDahilMi) {
-                        islemMaliyet *= 1.05; // Lojistik farkı müşteriye yansımaz, sadece bizim maliyetimizi artırır.
-                    }
+                    if(!komsuHavuzaDahilMi) islemMaliyet *= 1.05;
 
-                    if(!isDynamic && islemSatis > 0 && islemSatis < tabanFiyat && srv.periyotCarpan > 0) {
+                    if(!isDynamic && islemSatis > 0 && islemSatis < tabanFiyat && pCarpan > 0) {
                         islemSatis = tabanFiyat;
                     }
 
-                    ilAylikMaliyet += (islemMaliyet * srv.periyotCarpan);
-                    ilAylikSatis += (islemSatis * srv.periyotCarpan);
+                    ilAylikMaliyet += (islemMaliyet * pCarpan);
+                    ilAylikSatis += (islemSatis * pCarpan);
                 });
             });
 
@@ -1467,8 +1513,8 @@
             let requiredGenelManDays = 0;
 
             veri.subeler.forEach(sube => {
-                let hasCam = serviceRequests.some(s => s.ad.toLowerCase().includes("cam"));
-                let hasGenel = serviceRequests.some(s => s.ad.toLowerCase().includes("genel"));
+                let hasCam = serviceRequests.some(s => s.ad.toLowerCase().includes("cam") && periyotMatrisi[sube.id][s.ad] > 0);
+                let hasGenel = serviceRequests.some(s => s.ad.toLowerCase().includes("genel") && periyotMatrisi[sube.id][s.ad] > 0);
 
                 if (hasCam) {
                     let cM2 = Number(sube.camM2);
@@ -1531,6 +1577,7 @@
             satis: teklifSatisTutari,
             subeler: checkedSubeler.map(cb => allSubeler.find(x => x.id == cb.value)),
             hizmetler: serviceRequests,
+            periyotlar: periyotMatrisi, // YENİ VERİ EKLENDİ
             fiyatlar: allFiyatlar,
             esitDagitCam: document.getElementById('chkEsitCam').checked,
             esitDagitGenel: document.getElementById('chkEsitGenel').checked
@@ -1992,12 +2039,20 @@
         document.querySelectorAll('.hizmet-chk').forEach(cb => cb.checked = false);
         t.hizmetler.forEach(hizmet => {
             let cb = document.querySelector(`.hizmet-chk[value="${hizmet.ad}"]`);
-            if(cb) {
-                cb.checked = true;
-                let periyotSecim = document.querySelector(`.hizmet-periyot[data-hizmet="${hizmet.ad}"]`);
-                if(periyotSecim) periyotSecim.value = hizmet.periyotCarpan;
-            }
+            if(cb) cb.checked = true;
         });
+
+        // YENİ: Matrisi oluştur ve eski periyotları dropdown'lara doldur
+        buildPeriyotMatrix();
+        if(t.periyotlar) {
+            Object.keys(t.periyotlar).forEach(subeId => {
+                Object.keys(t.periyotlar[subeId]).forEach(hizmetAd => {
+                    let selectId = `periyot_${subeId}_${hizmetAd.replace(/\s+/g, '_')}`;
+                    let el = document.getElementById(selectId);
+                    if(el) el.value = t.periyotlar[subeId][hizmetAd];
+                });
+            });
+        }
         
         document.getElementById('chkEsitCam').checked = t.esitDagitCam || false;
         document.getElementById('chkEsitGenel').checked = t.esitDagitGenel || false;
@@ -2083,12 +2138,11 @@
             let tdFiyatlar = "";
 
             teklif.hizmetler.forEach(srv => {
+                let pCarpan = teklif.periyotlar ? teklif.periyotlar[sube.id][srv.ad] : 0; // ŞUBEYE ÖZEL PERİYOT ÇEKİLDİ
                 let srvLower = srv.ad.toLowerCase();
                 let dbFiyat = teklif.fiyatlar.find(f => f.hizmet.trim().toLowerCase() === srvLower && f.il.trim().toLowerCase() === sube.il.trim().toLowerCase());
                 
-                // Müşteriye Gösterilecek Fiyat (Kar/Lojistik çarpanı olmadan doğrudan DB'den alınır)
                 let rawBirimFiyat = dbFiyat ? dbFiyat.tutar : 0;
-                
                 let birimTipi = dbFiyat && dbFiyat.birimTipi ? dbFiyat.birimTipi : "m²";
                 let isDynamic = (birimTipi !== "m²") || (srvLower.includes("koltuk") || srvLower.includes("halı") || srvLower.includes("hali") || srvLower.includes("jaluzi") || srvLower.includes("iskele") || srvLower.includes("dağcı") || srvLower.includes("dagci") || srvLower.includes("saat"));
                 
@@ -2097,17 +2151,14 @@
                 if(srvLower.includes("tadilat")) carpimM2 = sube.tadilatM2 || sube.m2;
                 if(isDynamic) carpimM2 = 1;
 
-                // UYGULAMA BAŞINA NET SATIŞ TUTARI
                 let islemSatis = carpimM2 * rawBirimFiyat;
                 let marker = "";
 
-                // Tek seferlik işlem bedeli Taban Fiyatı aşamıyorsa minimum faturayı uygula (Periyot çarpanından bağımsız)
-                if(!isDynamic && islemSatis > 0 && islemSatis < tabanFiyat && srv.periyotCarpan > 0) {
+                if(!isDynamic && islemSatis > 0 && islemSatis < tabanFiyat && pCarpan > 0) {
                     islemSatis = tabanFiyat;
                     marker = `<br><span style="color:#d9534f; font-size:9px; font-weight:bold;">(⚠️ Min. Tutar)</span>`;
                 }
 
-                // YENİ EŞİT DAĞITIM KONTROLÜ
                 let birimBicimi = birimTipi === "m²" ? "₺/m²" : "₺/" + birimTipi;
                 let gosterilenBirimTutar = rawBirimFiyat.toLocaleString('tr-TR', {maximumFractionDigits:2}) + " " + birimBicimi;
                 
@@ -2121,17 +2172,15 @@
                     marker = "";
                 }
 
-                // Maliyetleri havuzlara ekleme
-                if (srv.periyotCarpan >= 1) { rutinAylikSatis += (islemSatis * srv.periyotCarpan); } 
-                else if (srv.periyotCarpan > 0 && srv.periyotCarpan < 1) { donemselUygulamaSatis += islemSatis; }
+                if (pCarpan >= 1) { rutinAylikSatis += (islemSatis * pCarpan); } 
+                else if (pCarpan > 0 && pCarpan < 1) { donemselUygulamaSatis += islemSatis; }
 
-                let bgRenk = srv.periyotCarpan == 0 ? "background-color: #fffcf2;" : "";
+                let bgRenk = pCarpan == 0 ? "background-color: #fffcf2;" : "";
                 
-                // HÜCRE İÇERİĞİ OLUŞTURMA
                 let hucreIcerik = "-";
                 if(dbFiyat) {
-                    if (srv.periyotCarpan == 0) {
-                        hucreIcerik = `<span style="font-size:12px; font-weight:bold; color:#000;">${gosterilenBirimTutar}</span>`;
+                    if (pCarpan == 0) {
+                        hucreIcerik = `<span style="font-size:12px; font-weight:bold; color:#000;">İptal/İstenmiyor</span>`;
                     } else {
                         hucreIcerik = `
                             <span style="font-size:10px; color:#666;">${gosterilenBirimTutar}</span><br>
@@ -2143,14 +2192,14 @@
 
                 tdFiyatlar += `<td style="${bgRenk}">${hucreIcerik}</td>`;
 
-                if(srv.periyotCarpan > 0) {
+                if(pCarpan > 0) {
                     let freq = "";
-                    if(srv.periyotCarpan == 30) freq = "Her Gün";
-                    else if(srv.periyotCarpan == 8) freq = "Haftada 2"; // YENİ
-                    else if(srv.periyotCarpan == 4) freq = "Haftada 1";
-                    else if(srv.periyotCarpan == 2) freq = "15 Günde Bir"; // YENİ
-                    else if(srv.periyotCarpan == 1) freq = "Ayda 1 Kez";
-                    else if(srv.periyotCarpan == 0.33) freq = "3 Ayda 1";
+                    if(pCarpan == 30) freq = "Her Gün";
+                    else if(pCarpan == 8) freq = "Haftada 2"; 
+                    else if(pCarpan == 4) freq = "Haftada 1";
+                    else if(pCarpan == 2) freq = "15 Günde Bir"; 
+                    else if(pCarpan == 1) freq = "Ayda 1 Kez";
+                    else if(pCarpan == 0.33) freq = "3 Ayda 1";
                     else freq = "Periyodik";
                     rutineTemizlikAciklamasi += `<b>${srv.ad}</b>: ${freq}<br>`;
                 }
@@ -2181,17 +2230,7 @@
 
         let dinamikEsaslar = "";
         teklif.hizmetler.forEach(h => {
-            let freq = "";
-            if(h.periyotCarpan == 30) freq = "Her Gün";
-            else if(h.periyotCarpan == 8) freq = "Haftada 2"; // YENİ
-            else if(h.periyotCarpan == 4) freq = "Haftada 1";
-            else if(h.periyotCarpan == 2) freq = "15 Günde Bir"; // YENİ
-            else if(h.periyotCarpan == 1) freq = "Ayda 1 Kez";
-            else if(h.periyotCarpan == 0.33) freq = "3 Ayda 1 (Yılda 4 Kez)";
-            
-            if(h.periyotCarpan > 0) { 
-                dinamikEsaslar += `<li style="margin-bottom: 4px;"><strong>${h.ad}:</strong> ${freq} gerçekleştirilecek olup, periyoduna göre fatura edilecektir.</li>`;
-            }
+            dinamikEsaslar += `<li style="margin-bottom: 4px;"><strong>${h.ad}:</strong> Yukarıdaki tabloda yer alan şube bazlı çalışma periyotları esas alınarak fatura edilecektir.</li>`;
         });
 
         let ozetTabloHtml = `
