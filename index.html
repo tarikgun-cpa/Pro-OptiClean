@@ -441,8 +441,11 @@
                         <div id="teklifHizmetListesi" class="border p-2 rounded bg-white mb-2" style="max-height: 200px; overflow-y: auto;">
                         </div>
                         
-                        <div id="periyotMatrisiAlani" class="mb-3" style="display:none;">
-                            <label class="form-label fw-bold text-primary mb-1" style="font-size:11px;">Şube & Periyot Eşleştirme Matrisi</label>
+                        <div id="periyotMatrisiAlani" class="mb-3" style="display:none; transition: all 0.3s ease;">
+                            <div class="d-flex justify-content-between align-items-center mb-1">
+                                <label class="form-label fw-bold text-primary mb-0" style="font-size:11px;">Şube & Periyot Eşleştirme Matrisi</label>
+                                <button type="button" class="btn btn-xs btn-primary py-0 px-2 fw-bold" style="font-size:10px; height: 20px; line-height: 1;" onclick="toggleMatrixFullscreen()">↔ Tam Ekran Genişlet / Daralt</button>
+                            </div>
                             <div class="table-responsive border border-primary rounded bg-white" style="max-height: 250px;">
                                 <table class="table table-sm table-bordered table-hover mb-0" id="periyotMatrisiTablosu">
                                     </table>
@@ -1395,7 +1398,8 @@
                         <option value="2">15 Günde Bir</option>
                         <option value="1" selected>Ayda 1</option>
                         <option value="0.33">3 Ayda 1</option>
-                        <option value="0" class="text-danger fw-bold">İstemiyor (0)</option>
+                        <option value="0" class="text-info fw-bold">İsteğe Göre</option>
+                        <option value="none" class="text-danger fw-bold">İstenmiyor</option>
                     </select>
                 </td>`;
             });
@@ -1405,6 +1409,30 @@
 
         table.innerHTML = thead + tbody;
         container.style.display = 'block';
+    }
+
+    function toggleMatrixFullscreen() {
+        const el = document.getElementById('periyotMatrisiAlani');
+        const tableContainer = el.querySelector('.table-responsive');
+        const btn = el.querySelector('button');
+        
+        if (el.classList.contains('matrix-fullscreen')) {
+            el.classList.remove('matrix-fullscreen');
+            el.style.position = ''; el.style.top = ''; el.style.left = ''; el.style.width = ''; el.style.height = '';
+            el.style.zIndex = ''; el.style.background = ''; el.style.padding = ''; el.style.boxShadow = '';
+            tableContainer.style.maxHeight = '250px';
+            btn.innerHTML = '↔ Tam Ekran Genişlet / Daralt';
+            btn.className = "btn btn-xs btn-primary py-0 px-2 fw-bold";
+        } else {
+            el.classList.add('matrix-fullscreen');
+            el.style.position = 'fixed';
+            el.style.top = '15px'; el.style.left = '15px'; el.style.width = 'calc(100% - 30px)'; el.style.height = 'calc(100% - 30px)';
+            el.style.zIndex = '9999'; el.style.background = '#ffffff'; el.style.padding = '20px';
+            el.style.boxShadow = '0 0 30px rgba(0,0,0,0.25)';
+            tableContainer.style.maxHeight = 'calc(100vh - 100px)';
+            btn.innerHTML = '🗗 Normal Boyuta Dön';
+            btn.className = "btn btn-xs btn-danger py-0 px-2 fw-bold";
+        }
     }
 
     function generateAIQuote() {
@@ -1450,7 +1478,7 @@
             checkedHizmetler.forEach(chk => {
                 let selectId = `periyot_${cb.value}_${chk.value.replace(/\s+/g, '_')}`;
                 let selectBox = document.getElementById(selectId);
-                periyotMatrisi[cb.value][chk.value] = selectBox ? Number(selectBox.value) : 0;
+                periyotMatrisi[cb.value][chk.value] = selectBox ? selectBox.value : "1";
             });
         });
 
@@ -1470,7 +1498,9 @@
             veri.subeler.forEach(sube => {
                 serviceRequests.forEach(srv => {
                     let srvLower = srv.ad.toLowerCase();
-                    let pCarpan = periyotMatrisi[sube.id][srv.ad]; // Şubeye özel periyodu al
+                    let selectVal = periyotMatrisi[sube.id][srv.ad];
+                    // "none" veya "0" ise çarpan 0'dır (Aylık ciroya yansımaz)
+                    let pCarpan = (selectVal === "none" || selectVal === "0") ? 0 : Number(selectVal);
                     
                     let dbFiyat = allFiyatlar.find(f => f.hizmet.trim().toLowerCase() === srvLower && f.il.trim().toLowerCase() === ilAdi.trim().toLowerCase());
                     let birimFiyat = dbFiyat ? dbFiyat.tutar : 0; 
@@ -1513,8 +1543,14 @@
             let requiredGenelManDays = 0;
 
             veri.subeler.forEach(sube => {
-                let hasCam = serviceRequests.some(s => s.ad.toLowerCase().includes("cam") && periyotMatrisi[sube.id][s.ad] > 0);
-                let hasGenel = serviceRequests.some(s => s.ad.toLowerCase().includes("genel") && periyotMatrisi[sube.id][s.ad] > 0);
+                let hasCam = serviceRequests.some(s => {
+                    let sv = periyotMatrisi[sube.id][s.ad];
+                    return s.ad.toLowerCase().includes("cam") && sv !== "none" && Number(sv) > 0;
+                });
+                let hasGenel = serviceRequests.some(s => {
+                    let sv = periyotMatrisi[sube.id][s.ad];
+                    return s.ad.toLowerCase().includes("genel") && sv !== "none" && Number(sv) > 0;
+                });
 
                 if (hasCam) {
                     let cM2 = Number(sube.camM2);
@@ -2138,7 +2174,8 @@
             let tdFiyatlar = "";
 
             teklif.hizmetler.forEach(srv => {
-                let pCarpan = teklif.periyotlar ? teklif.periyotlar[sube.id][srv.ad] : 0; // ŞUBEYE ÖZEL PERİYOT ÇEKİLDİ
+                let selectVal = teklif.periyotlar ? teklif.periyotlar[sube.id][srv.ad] : "1";
+                let pCarpan = (selectVal === "none" || selectVal === "0") ? 0 : Number(selectVal);
                 let srvLower = srv.ad.toLowerCase();
                 let dbFiyat = teklif.fiyatlar.find(f => f.hizmet.trim().toLowerCase() === srvLower && f.il.trim().toLowerCase() === sube.il.trim().toLowerCase());
                 
@@ -2175,32 +2212,59 @@
                 if (pCarpan >= 1) { rutinAylikSatis += (islemSatis * pCarpan); } 
                 else if (pCarpan > 0 && pCarpan < 1) { donemselUygulamaSatis += islemSatis; }
 
-                let bgRenk = pCarpan == 0 ? "background-color: #fffcf2;" : "";
+                // Seçime göre arka plan rengini özelleştiriyoruz
+                let bgRenk = "";
+                if (selectVal === "none") bgRenk = "background-color: #f1f5f9; color: #94a3b8;"; // İstenmiyor gri
+                else if (selectVal === "0") bgRenk = "background-color: #f0fdf4;"; // İsteğe göre hafif yeşil
                 
                 let hucreIcerik = "-";
                 if(dbFiyat) {
-                    if (pCarpan == 0) {
-                        hucreIcerik = `<span style="font-size:12px; font-weight:bold; color:#000;">İptal/İstenmiyor</span>`;
-                    } else {
+                    if (selectVal === "none") {
+                        hucreIcerik = `<span style="font-size:11px; color:#94a3b8; font-weight:500;">İstenmiyor</span>`;
+                    } else if (selectVal === "0") {
                         hucreIcerik = `
-                            <span style="font-size:10px; color:#666;">${gosterilenBirimTutar}</span><br>
-                            <span style="font-size:12px; font-weight:bold; color:#000;">${islemSatis.toLocaleString('tr-TR', {maximumFractionDigits:2})} ₺</span>
-                            ${marker}
+                            <span style="font-size:10px; color:#475569;">${gosterilenBirimTutar}</span><br>
+                            <span style="font-size:11px; font-weight:bold; color:#0284c7;">İsteğe Göre</span>
                         `;
+                    } else {
+                        let aylikSatisTutari = islemSatis * pCarpan;
+                        let periyotMetni = "";
+                        if(pCarpan == 30) periyotMetni = "Her Gün";
+                        else if(pCarpan == 8) periyotMetni = "Hft. 2"; 
+                        else if(pCarpan == 4) periyotMetni = "Hft. 1";
+                        else if(pCarpan == 2) periyotMetni = "15 Gün"; 
+                        else if(pCarpan == 1) periyotMetni = "Ayda 1";
+                        else if(pCarpan == 0.33) periyotMetni = "3 Ayda 1";
+
+                        if (pCarpan < 1) {
+                            // Dönemsel işler için tek uygulama fiyatı ve periyodu yazılır
+                            hucreIcerik = `
+                                <span style="font-size:10px; color:#475569;">Uyg: ${islemSatis.toLocaleString('tr-TR', {maximumFractionDigits:2})} ₺</span><br>
+                                <span style="font-size:11px; font-weight:bold; color:#e11d48;">(${periyotMetni})</span>
+                                ${marker}
+                            `;
+                        } else {
+                            // Rutin işler için: Tek Uygulama x Ayda Kaç Sefer = Aylık Toplam Ödeme
+                            hucreIcerik = `
+                                <span style="font-size:9px; color:#475569;">${islemSatis.toLocaleString('tr-TR', {maximumFractionDigits:2})} ₺ x ${pCarpan} (${periyotMetni})</span><br>
+                                <span style="font-size:12px; font-weight:bold; color:#1e3a8a; display:inline-block; margin-top:2px;">Aylık: ${aylikSatisTutari.toLocaleString('tr-TR', {maximumFractionDigits:2})} ₺</span>
+                                ${marker}
+                            `;
+                        }
                     }
                 }
 
-                tdFiyatlar += `<td style="${bgRenk}">${hucreIcerik}</td>`;
+                tdFiyatlar += `<td style="${bgRenk} text-align: center; vertical-align: middle;">${hucreIcerik}</td>`;
 
-                if(pCarpan > 0) {
+                if(pCarpan > 0 || selectVal === "0") {
                     let freq = "";
-                    if(pCarpan == 30) freq = "Her Gün";
+                    if(selectVal === "0") freq = "İsteğe Göre";
+                    else if(pCarpan == 30) freq = "Her Gün";
                     else if(pCarpan == 8) freq = "Haftada 2"; 
                     else if(pCarpan == 4) freq = "Haftada 1";
                     else if(pCarpan == 2) freq = "15 Günde Bir"; 
                     else if(pCarpan == 1) freq = "Ayda 1 Kez";
                     else if(pCarpan == 0.33) freq = "3 Ayda 1";
-                    else freq = "Periyodik";
                     rutineTemizlikAciklamasi += `<b>${srv.ad}</b>: ${freq}<br>`;
                 }
             });
