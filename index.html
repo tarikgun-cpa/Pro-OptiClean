@@ -349,10 +349,29 @@
                                     <input type="number" id="ayarKarOran" class="form-control border-success" placeholder="Örn: 50" value="50">
                                     <span class="input-group-text bg-success text-white">%</span>
                                 </div>
-                                <label class="form-label text-primary fw-bold">Şube Hizmet Taban Fiyatı (TL)</label>
-                                <div class="input-group mb-3">
-                                    <input type="number" id="ayarTabanFiyat" class="form-control border-primary" placeholder="Örn: 5000" value="5000">
-                                    <span class="input-group-text bg-primary text-white">₺</span>
+                                <label class="form-label text-primary fw-bold">Hizmet Türü Taban Fiyatları (TL)</label>
+                                <div class="row g-2 mb-3">
+                                    <div class="col-4">
+                                        <label style="font-size:10px;" class="text-secondary fw-bold">Cam Silme</label>
+                                        <div class="input-group input-group-sm">
+                                            <input type="number" id="ayarTabanFiyat_cam" class="form-control border-primary" placeholder="5000">
+                                            <span class="input-group-text bg-primary text-white">₺</span>
+                                        </div>
+                                    </div>
+                                    <div class="col-4">
+                                        <label style="font-size:10px;" class="text-secondary fw-bold">Genel Temizlik</label>
+                                        <div class="input-group input-group-sm">
+                                            <input type="number" id="ayarTabanFiyat_genel" class="form-control border-primary" placeholder="5000">
+                                            <span class="input-group-text bg-primary text-white">₺</span>
+                                        </div>
+                                    </div>
+                                    <div class="col-4">
+                                        <label style="font-size:10px;" class="text-secondary fw-bold">İskele/Dağcı</label>
+                                        <div class="input-group input-group-sm">
+                                            <input type="number" id="ayarTabanFiyat_iskele" class="form-control border-primary" placeholder="5000">
+                                            <span class="input-group-text bg-primary text-white">₺</span>
+                                        </div>
+                                    </div>
                                 </div>
                                 
                                 <h6 class="mt-4 border-bottom border-secondary pb-1 text-secondary">Kapasite ve İstihdam Ayarları (AI İçin)</h6>
@@ -1050,7 +1069,9 @@
         const ayarlar = {
             sarf: document.getElementById('ayarSarfOran').value,
             kar: document.getElementById('ayarKarOran').value,
-            taban: document.getElementById('ayarTabanFiyat').value,
+            taban_cam: document.getElementById('ayarTabanFiyat_cam').value,
+            taban_genel: document.getElementById('ayarTabanFiyat_genel').value,
+            taban_iskele: document.getElementById('ayarTabanFiyat_iskele').value,
             camFT: document.getElementById('ayarCamFT').value,
             camPT: document.getElementById('ayarCamPT').value,
             camPTGun: document.getElementById('ayarCamPTGun').value,
@@ -1168,7 +1189,9 @@
         let ayarlar = JSON.parse(localStorage.getItem(KEYS.AYARLAR)) || {};
         document.getElementById('ayarSarfOran').value = ayarlar.sarf || "15";
         document.getElementById('ayarKarOran').value = ayarlar.kar || "50";
-        document.getElementById('ayarTabanFiyat').value = ayarlar.taban || "5000";
+        document.getElementById('ayarTabanFiyat_cam').value = ayarlar.taban_cam || ayarlar.taban || "5000";
+        document.getElementById('ayarTabanFiyat_genel').value = ayarlar.taban_genel || ayarlar.taban || "5000";
+        document.getElementById('ayarTabanFiyat_iskele').value = ayarlar.taban_iskele || ayarlar.taban || "5000";
         document.getElementById('ayarCamFT').value = ayarlar.camFT || "2";
         document.getElementById('ayarCamPT').value = ayarlar.camPT || "0";
         document.getElementById('ayarCamPTGun').value = ayarlar.camPTGun || "10";
@@ -1449,7 +1472,9 @@
 
         const ayarlar = JSON.parse(localStorage.getItem(KEYS.AYARLAR)) || {};
         const karOrani = Number(ayarlar.kar) || 50; 
-        const tabanFiyat = Number(ayarlar.taban) || 5000;
+        const taban_cam = Number(ayarlar.taban_cam) || 5000;
+        const taban_genel = Number(ayarlar.taban_genel) || 5000;
+        const taban_iskele = Number(ayarlar.taban_iskele) || 5000;
         
         const allSubeler = getData(KEYS.SUBELER);
         const allFiyatlar = getData(KEYS.FIYATLAR);
@@ -1524,8 +1549,13 @@
 
                     if(!komsuHavuzaDahilMi) islemMaliyet *= 1.05;
 
-                    if(!isDynamic && islemSatis > 0 && islemSatis < tabanFiyat && pCarpan > 0) {
-                        islemSatis = tabanFiyat;
+                    let aktifTaban = taban_genel;
+                    if(srvLower.includes("cam")) aktifTaban = taban_cam;
+                    else if(srvLower.includes("iskele") || srvLower.includes("dağcı") || srvLower.includes("dagci") || srvLower.includes("saat")) aktifTaban = taban_iskele;
+
+                    // isDynamic olanlar (iskele, dağcı vs.) veya normal hizmetler için taban uygula
+                    if(islemSatis > 0 && islemSatis < aktifTaban && pCarpan > 0) {
+                        islemSatis = aktifTaban;
                     }
 
                     ilAylikMaliyet += (islemMaliyet * pCarpan);
@@ -2116,7 +2146,9 @@
         if(!teklif) return;
 
         const ayarlar = JSON.parse(localStorage.getItem(KEYS.AYARLAR)) || {};
-        const tabanFiyat = Number(ayarlar.taban) || 5000;
+        const taban_cam = Number(ayarlar.taban_cam) || 5000;
+        const taban_genel = Number(ayarlar.taban_genel) || 5000;
+        const taban_iskele = Number(ayarlar.taban_iskele) || 5000;
         
         let istekUzereHizmetler = [];
         teklif.hizmetler.forEach(h => {
@@ -2154,8 +2186,12 @@
                 if(srvLower.includes("tadilat")) carpimM2 = sube.tadilatM2 || sube.m2;
                 if(isDynamic) carpimM2 = 1;
 
+                let selectVal = teklif.periyotlar ? teklif.periyotlar[sube.id][srv.ad] : "1";
+                let pCarpan = (selectVal === "none" || selectVal === "0") ? 0 : Number(selectVal);
+                
                 let islemSatis = carpimM2 * rawBirimFiyat;
-                if(!isDynamic && islemSatis > 0 && islemSatis < tabanFiyat && srv.periyotCarpan > 0) islemSatis = tabanFiyat;
+                let aktifTaban = srvLower.includes("cam") ? taban_cam : (srvLower.includes("iskele") || srvLower.includes("dağcı") || srvLower.includes("saat") ? taban_iskele : taban_genel);
+                if(islemSatis > 0 && islemSatis < aktifTaban && pCarpan > 0) islemSatis = aktifTaban;
 
                 if (teklif.esitDagitCam && srvLower.includes("cam")) { camTotal += islemSatis; camSubeCount++; }
                 if (teklif.esitDagitGenel && srvLower.includes("genel")) { genelTotal += islemSatis; genelSubeCount++; }
@@ -2191,8 +2227,9 @@
                 let islemSatis = carpimM2 * rawBirimFiyat;
                 let marker = "";
 
-                if(!isDynamic && islemSatis > 0 && islemSatis < tabanFiyat && pCarpan > 0) {
-                    islemSatis = tabanFiyat;
+                let aktifTaban = srvLower.includes("cam") ? taban_cam : (srvLower.includes("iskele") || srvLower.includes("dağcı") || srvLower.includes("saat") ? taban_iskele : taban_genel);
+                if(islemSatis > 0 && islemSatis < aktifTaban && pCarpan > 0) {
+                    islemSatis = aktifTaban;
                     marker = `<br><span style="color:#d9534f; font-size:9px; font-weight:bold;">(⚠️ Min. Tutar)</span>`;
                 }
 
@@ -2256,10 +2293,9 @@
 
                 tdFiyatlar += `<td style="${bgRenk} text-align: center; vertical-align: middle;">${hucreIcerik}</td>`;
 
-                if(pCarpan > 0 || selectVal === "0") {
+                if(pCarpan > 0) {
                     let freq = "";
-                    if(selectVal === "0") freq = "İsteğe Göre";
-                    else if(pCarpan == 30) freq = "Her Gün";
+                    if(pCarpan == 30) freq = "Her Gün";
                     else if(pCarpan == 8) freq = "Haftada 2"; 
                     else if(pCarpan == 4) freq = "Haftada 1";
                     else if(pCarpan == 2) freq = "15 Günde Bir"; 
@@ -2389,9 +2425,9 @@
                         ${istekUzereHtml}
                     </ul>
                     
-                    ${teklif.hizmetler.some(h => h.ad.toLowerCase().includes('cam') || h.ad.toLowerCase().includes('genel')) ? `
+                    ${teklif.hizmetler.length > 0 ? `
                     <div style="background: #fff3f3; color: #d9534f; padding: 10px; border-left: 4px solid #d9534f; font-size: 12px; margin-bottom: 15px;">
-                        <strong>⚠️ DİKKAT (Şube Hizmet Taban Fiyatı):</strong> Şube bazlı hizmetlerde uygulanacak minimum fatura tutarı <strong>${tabanFiyat.toLocaleString('tr-TR')} TL</strong>'dir. Hesaplanan işlem hacmi bu tutarın altında kalsa dahi, faturaya (⚠️ Min. Tutar) ibaresi ile belirtilen bu taban fiyat esas alınır.
+                        <strong>⚠️ DİKKAT (Hizmet Taban Fiyatları):</strong> Şube bazlı işlemlerde hesaplanan tutar sınırın altındaysa taban fiyatlar esas alınır. (Genel Temizlik: ${taban_genel} ₺, Cam: ${taban_cam} ₺, İskele/Dağcı: ${taban_iskele} ₺)
                     </div>` : ""}
                     
                     <div style="text-align: right; font-size: 14px; font-weight: bold; margin-top: 15px; border-top: 1px dashed #ccc; padding-top: 10px;">
@@ -2693,7 +2729,9 @@
         document.getElementById('hakedisThead').innerHTML = th;
 
         const ayarlar = JSON.parse(localStorage.getItem(KEYS.AYARLAR)) || {};
-        const tabanFiyat = Number(ayarlar.taban) || 5000;
+        const taban_cam = Number(ayarlar.taban_cam) || 5000;
+        const taban_genel = Number(ayarlar.taban_genel) || 5000;
+        const taban_iskele = Number(ayarlar.taban_iskele) || 5000;
 
         let camTotal = 0; let genelTotal = 0;
         let camSubeCount = 0; let genelSubeCount = 0;
@@ -2711,7 +2749,8 @@
                     if(srvLower.includes("cam")) carpimM2 = sube.camM2 || sube.m2;
                     if(srvLower.includes("tadilat")) carpimM2 = sube.tadilatM2 || sube.m2;
                     let finalFiyat = birimFiyat * carpimM2;
-                    if (finalFiyat > 0 && finalFiyat < tabanFiyat) finalFiyat = tabanFiyat;
+                    let aktifTaban = srvLower.includes("cam") ? taban_cam : (srvLower.includes("iskele") || srvLower.includes("dağcı") || srvLower.includes("saat") ? taban_iskele : taban_genel);
+                    if (finalFiyat > 0 && finalFiyat < aktifTaban) finalFiyat = aktifTaban;
 
                     if (teklif.esitDagitCam && srvLower.includes("cam")) { camTotal += finalFiyat; camSubeCount++; }
                     if (teklif.esitDagitGenel && srvLower.includes("genel")) { genelTotal += finalFiyat; genelSubeCount++; }
@@ -2750,11 +2789,10 @@
                     if(srvLower.includes("tadilat")) carpimM2 = sube.tadilatM2 || sube.m2;
                     let finalFiyat = birimFiyat * carpimM2;
 
-                    // Taban Fiyat Kontrolü Eklendi
-                    const ayarlar = JSON.parse(localStorage.getItem(KEYS.AYARLAR)) || {};
-                    const tabanFiyat = Number(ayarlar.taban) || 5000;
-                    if (finalFiyat > 0 && finalFiyat < tabanFiyat) {
-                        finalFiyat = tabanFiyat;
+                    // Taban Fiyat Kontrolü (Hizmet Bazlı)
+                    let aktifTaban = srvLower.includes("cam") ? taban_cam : (srvLower.includes("iskele") || srvLower.includes("dağcı") || srvLower.includes("saat") ? taban_iskele : taban_genel);
+                    if (finalFiyat > 0 && finalFiyat < aktifTaban) {
+                        finalFiyat = aktifTaban;
                     }
                     
                     // Eşit Dağıtım Ezmesi (Dışarıda olmalı)
@@ -2885,7 +2923,9 @@
         document.querySelectorAll('.hakedis-input').forEach(inp => { if(inp.value > 0) miktarlar[inp.getAttribute('data-id')] = Number(inp.value); });
 
         const ayarlar = JSON.parse(localStorage.getItem(KEYS.AYARLAR)) || {};
-        const tabanFiyat = Number(ayarlar.taban) || 5000;
+        const taban_cam = Number(ayarlar.taban_cam) || 5000;
+        const taban_genel = Number(ayarlar.taban_genel) || 5000;
+        const taban_iskele = Number(ayarlar.taban_iskele) || 5000;
 
         let camTotal = 0; let genelTotal = 0;
         let camSubeCount = 0; let genelSubeCount = 0;
@@ -2903,7 +2943,8 @@
                     if(srvLower.includes("cam")) carpimM2 = sube.camM2 || sube.m2;
                     if(srvLower.includes("tadilat")) carpimM2 = sube.tadilatM2 || sube.m2;
                     let finalFiyat = birimFiyat * carpimM2;
-                    if (finalFiyat > 0 && finalFiyat < tabanFiyat) finalFiyat = tabanFiyat;
+                    let aktifTaban = srvLower.includes("cam") ? taban_cam : (srvLower.includes("iskele") || srvLower.includes("dağcı") || srvLower.includes("saat") ? taban_iskele : taban_genel);
+                    if (finalFiyat > 0 && finalFiyat < aktifTaban) finalFiyat = aktifTaban;
 
                     if (teklif.esitDagitCam && srvLower.includes("cam")) { camTotal += finalFiyat; camSubeCount++; }
                     if (teklif.esitDagitGenel && srvLower.includes("genel")) { genelTotal += finalFiyat; genelSubeCount++; }
@@ -2928,8 +2969,7 @@
                 let birimTipi = dbFiyat && dbFiyat.birimTipi ? dbFiyat.birimTipi : "m²";
                 let isFixed = (birimTipi === "m²") && !(srvLower.includes("koltuk") || srvLower.includes("halı") || srvLower.includes("hali") || srvLower.includes("jaluzi") || srvLower.includes("iskele") || srvLower.includes("dağcı") || srvLower.includes("dagci") || srvLower.includes("saat"));
                 
-                const ayarlar = JSON.parse(localStorage.getItem(KEYS.AYARLAR)) || {};
-                const tabanFiyat = Number(ayarlar.taban) || 5000;
+                let aktifTaban = srvLower.includes("cam") ? taban_cam : (srvLower.includes("iskele") || srvLower.includes("dağcı") || srvLower.includes("saat") ? taban_iskele : taban_genel);
 
                 // Sabit Hizmetler (Cam, Genel vb.)
                 if(isFixed && isaretliler.includes(chkId)) {
@@ -2940,9 +2980,9 @@
                     let aciklamaYazisi = `${carpimM2} m² x ${birimFiyat.toLocaleString('tr-TR')} ₺`;
 
                     // Taban Fiyat Kontrolü
-                    if (fiyat > 0 && fiyat < tabanFiyat) {
-                        fiyat = tabanFiyat;
-                        aciklamaYazisi = `<i>Minimum Şube Taban Fiyatı Uygulandı</i>`;
+                    if (fiyat > 0 && fiyat < aktifTaban) {
+                        fiyat = aktifTaban;
+                        aciklamaYazisi = `<i>Minimum Hizmet Taban Fiyatı Uygulandı</i>`;
                     }
                     
                     // Eşit Dağıtım Ezmesi
