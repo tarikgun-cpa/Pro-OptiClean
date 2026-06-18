@@ -2209,8 +2209,8 @@ function saveSettings() {
             });
         });
 
-        let camOrtalama = camSubeCount > 0 ? (camTotal / camSubeCount) : 0;
-        let genelOrtalama = genelSubeCount > 0 ? (genelTotal / genelSubeCount) : 0;
+        let camOrtalama = camSubeCount > 0 ? Math.ceil((camTotal / camSubeCount) / 100) * 100 : 0;
+        let genelOrtalama = genelSubeCount > 0 ? Math.ceil((genelTotal / genelSubeCount) / 100) * 100 : 0;
 
         let trRows = "";
         let rutinAylikSatis = 0;
@@ -2244,11 +2244,8 @@ function saveSettings() {
                 if (srvLower.includes("saat") || srvLower.includes("iskele") || srvLower.includes("dağcı")) {
                     if (carpimM2 > 0) {
                         islemSatis = aktifTaban + ((carpimM2 - 1) * rawBirimFiyat);
-                        if (carpimM2 === 1) {
-                            gosterilenBirimTutar = `İlk Saat Taban: ${aktifTaban.toLocaleString('tr-TR')} ₺`;
-                        } else {
-                            gosterilenBirimTutar = `İlk Saat: ${aktifTaban.toLocaleString('tr-TR')} ₺ + ${carpimM2 - 1} ${birimTipi} x ${rawBirimFiyat.toLocaleString('tr-TR')} ₺`;
-                        }
+                        // Müşteriye Birim & Toplam sütununda tüm saatlik tarifenin formülünü net bir şekilde göster
+                        gosterilenBirimTutar = `<span style="color:#e11d48">İlk Sa: ${aktifTaban.toLocaleString('tr-TR')} ₺</span><br><span style="color:#0284c7">Ek Sa: ${rawBirimFiyat.toLocaleString('tr-TR')} ₺/${birimTipi}</span>`;
                     } else {
                         gosterilenBirimTutar = "0 Saat";
                     }
@@ -2302,6 +2299,7 @@ function saveSettings() {
                         if (pCarpan < 1) {
                             // Dönemsel işler için tek uygulama fiyatı ve periyodu yazılır
                             hucreIcerik = `
+                                <span style="font-size:10px; color:#666; display:block; margin-bottom:2px;">${gosterilenBirimTutar}</span>
                                 <span style="font-size:10px; color:#475569;">Uyg: ${islemSatis.toLocaleString('tr-TR', {maximumFractionDigits:2})} ₺</span><br>
                                 <span style="font-size:11px; font-weight:bold; color:#e11d48;">(${periyotMetni})</span>
                                 ${marker}
@@ -2309,6 +2307,7 @@ function saveSettings() {
                         } else {
                             // Rutin işler için: Tek Uygulama x Ayda Kaç Sefer = Aylık Toplam Ödeme
                             hucreIcerik = `
+                                <span style="font-size:10px; color:#666; display:block; margin-bottom:2px;">${gosterilenBirimTutar}</span>
                                 <span style="font-size:9px; color:#475569;">${islemSatis.toLocaleString('tr-TR', {maximumFractionDigits:2})} ₺ x ${pCarpan} (${periyotMetni})</span><br>
                                 <span style="font-size:12px; font-weight:bold; color:#1e3a8a; display:inline-block; margin-top:2px;">Aylık: ${aylikSatisTutari.toLocaleString('tr-TR', {maximumFractionDigits:2})} ₺</span>
                                 ${marker}
@@ -2790,8 +2789,8 @@ function saveSettings() {
             });
         });
 
-        let camOrtalama = camSubeCount > 0 ? (camTotal / camSubeCount) : 0;
-        let genelOrtalama = genelSubeCount > 0 ? (genelTotal / genelSubeCount) : 0;
+        let camOrtalama = camSubeCount > 0 ? Math.ceil((camTotal / camSubeCount) / 100) * 100 : 0;
+        let genelOrtalama = genelSubeCount > 0 ? Math.ceil((genelTotal / genelSubeCount) / 100) * 100 : 0;
 
         let tr = "";
         teklif.subeler.forEach(sube => {
@@ -2987,8 +2986,8 @@ function saveSettings() {
             });
         });
 
-        let camOrtalama = camSubeCount > 0 ? (camTotal / camSubeCount) : 0;
-        let genelOrtalama = genelSubeCount > 0 ? (genelTotal / genelSubeCount) : 0;
+        let camOrtalama = camSubeCount > 0 ? Math.ceil((camTotal / camSubeCount) / 100) * 100 : 0;
+        let genelOrtalama = genelSubeCount > 0 ? Math.ceil((genelTotal / genelSubeCount) / 100) * 100 : 0;
 
         let trRows = "";
         teklif.subeler.forEach(sube => {
