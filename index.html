@@ -47,10 +47,10 @@
         .nav-pills .nav-link.active { background-color: #334155; color: white; }
 
         /* TABLOLAR (Kompakt ve Okunabilir) */
-        .table { font-size: 12px; margin-bottom: 0; color: #334155; }
-        .table-responsive { border: 1px solid #e2e8f0; border-radius: 8px; max-height: 500px; overflow-y: auto; }
-        .table th { background-color: #f8fafc !important; color: #475569 !important; font-weight: 700; text-transform: uppercase; font-size: 10px; letter-spacing: 0.5px; border-bottom: 2px solid #cbd5e1 !important; padding: 10px 8px; vertical-align: middle; position: sticky; top: 0; z-index: 1;}
-        .table td { padding: 6px 8px; vertical-align: middle; border-bottom: 1px solid #f1f5f9; }
+        .table { font-size: 12px; margin-bottom: 0; color: #334155; width: 100%; }
+        .table-responsive { border: 1px solid #e2e8f0; border-radius: 8px; max-height: 500px; overflow-y: auto; overflow-x: auto; }
+        .table th { background-color: #f8fafc !important; color: #475569 !important; font-weight: 700; text-transform: uppercase; font-size: 10px; letter-spacing: 0.5px; border-bottom: 2px solid #cbd5e1 !important; padding: 10px 12px; vertical-align: middle; position: sticky; top: 0; z-index: 1; white-space: nowrap;}
+        .table td { padding: 8px 12px; vertical-align: middle; border-bottom: 1px solid #f1f5f9; }
         .table-hover tbody tr:hover { background-color: #f0fdf4; }
         
         /* İSTATİSTİK KARTLARI (Özet Paneli) */
@@ -1529,16 +1529,17 @@ function saveSettings() {
                     let pCarpan = (selectVal === "none" || selectVal === "0") ? 0 : Number(selectVal);
                     
                     let dbFiyat = allFiyatlar.find(f => f.hizmet.trim().toLowerCase() === srvLower && f.il.trim().toLowerCase() === ilAdi.trim().toLowerCase());
-                    let birimFiyat = dbFiyat ? dbFiyat.tutar : 0; 
+                    let birimFiyat = dbFiyat ? Number(dbFiyat.tutar) : 0; 
                     
                     if(!dbFiyat) hizmetDetaylariHTML += `<span class="badge bg-danger mt-1">! ${srv.ad} fiyatı eksik!</span><br>`;
 
                     let birimTipi = dbFiyat && dbFiyat.birimTipi ? dbFiyat.birimTipi : "m²";
                     let isDynamic = (birimTipi !== "m²") || (srvLower.includes("koltuk") || srvLower.includes("halı") || srvLower.includes("hali") || srvLower.includes("jaluzi") || srvLower.includes("iskele") || srvLower.includes("dağcı") || srvLower.includes("dagci") || srvLower.includes("saat"));
 
-                    let carpimM2 = sube.m2;
-                    if(srvLower.includes("cam")) carpimM2 = sube.camM2 || sube.m2;
-                    if(srvLower.includes("tadilat")) carpimM2 = sube.tadilatM2 || sube.m2;
+                    let baseM2 = Number(sube.m2) || 0;
+                    let carpimM2 = baseM2;
+                    if(srvLower.includes("cam") && Number(sube.camM2) > 0) carpimM2 = Number(sube.camM2);
+                    if(srvLower.includes("tadilat") && Number(sube.tadilatM2) > 0) carpimM2 = Number(sube.tadilatM2);
                     if(isDynamic) carpimM2 = 1; 
                     
                     let aylikYuku = carpimM2 * pCarpan;
@@ -2181,13 +2182,14 @@ function saveSettings() {
             teklif.hizmetler.forEach(srv => {
                 let srvLower = srv.ad.toLowerCase();
                 let dbFiyat = teklif.fiyatlar.find(f => f.hizmet.trim().toLowerCase() === srvLower && f.il.trim().toLowerCase() === sube.il.trim().toLowerCase());
-                let rawBirimFiyat = dbFiyat ? dbFiyat.tutar : 0;
+                let rawBirimFiyat = dbFiyat ? Number(dbFiyat.tutar) : 0;
                 let birimTipi = dbFiyat && dbFiyat.birimTipi ? dbFiyat.birimTipi : "m²";
                 let isDynamic = (birimTipi !== "m²") || (srvLower.includes("koltuk") || srvLower.includes("halı") || srvLower.includes("hali") || srvLower.includes("jaluzi") || srvLower.includes("iskele") || srvLower.includes("dağcı") || srvLower.includes("dagci") || srvLower.includes("saat"));
                 
-                let carpimM2 = sube.m2;
-                if(srvLower.includes("cam")) carpimM2 = sube.camM2 || sube.m2;
-                if(srvLower.includes("tadilat")) carpimM2 = sube.tadilatM2 || sube.m2;
+                let baseM2 = Number(sube.m2) || 0;
+                let carpimM2 = baseM2;
+                if(srvLower.includes("cam") && Number(sube.camM2) > 0) carpimM2 = Number(sube.camM2);
+                if(srvLower.includes("tadilat") && Number(sube.tadilatM2) > 0) carpimM2 = Number(sube.tadilatM2);
                 if(isDynamic) carpimM2 = 1;
 
                 let selectVal = teklif.periyotlar ? teklif.periyotlar[sube.id][srv.ad] : "1";
@@ -2226,13 +2228,14 @@ function saveSettings() {
                 let srvLower = srv.ad.toLowerCase();
                 let dbFiyat = teklif.fiyatlar.find(f => f.hizmet.trim().toLowerCase() === srvLower && f.il.trim().toLowerCase() === sube.il.trim().toLowerCase());
                 
-                let rawBirimFiyat = dbFiyat ? dbFiyat.tutar : 0;
+                let rawBirimFiyat = dbFiyat ? Number(dbFiyat.tutar) : 0;
                 let birimTipi = dbFiyat && dbFiyat.birimTipi ? dbFiyat.birimTipi : "m²";
                 let isDynamic = (birimTipi !== "m²") || (srvLower.includes("koltuk") || srvLower.includes("halı") || srvLower.includes("hali") || srvLower.includes("jaluzi") || srvLower.includes("iskele") || srvLower.includes("dağcı") || srvLower.includes("dagci") || srvLower.includes("saat"));
                 
-                let carpimM2 = sube.m2;
-                if(srvLower.includes("cam")) carpimM2 = sube.camM2 || sube.m2;
-                if(srvLower.includes("tadilat")) carpimM2 = sube.tadilatM2 || sube.m2;
+                let baseM2 = Number(sube.m2) || 0;
+                let carpimM2 = baseM2;
+                if(srvLower.includes("cam") && Number(sube.camM2) > 0) carpimM2 = Number(sube.camM2);
+                if(srvLower.includes("tadilat") && Number(sube.tadilatM2) > 0) carpimM2 = Number(sube.tadilatM2);
                 if(isDynamic) carpimM2 = 1;
 
                 let aktifTaban = srvLower.includes("cam") ? taban_cam : (srvLower.includes("iskele") || srvLower.includes("dağcı") || srvLower.includes("saat") ? taban_iskele : taban_genel);
@@ -2764,15 +2767,16 @@ function saveSettings() {
         teklif.subeler.forEach(sube => {
             teklif.hizmetler.forEach(srv => {
                 let dbFiyat = teklif.fiyatlar.find(f => f.hizmet.trim().toLowerCase() === srv.ad.trim().toLowerCase() && f.il.trim().toLowerCase() === sube.il.trim().toLowerCase());
-                let birimFiyat = dbFiyat ? dbFiyat.tutar : 0;
+                let birimFiyat = dbFiyat ? Number(dbFiyat.tutar) : 0;
                 let srvLower = srv.ad.toLowerCase();
                 let birimTipi = dbFiyat && dbFiyat.birimTipi ? dbFiyat.birimTipi : "m²";
                 let isFixedCell = (birimTipi === "m²") && !(srvLower.includes("koltuk") || srvLower.includes("halı") || srvLower.includes("hali") || srvLower.includes("jaluzi") || srvLower.includes("iskele") || srvLower.includes("dağcı") || srvLower.includes("dagci") || srvLower.includes("saat"));
                 
                 if (isFixedCell) {
-                    let carpimM2 = sube.m2;
-                    if(srvLower.includes("cam")) carpimM2 = sube.camM2 || sube.m2;
-                    if(srvLower.includes("tadilat")) carpimM2 = sube.tadilatM2 || sube.m2;
+                    let baseM2 = Number(sube.m2) || 0;
+                    let carpimM2 = baseM2;
+                    if(srvLower.includes("cam") && Number(sube.camM2) > 0) carpimM2 = Number(sube.camM2);
+                    if(srvLower.includes("tadilat") && Number(sube.tadilatM2) > 0) carpimM2 = Number(sube.tadilatM2);
                     let aktifTaban = srvLower.includes("cam") ? taban_cam : (srvLower.includes("iskele") || srvLower.includes("dağcı") || srvLower.includes("saat") ? taban_iskele : taban_genel);
                     let finalFiyat = 0;
 
@@ -2798,7 +2802,7 @@ function saveSettings() {
             
             teklif.hizmetler.forEach(srv => {
                 let dbFiyat = teklif.fiyatlar.find(f => f.hizmet.trim().toLowerCase() === srv.ad.trim().toLowerCase() && f.il.trim().toLowerCase() === sube.il.trim().toLowerCase());
-                let birimFiyat = dbFiyat ? dbFiyat.tutar : 0;
+                let birimFiyat = dbFiyat ? Number(dbFiyat.tutar) : 0;
                 let srvLower = srv.ad.toLowerCase();
                 let chkId = `${sube.id}_${srv.ad}`;
                 
@@ -2815,9 +2819,10 @@ function saveSettings() {
                 } 
                 // Sabit Çarpanlı Hizmetler
                 else {
-                    let carpimM2 = sube.m2;
-                    if(srvLower.includes("cam")) carpimM2 = sube.camM2 || sube.m2;
-                    if(srvLower.includes("tadilat")) carpimM2 = sube.tadilatM2 || sube.m2;
+                    let baseM2 = Number(sube.m2) || 0;
+                    let carpimM2 = baseM2;
+                    if(srvLower.includes("cam") && Number(sube.camM2) > 0) carpimM2 = Number(sube.camM2);
+                    if(srvLower.includes("tadilat") && Number(sube.tadilatM2) > 0) carpimM2 = Number(sube.tadilatM2);
                     
                     let aktifTaban = srvLower.includes("cam") ? taban_cam : (srvLower.includes("iskele") || srvLower.includes("dağcı") || srvLower.includes("saat") ? taban_iskele : taban_genel);
                     let finalFiyat = 0;
@@ -2967,15 +2972,16 @@ function saveSettings() {
         teklif.subeler.forEach(sube => {
             teklif.hizmetler.forEach(srv => {
                 let dbFiyat = teklif.fiyatlar.find(f => f.hizmet.trim().toLowerCase() === srv.ad.trim().toLowerCase() && f.il.trim().toLowerCase() === sube.il.trim().toLowerCase());
-                let birimFiyat = dbFiyat ? dbFiyat.tutar : 0;
+                let birimFiyat = dbFiyat ? Number(dbFiyat.tutar) : 0;
                 let srvLower = srv.ad.toLowerCase();
                 let birimTipi = dbFiyat && dbFiyat.birimTipi ? dbFiyat.birimTipi : "m²";
                 let isFixedCell = (birimTipi === "m²") && !(srvLower.includes("koltuk") || srvLower.includes("halı") || srvLower.includes("hali") || srvLower.includes("jaluzi") || srvLower.includes("iskele") || srvLower.includes("dağcı") || srvLower.includes("dagci") || srvLower.includes("saat"));
                 
                 if (isFixedCell) {
-                    let carpimM2 = sube.m2;
-                    if(srvLower.includes("cam")) carpimM2 = sube.camM2 || sube.m2;
-                    if(srvLower.includes("tadilat")) carpimM2 = sube.tadilatM2 || sube.m2;
+                    let baseM2 = Number(sube.m2) || 0;
+                    let carpimM2 = baseM2;
+                    if(srvLower.includes("cam") && Number(sube.camM2) > 0) carpimM2 = Number(sube.camM2);
+                    if(srvLower.includes("tadilat") && Number(sube.tadilatM2) > 0) carpimM2 = Number(sube.tadilatM2);
                     let finalFiyat = birimFiyat * carpimM2;
                     let aktifTaban = srvLower.includes("cam") ? taban_cam : (srvLower.includes("iskele") || srvLower.includes("dağcı") || srvLower.includes("saat") ? taban_iskele : taban_genel);
                     if (finalFiyat > 0 && finalFiyat < aktifTaban) finalFiyat = aktifTaban;
@@ -2998,7 +3004,7 @@ function saveSettings() {
                 let srvLower = srv.ad.toLowerCase();
                 let chkId = `${sube.id}_${srv.ad}`;
                 let dbFiyat = teklif.fiyatlar.find(f => f.hizmet.trim().toLowerCase() === srv.ad.trim().toLowerCase() && f.il.trim().toLowerCase() === sube.il.trim().toLowerCase());
-                let birimFiyat = dbFiyat ? dbFiyat.tutar : 0;
+                let birimFiyat = dbFiyat ? Number(dbFiyat.tutar) : 0;
                 
                 let birimTipi = dbFiyat && dbFiyat.birimTipi ? dbFiyat.birimTipi : "m²";
                 let isFixed = (birimTipi === "m²") && !(srvLower.includes("koltuk") || srvLower.includes("halı") || srvLower.includes("hali") || srvLower.includes("jaluzi") || srvLower.includes("iskele") || srvLower.includes("dağcı") || srvLower.includes("dagci") || srvLower.includes("saat"));
@@ -3007,9 +3013,10 @@ function saveSettings() {
 
                 // Sabit Hizmetler (Cam, Genel vb.)
                 if(isFixed && isaretliler.includes(chkId)) {
-                    let carpimM2 = sube.m2;
-                    if(srvLower.includes("cam")) carpimM2 = sube.camM2 || sube.m2;
-                    if(srvLower.includes("tadilat")) carpimM2 = sube.tadilatM2 || sube.m2;
+                    let baseM2 = Number(sube.m2) || 0;
+                    let carpimM2 = baseM2;
+                    if(srvLower.includes("cam") && Number(sube.camM2) > 0) carpimM2 = Number(sube.camM2);
+                    if(srvLower.includes("tadilat") && Number(sube.tadilatM2) > 0) carpimM2 = Number(sube.tadilatM2);
                     let fiyat = 0;
                     let aciklamaYazisi = "";
 
@@ -3179,9 +3186,10 @@ function saveSettings() {
                 let chkId = `${sube.id}_${srv.ad}`;
                 
                 if(isaretliler.includes(chkId)) {
-                    let carpimM2 = sube.m2;
-                    if(srvLower.includes("cam")) carpimM2 = sube.camM2 || sube.m2;
-                    if(srvLower.includes("tadilat")) carpimM2 = sube.tadilatM2 || sube.m2;
+                    let baseM2 = Number(sube.m2) || 0;
+                    let carpimM2 = baseM2;
+                    if(srvLower.includes("cam") && Number(sube.camM2) > 0) carpimM2 = Number(sube.camM2);
+                    if(srvLower.includes("tadilat") && Number(sube.tadilatM2) > 0) carpimM2 = Number(sube.tadilatM2);
                     yapilanHizmetler.push(`☑️ <b>${srv.ad}</b> (${carpimM2} m²)`);
                 }
                 
