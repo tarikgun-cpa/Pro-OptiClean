@@ -738,13 +738,17 @@
         auth.signOut().then(() => { location.reload(); });
     }
 
-    async function syncFromCloud(uid) {
+    function syncFromCloud(uid) {
         window.currentUserUid = uid;
-        const snapshot = await db.collection('cpa_veriler').doc(uid).collection('veritabanlarim').get();
-        snapshot.forEach(doc => {
-            localStorage.setItem(doc.id, doc.data().veri);
+        // get() yerine onSnapshot kullanarak diğer bilgisayarlara anlık veri akışı sağlıyoruz
+        db.collection('cpa_veriler').doc(uid).collection('veritabanlarim').onSnapshot((snapshot) => {
+            snapshot.forEach(doc => {
+                localStorage.setItem(doc.id, doc.data().veri);
+            });
+            renderAll();
+        }, (error) => {
+            console.error("Bulut eşitleme hatası:", error);
         });
-        renderAll();
     }
 
     // Oturum kontrolü
@@ -790,7 +794,11 @@
         let stringData = JSON.stringify(data);
         localStorage.setItem(key, stringData);
         if(window.currentUserUid) {
-            db.collection('cpa_veriler').doc(window.currentUserUid).collection('veritabanlarim').doc(key).set({veri: stringData});
+            db.collection('cpa_veriler').doc(window.currentUserUid).collection('veritabanlarim').doc(key).set({veri: stringData})
+            .catch((error) => {
+                console.error("Buluta veri kaydetme hatası:", error);
+                alert("DİKKAT: Veri buluta KAYDEDİLEMEDİ! İnternet bağlantınızı kontrol edin.");
+            });
         }
         renderAll();
     }
@@ -1794,7 +1802,7 @@ function saveSettings() {
         ayarlar.genelFT = document.getElementById('hizliGenelFT').value;
         ayarlar.genelPT = document.getElementById('hizliGenelPT').value;
         
-        localStorage.setItem(KEYS.AYARLAR, JSON.stringify(ayarlar));
+        saveData(KEYS.AYARLAR, ayarlar); // Sadece bilgisayara değil, doğrudan bulut fonksiyonuna gönderiyoruz
         
         // Ana sekmedeki inputları da senkronize et
         document.getElementById('ayarCamFT').value = ayarlar.camFT;
