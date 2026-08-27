@@ -724,9 +724,9 @@
         const p = document.getElementById('loginPassword').value;
         document.getElementById('btnLogin').innerText = "Bağlanıyor...";
         auth.signInWithEmailAndPassword(e, p).then((userCredential) => {
-            document.getElementById('loginOverlay').style.display = 'none';
-            document.getElementById('mainApp').style.display = 'block';
-            syncFromCloud(userCredential.user.uid);
+            // Alt kısımdaki onAuthStateChanged fonksiyonu burayı zaten yakalayacağı için 
+            // çifte senkronizasyon döngüsünü engelledik.
+            console.log("Giriş başarılı, ortak veritabanına bağlanılıyor...");
         }).catch((error) => {
             document.getElementById('loginError').innerText = "Hatalı giriş! " + error.message;
             document.getElementById('loginError').style.display = 'block';
@@ -740,14 +740,15 @@
 
     function syncFromCloud(uid) {
         window.currentUserUid = uid;
-        // get() yerine onSnapshot kullanarak diğer bilgisayarlara anlık veri akışı sağlıyoruz
-        db.collection('cpa_veriler').doc(uid).collection('veritabanlarim').onSnapshot((snapshot) => {
+        // DİKKAT: 'uid' yerine 'ORTAK_VERITABANI' kullanarak herkesin aynı veriyi görmesini sağlıyoruz.
+        db.collection('cpa_veriler').doc('ORTAK_VERITABANI').collection('veritabanlarim').onSnapshot((snapshot) => {
             snapshot.forEach(doc => {
                 localStorage.setItem(doc.id, doc.data().veri);
             });
             renderAll();
         }, (error) => {
             console.error("Bulut eşitleme hatası:", error);
+            alert("Firebase'den veri çekilemedi. Veritabanı kurallarınızı (Rules) kontrol edin.");
         });
     }
 
@@ -794,10 +795,11 @@
         let stringData = JSON.stringify(data);
         localStorage.setItem(key, stringData);
         if(window.currentUserUid) {
-            db.collection('cpa_veriler').doc(window.currentUserUid).collection('veritabanlarim').doc(key).set({veri: stringData})
+            // DİKKAT: 'window.currentUserUid' yerine 'ORTAK_VERITABANI' kullanıyoruz.
+            db.collection('cpa_veriler').doc('ORTAK_VERITABANI').collection('veritabanlarim').doc(key).set({veri: stringData})
             .catch((error) => {
                 console.error("Buluta veri kaydetme hatası:", error);
-                alert("DİKKAT: Veri buluta KAYDEDİLEMEDİ! İnternet bağlantınızı kontrol edin.");
+                alert("DİKKAT: Veri buluta KAYDEDİLEMEDİ! Firebase Kurallarınızı (Rules) kontrol edin.");
             });
         }
         renderAll();
