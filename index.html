@@ -740,15 +740,22 @@
 
     function syncFromCloud(uid) {
         window.currentUserUid = uid;
-        // DİKKAT: 'uid' yerine 'ORTAK_VERITABANI' kullanarak herkesin aynı veriyi görmesini sağlıyoruz.
-        db.collection('cpa_veriler').doc('ORTAK_VERITABANI').collection('veritabanlarim').onSnapshot((snapshot) => {
+        // Gerçek verilerinin bulunduğu UID adresine kilitliyoruz.
+        const ORTAK_UID = 'Fhd6W769UnMFzCKeNw8P1eedBhk1';
+        
+        db.collection('cpa_veriler').doc(ORTAK_UID).collection('veritabanlarim').onSnapshot((snapshot) => {
+            let dataGuncellendi = false;
             snapshot.forEach(doc => {
                 localStorage.setItem(doc.id, doc.data().veri);
+                dataGuncellendi = true;
             });
-            renderAll();
+            // Diğer bilgisayardan veri girildiğinde ekranı anında yeniler
+            if(dataGuncellendi) {
+                renderAll();
+            }
         }, (error) => {
             console.error("Bulut eşitleme hatası:", error);
-            alert("Firebase'den veri çekilemedi. Veritabanı kurallarınızı (Rules) kontrol edin.");
+            alert("Firebase'den veri çekilemedi. İnternet bağlantınızı kontrol edin.");
         });
     }
 
@@ -793,16 +800,19 @@
 
     function saveData(key, data) {
         let stringData = JSON.stringify(data);
-        localStorage.setItem(key, stringData);
+        localStorage.setItem(key, stringData); // Önce bilgisayara anında kaydet
+        renderAll(); // Ekranı hemen güncelle
+        
         if(window.currentUserUid) {
-            // DİKKAT: 'window.currentUserUid' yerine 'ORTAK_VERITABANI' kullanıyoruz.
-            db.collection('cpa_veriler').doc('ORTAK_VERITABANI').collection('veritabanlarim').doc(key).set({veri: stringData})
+            const ORTAK_UID = 'Fhd6W769UnMFzCKeNw8P1eedBhk1';
+            db.collection('cpa_veriler').doc(ORTAK_UID).collection('veritabanlarim').doc(key).set({veri: stringData})
+            .then(() => {
+                console.log(key + " başarıyla ortak buluta yüklendi.");
+            })
             .catch((error) => {
                 console.error("Buluta veri kaydetme hatası:", error);
-                alert("DİKKAT: Veri buluta KAYDEDİLEMEDİ! Firebase Kurallarınızı (Rules) kontrol edin.");
             });
         }
-        renderAll();
     }
 
     // ================== MÜŞTERİ YÖNETİMİ ==================
