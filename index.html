@@ -740,22 +740,19 @@
 
     function syncFromCloud(uid) {
         window.currentUserUid = uid;
-        // Gerçek verilerinin bulunduğu UID adresine kilitliyoruz.
-        const ORTAK_UID = 'Fhd6W769UnMFzCKeNw8P1eedBhk1';
         
-        db.collection('cpa_veriler').doc(ORTAK_UID).collection('veritabanlarim').onSnapshot((snapshot) => {
-            let dataGuncellendi = false;
-            snapshot.forEach(doc => {
-                localStorage.setItem(doc.id, doc.data().veri);
-                dataGuncellendi = true;
-            });
-            // Diğer bilgisayardan veri girildiğinde ekranı anında yeniler
-            if(dataGuncellendi) {
-                renderAll();
+        // DİKKAT: Veriyi bilgisayarın hafızasından değil, ZORLA sunucudan (server) çektiriyoruz.
+        db.collection('cpa_veriler').doc(uid).collection('veritabanlarim').get({ source: 'server' }).then((snapshot) => {
+            if (!snapshot.empty) {
+                snapshot.forEach(doc => {
+                    localStorage.setItem(doc.id, doc.data().veri);
+                });
             }
-        }, (error) => {
+            renderAll(); // Verileri ekrana çiz
+        }).catch((error) => {
             console.error("Bulut eşitleme hatası:", error);
-            alert("Firebase'den veri çekilemedi. İnternet bağlantınızı kontrol edin.");
+            alert("Buluttan veri çekilemedi! İnternet bağlantınızı kontrol edin.");
+            renderAll(); // İnternet yoksa bile bilgisayardaki eski veriyi göstersin
         });
     }
 
@@ -804,13 +801,14 @@
         renderAll(); // Ekranı hemen güncelle
         
         if(window.currentUserUid) {
-            const ORTAK_UID = 'Fhd6W769UnMFzCKeNw8P1eedBhk1';
-            db.collection('cpa_veriler').doc(ORTAK_UID).collection('veritabanlarim').doc(key).set({veri: stringData})
+            // Veriyi giriş yapan kullanıcının kendi UID havuzuna yazıyoruz
+            db.collection('cpa_veriler').doc(window.currentUserUid).collection('veritabanlarim').doc(key).set({veri: stringData})
             .then(() => {
-                console.log(key + " başarıyla ortak buluta yüklendi.");
+                console.log(key + " başarıyla buluta yüklendi.");
             })
             .catch((error) => {
                 console.error("Buluta veri kaydetme hatası:", error);
+                alert("DİKKAT: Ağ hatası! Veri buluta gitmedi, sadece bu bilgisayarda kaldı.");
             });
         }
     }
